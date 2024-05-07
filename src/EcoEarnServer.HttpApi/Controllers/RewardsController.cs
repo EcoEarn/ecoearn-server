@@ -12,7 +12,7 @@ namespace EcoEarnServer.Controllers;
 [Area("app")]
 [ControllerName("RewardsController")]
 [Route("api/app/rewards")]
-public class RewardsController
+public class RewardsController : EcoEarnServerController
 {
     private readonly IRewardsService _rewardsService;
 

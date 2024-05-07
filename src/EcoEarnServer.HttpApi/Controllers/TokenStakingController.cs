@@ -11,7 +11,7 @@ namespace EcoEarnServer.Controllers;
 [Area("app")]
 [ControllerName("TokenStakingController")]
 [Route("api/app/simple/staking")]
-public class TokenStakingController
+public class TokenStakingController : EcoEarnServerController
 {
     private readonly ITokenStakingService _tokenStakingService;
 

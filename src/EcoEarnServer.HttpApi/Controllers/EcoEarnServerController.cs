@@ -3,7 +3,7 @@ using Volo.Abp.AspNetCore.Mvc;
 
 namespace EcoEarnServer.Controllers;
 
-public class EcoEarnServerController : AbpControllerBase
+public abstract class EcoEarnServerController : AbpControllerBase
 {
     protected EcoEarnServerController()
     {
