@@ -13,7 +13,26 @@ using aelf = global::AElf.CSharp.Core;
 namespace EcoEarn.Contracts.Points {
 
   #region Events
-  internal partial class ConfigSet : aelf::IEvent<ConfigSet>
+  public partial class ContractConfigSet : aelf::IEvent<ContractConfigSet>
+  {
+    public global::System.Collections.Generic.IEnumerable<ContractConfigSet> GetIndexed()
+    {
+      return new List<ContractConfigSet>
+      {
+      };
+    }
+
+    public ContractConfigSet GetNonIndexed()
+    {
+      return new ContractConfigSet
+      {
+        PointsContract = PointsContract,
+        EcoearnTokensContract = EcoearnTokensContract,
+      };
+    }
+  }
+
+  public partial class ConfigSet : aelf::IEvent<ConfigSet>
   {
     public global::System.Collections.Generic.IEnumerable<ConfigSet> GetIndexed()
     {
@@ -31,7 +50,7 @@ namespace EcoEarn.Contracts.Points {
     }
   }
 
-  internal partial class AdminSet : aelf::IEvent<AdminSet>
+  public partial class AdminSet : aelf::IEvent<AdminSet>
   {
     public global::System.Collections.Generic.IEnumerable<AdminSet> GetIndexed()
     {
@@ -49,7 +68,7 @@ namespace EcoEarn.Contracts.Points {
     }
   }
 
-  internal partial class Registered : aelf::IEvent<Registered>
+  public partial class Registered : aelf::IEvent<Registered>
   {
     public global::System.Collections.Generic.IEnumerable<Registered> GetIndexed()
     {
@@ -91,7 +110,7 @@ namespace EcoEarn.Contracts.Points {
     }
   }
 
-  internal partial class PointsPoolClosed : aelf::IEvent<PointsPoolClosed>
+  public partial class PointsPoolClosed : aelf::IEvent<PointsPoolClosed>
   {
     public global::System.Collections.Generic.IEnumerable<PointsPoolClosed> GetIndexed()
     {
@@ -110,7 +129,7 @@ namespace EcoEarn.Contracts.Points {
     }
   }
 
-  internal partial class SnapshotUpdated : aelf::IEvent<SnapshotUpdated>
+  public partial class SnapshotUpdated : aelf::IEvent<SnapshotUpdated>
   {
     public global::System.Collections.Generic.IEnumerable<SnapshotUpdated> GetIndexed()
     {
@@ -180,13 +199,14 @@ namespace EcoEarn.Contracts.Points {
       return new EarlyStaked
       {
         PoolId = PoolId,
+        Amount = Amount,
         Period = Period,
         ClaimInfos = ClaimInfos,
       };
     }
   }
 
-  internal partial class TokenRecovered : aelf::IEvent<TokenRecovered>
+  public partial class TokenRecovered : aelf::IEvent<TokenRecovered>
   {
     public global::System.Collections.Generic.IEnumerable<TokenRecovered> GetIndexed()
     {
@@ -207,7 +227,7 @@ namespace EcoEarn.Contracts.Points {
     }
   }
 
-  internal partial class PointsPoolEndBlockNumberSet : aelf::IEvent<PointsPoolEndBlockNumberSet>
+  public partial class PointsPoolEndBlockNumberSet : aelf::IEvent<PointsPoolEndBlockNumberSet>
   {
     public global::System.Collections.Generic.IEnumerable<PointsPoolEndBlockNumberSet> GetIndexed()
     {
@@ -227,7 +247,7 @@ namespace EcoEarn.Contracts.Points {
     }
   }
 
-  internal partial class PointsPoolRestarted : aelf::IEvent<PointsPoolRestarted>
+  public partial class PointsPoolRestarted : aelf::IEvent<PointsPoolRestarted>
   {
     public global::System.Collections.Generic.IEnumerable<PointsPoolRestarted> GetIndexed()
     {
@@ -247,7 +267,7 @@ namespace EcoEarn.Contracts.Points {
     }
   }
 
-  internal partial class PointsPoolUpdateAddressSet : aelf::IEvent<PointsPoolUpdateAddressSet>
+  public partial class PointsPoolUpdateAddressSet : aelf::IEvent<PointsPoolUpdateAddressSet>
   {
     public global::System.Collections.Generic.IEnumerable<PointsPoolUpdateAddressSet> GetIndexed()
     {
@@ -266,7 +286,7 @@ namespace EcoEarn.Contracts.Points {
     }
   }
 
-  internal partial class PointsPoolRewardReleasePeriodSet : aelf::IEvent<PointsPoolRewardReleasePeriodSet>
+  public partial class PointsPoolRewardReleasePeriodSet : aelf::IEvent<PointsPoolRewardReleasePeriodSet>
   {
     public global::System.Collections.Generic.IEnumerable<PointsPoolRewardReleasePeriodSet> GetIndexed()
     {
@@ -285,7 +305,7 @@ namespace EcoEarn.Contracts.Points {
     }
   }
 
-  internal partial class DappAdminSet : aelf::IEvent<DappAdminSet>
+  public partial class DappAdminSet : aelf::IEvent<DappAdminSet>
   {
     public global::System.Collections.Generic.IEnumerable<DappAdminSet> GetIndexed()
     {
@@ -305,7 +325,7 @@ namespace EcoEarn.Contracts.Points {
   }
 
   #endregion
-  internal static partial class EcoEarnPointsContractContainer
+  public static partial class EcoEarnPointsContractContainer
   {
     static readonly string __ServiceName = "EcoEarnPointsContract";
 
@@ -314,6 +334,8 @@ namespace EcoEarn.Contracts.Points {
     static readonly aelf::Marshaller<global::Google.Protobuf.WellKnownTypes.Empty> __Marshaller_google_protobuf_Empty = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Google.Protobuf.WellKnownTypes.Empty.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.Config> __Marshaller_Config = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.Config.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AElf.Types.Address> __Marshaller_aelf_Address = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AElf.Types.Address.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.SetContractConfigInput> __Marshaller_SetContractConfigInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.SetContractConfigInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.GetContractConfigOutput> __Marshaller_GetContractConfigOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.GetContractConfigOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.RegisterInput> __Marshaller_RegisterInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.RegisterInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.SetDappAdminInput> __Marshaller_SetDappAdminInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.SetDappAdminInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AElf.Types.Hash> __Marshaller_aelf_Hash = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AElf.Types.Hash.Parser.ParseFrom);
@@ -369,6 +391,20 @@ namespace EcoEarn.Contracts.Points {
         "GetAdmin",
         __Marshaller_google_protobuf_Empty,
         __Marshaller_aelf_Address);
+
+    static readonly aelf::Method<global::EcoEarn.Contracts.Points.SetContractConfigInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetContractConfig = new aelf::Method<global::EcoEarn.Contracts.Points.SetContractConfigInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "SetContractConfig",
+        __Marshaller_SetContractConfigInput,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::EcoEarn.Contracts.Points.GetContractConfigOutput> __Method_GetContractConfig = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::EcoEarn.Contracts.Points.GetContractConfigOutput>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetContractConfig",
+        __Marshaller_google_protobuf_Empty,
+        __Marshaller_GetContractConfigOutput);
 
     static readonly aelf::Method<global::EcoEarn.Contracts.Points.RegisterInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_Register = new aelf::Method<global::EcoEarn.Contracts.Points.RegisterInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
@@ -517,32 +553,167 @@ namespace EcoEarn.Contracts.Points {
     }
     #endregion
 
-    // public class EcoEarnPointsContractReferenceState : global::AElf.Sdk.CSharp.State.ContractReferenceState
+    /// <summary>Base class for the contract of EcoEarnPointsContract</summary>
+    // public abstract partial class EcoEarnPointsContractBase : AElf.Sdk.CSharp.CSharpSmartContract<EcoEarn.Contracts.Points.EcoEarnPointsContractState>
     // {
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.InitializeInput, global::Google.Protobuf.WellKnownTypes.Empty> Initialize { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.Config, global::Google.Protobuf.WellKnownTypes.Empty> SetConfig { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::EcoEarn.Contracts.Points.Config> GetConfig { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty> SetAdmin { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::AElf.Types.Address> GetAdmin { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.RegisterInput, global::Google.Protobuf.WellKnownTypes.Empty> Register { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.SetDappAdminInput, global::Google.Protobuf.WellKnownTypes.Empty> SetDappAdmin { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Hash, global::EcoEarn.Contracts.Points.DappInfo> GetDappInfo { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.CreatePointsPoolInput, global::Google.Protobuf.WellKnownTypes.Empty> CreatePointsPool { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Hash, global::Google.Protobuf.WellKnownTypes.Empty> ClosePointsPool { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.SetPointsPoolEndBlockNumberInput, global::Google.Protobuf.WellKnownTypes.Empty> SetPointsPoolEndBlockNumber { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.RestartPointsPoolInput, global::Google.Protobuf.WellKnownTypes.Empty> RestartPointsPool { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.SetPointsPoolUpdateAddressInput, global::Google.Protobuf.WellKnownTypes.Empty> SetPointsPoolUpdateAddress { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.SetPointsPoolRewardReleasePeriodInput, global::Google.Protobuf.WellKnownTypes.Empty> SetPointsPoolRewardReleasePeriod { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Hash, global::EcoEarn.Contracts.Points.GetPoolInfoOutput> GetPoolInfo { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Hash, global::AElf.Types.Address> GetPoolAddress { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.UpdateSnapshotInput, global::Google.Protobuf.WellKnownTypes.Empty> UpdateSnapshot { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.GetSnapshotInput, global::EcoEarn.Contracts.Points.Snapshot> GetSnapshot { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.ClaimInput, global::Google.Protobuf.WellKnownTypes.Empty> Claim { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Hash, global::EcoEarn.Contracts.Points.ClaimInfo> GetClaimInfo { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.WithdrawInput, global::Google.Protobuf.WellKnownTypes.Empty> Withdraw { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.EarlyStakeInput, global::Google.Protobuf.WellKnownTypes.Empty> EarlyStake { get; set; }
-    //   internal global::AElf.Sdk.CSharp.State.MethodReference<global::EcoEarn.Contracts.Points.RecoverTokenInput, global::Google.Protobuf.WellKnownTypes.Empty> RecoverToken { get; set; }
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Initialize(global::EcoEarn.Contracts.Points.InitializeInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetConfig(global::EcoEarn.Contracts.Points.Config input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::EcoEarn.Contracts.Points.Config GetConfig(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetAdmin(global::AElf.Types.Address input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AElf.Types.Address GetAdmin(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetContractConfig(global::EcoEarn.Contracts.Points.SetContractConfigInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::EcoEarn.Contracts.Points.GetContractConfigOutput GetContractConfig(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Register(global::EcoEarn.Contracts.Points.RegisterInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetDappAdmin(global::EcoEarn.Contracts.Points.SetDappAdminInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::EcoEarn.Contracts.Points.DappInfo GetDappInfo(global::AElf.Types.Hash input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty CreatePointsPool(global::EcoEarn.Contracts.Points.CreatePointsPoolInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty ClosePointsPool(global::AElf.Types.Hash input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetPointsPoolEndBlockNumber(global::EcoEarn.Contracts.Points.SetPointsPoolEndBlockNumberInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty RestartPointsPool(global::EcoEarn.Contracts.Points.RestartPointsPoolInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetPointsPoolUpdateAddress(global::EcoEarn.Contracts.Points.SetPointsPoolUpdateAddressInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetPointsPoolRewardReleasePeriod(global::EcoEarn.Contracts.Points.SetPointsPoolRewardReleasePeriodInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::EcoEarn.Contracts.Points.GetPoolInfoOutput GetPoolInfo(global::AElf.Types.Hash input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AElf.Types.Address GetPoolAddress(global::AElf.Types.Hash input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty UpdateSnapshot(global::EcoEarn.Contracts.Points.UpdateSnapshotInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::EcoEarn.Contracts.Points.Snapshot GetSnapshot(global::EcoEarn.Contracts.Points.GetSnapshotInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Claim(global::EcoEarn.Contracts.Points.ClaimInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::EcoEarn.Contracts.Points.ClaimInfo GetClaimInfo(global::AElf.Types.Hash input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Withdraw(global::EcoEarn.Contracts.Points.WithdrawInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty EarlyStake(global::EcoEarn.Contracts.Points.EarlyStakeInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty RecoverToken(global::EcoEarn.Contracts.Points.RecoverTokenInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
     // }
+    //
+    // public static aelf::ServerServiceDefinition BindService(EcoEarnPointsContractBase serviceImpl)
+    // {
+    //   return aelf::ServerServiceDefinition.CreateBuilder()
+    //       .AddDescriptors(Descriptors)
+    //       .AddMethod(__Method_Initialize, serviceImpl.Initialize)
+    //       .AddMethod(__Method_SetConfig, serviceImpl.SetConfig)
+    //       .AddMethod(__Method_GetConfig, serviceImpl.GetConfig)
+    //       .AddMethod(__Method_SetAdmin, serviceImpl.SetAdmin)
+    //       .AddMethod(__Method_GetAdmin, serviceImpl.GetAdmin)
+    //       .AddMethod(__Method_SetContractConfig, serviceImpl.SetContractConfig)
+    //       .AddMethod(__Method_GetContractConfig, serviceImpl.GetContractConfig)
+    //       .AddMethod(__Method_Register, serviceImpl.Register)
+    //       .AddMethod(__Method_SetDappAdmin, serviceImpl.SetDappAdmin)
+    //       .AddMethod(__Method_GetDappInfo, serviceImpl.GetDappInfo)
+    //       .AddMethod(__Method_CreatePointsPool, serviceImpl.CreatePointsPool)
+    //       .AddMethod(__Method_ClosePointsPool, serviceImpl.ClosePointsPool)
+    //       .AddMethod(__Method_SetPointsPoolEndBlockNumber, serviceImpl.SetPointsPoolEndBlockNumber)
+    //       .AddMethod(__Method_RestartPointsPool, serviceImpl.RestartPointsPool)
+    //       .AddMethod(__Method_SetPointsPoolUpdateAddress, serviceImpl.SetPointsPoolUpdateAddress)
+    //       .AddMethod(__Method_SetPointsPoolRewardReleasePeriod, serviceImpl.SetPointsPoolRewardReleasePeriod)
+    //       .AddMethod(__Method_GetPoolInfo, serviceImpl.GetPoolInfo)
+    //       .AddMethod(__Method_GetPoolAddress, serviceImpl.GetPoolAddress)
+    //       .AddMethod(__Method_UpdateSnapshot, serviceImpl.UpdateSnapshot)
+    //       .AddMethod(__Method_GetSnapshot, serviceImpl.GetSnapshot)
+    //       .AddMethod(__Method_Claim, serviceImpl.Claim)
+    //       .AddMethod(__Method_GetClaimInfo, serviceImpl.GetClaimInfo)
+    //       .AddMethod(__Method_Withdraw, serviceImpl.Withdraw)
+    //       .AddMethod(__Method_EarlyStake, serviceImpl.EarlyStake)
+    //       .AddMethod(__Method_RecoverToken, serviceImpl.RecoverToken).Build();
+    // }
+
   }
 }
 #endregion
