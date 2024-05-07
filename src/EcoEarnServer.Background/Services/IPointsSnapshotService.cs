@@ -122,11 +122,13 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
         foreach (var addressPointsGroup in addressPointsGroups)
         {
             var address = addressPointsGroup.Address;
+            var dappId = addressPointsGroup.Points.FirstOrDefault()?.DappId;
             //var flag = addressRelationShipDic.TryGetValue(address, out var addressRelationShip);
-            var newPointList = new PointsListDto()
+            var newPointList = new PointsListDto
             {
                 Address = address,
-                UpdateTime = startOfDayTimestamp
+                UpdateTime = startOfDayTimestamp,
+                DappId = dappId
             };
             foreach (var pointsListDto in addressPointsGroup.Points)
             {

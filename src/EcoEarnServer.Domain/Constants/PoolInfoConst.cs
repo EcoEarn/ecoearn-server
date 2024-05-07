@@ -29,4 +29,9 @@ public class PoolInfoConst
         { "EightSymbolAmount", "XPSG-8" },
         { "NineSymbolAmount", "XPSG-9" }
     };
+    
+    public static readonly Dictionary<string, string> ProjectOwnerDic = new()
+    {
+        { "dappId", "Schrodinger" },
+    };
 }

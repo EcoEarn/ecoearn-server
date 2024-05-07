@@ -4,6 +4,7 @@ public class PointsSnapshotDto
 {
     public string Domain { get; set; }
     public string Address { get; set; }
+    public string DappId { get; set; }
     public string FirstSymbolAmount { get; set; } = "0";
     public string SecondSymbolAmount { get; set; } = "0";
     public string ThirdSymbolAmount { get; set; } = "0";

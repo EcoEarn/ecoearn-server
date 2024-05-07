@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Cryptography;
@@ -14,6 +15,7 @@ using EcoEarnServer.PointsSnapshot;
 using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.PointsStaking.Provider;
+using EcoEarnServer.TokenStaking;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -36,11 +38,13 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly ILogger<PointsStakingService> _logger;
+    private readonly ITokenStakingService _tokenStakingService;
 
     public PointsStakingService(IOptionsSnapshot<ProjectItemOptions> projectItemOptions, IObjectMapper objectMapper,
         IPointsStakingProvider pointsStakingProvider, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
         ContractProvider contractProvider, IOptionsSnapshot<ProjectKeyPairInfoOptions> projectKeyPairInfoOptions,
-        IClusterClient clusterClient, IDistributedEventBus distributedEventBus, ILogger<PointsStakingService> logger)
+        IClusterClient clusterClient, IDistributedEventBus distributedEventBus, ILogger<PointsStakingService> logger,
+        ITokenStakingService tokenStakingService)
     {
         _objectMapper = objectMapper;
         _pointsStakingProvider = pointsStakingProvider;
@@ -48,6 +52,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _logger = logger;
+        _tokenStakingService = tokenStakingService;
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
         _earnContractOptions = earnContractOptions.Value;
         _projectItemOptions = projectItemOptions.Value;
@@ -92,7 +97,34 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             skipCount += count;
         } while (!list.IsNullOrEmpty());
 
-        return new Dictionary<string, ProjectItemAggDto>();
+        var projectItemAggDataDic = res.GroupBy(x => x.DappId)
+            .ToDictionary(g => g.Key, g =>
+            {
+                var firstSymbolSum = g.Select(x => BigInteger.Parse(x.FirstSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var thirdSymbolSum = g.Select(x => BigInteger.Parse(x.ThirdSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var fourSymbolSum = g.Select(x => BigInteger.Parse(x.FourSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var fiveSymbolSum = g.Select(x => BigInteger.Parse(x.FiveSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var sixSymbolSum = g.Select(x => BigInteger.Parse(x.SixSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var sevenSymbolSum = g.Select(x => BigInteger.Parse(x.SevenSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var eightSymbolSum = g.Select(x => BigInteger.Parse(x.EightSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var nineSymbolSum = g.Select(x => BigInteger.Parse(x.NineSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var tvl = firstSymbolSum + thirdSymbolSum + fourSymbolSum + fiveSymbolSum + sixSymbolSum +
+                          sevenSymbolSum + eightSymbolSum + nineSymbolSum;
+                return new ProjectItemAggDto
+                {
+                    StakingAddress = g.Count(),
+                    Tvl = tvl.ToString()
+                };
+            });
+        return projectItemAggDataDic;
     }
 
     public async Task<List<PointsPoolsDto>> GetPointsPoolsAsync(GetPointsPoolsInput input)
@@ -113,11 +145,18 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         return pointsPoolsDtos;
     }
 
-    public Task<ClaimAmountSignatureDto> ClaimAmountSignatureAsync(ClaimAmountSignatureInput input)
+    public async Task<ClaimAmountSignatureDto> ClaimAmountSignatureAsync(ClaimAmountSignatureInput input)
     {
         if (!_projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(input.PoolId, out var privateKey))
         {
-            throw new Exception("invalid pool");
+            throw new UserFriendlyException("invalid pool");
+        }
+
+        var addressStakeRewardsDic = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(input.Address);
+
+        if (!addressStakeRewardsDic.TryGetValue(input.PoolId, out var earned) || long.Parse(earned) - input.Amount < 0)
+        {
+            throw new UserFriendlyException("invalid amount");
         }
 
         var seed = Guid.NewGuid().ToString();
@@ -125,11 +164,11 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             Hash.LoadFromHex(input.PoolId), input.Amount, Address.FromBase58(input.Address),
             HashHelper.ComputeFrom(seed));
 
-        return Task.FromResult(new ClaimAmountSignatureDto
+        return new ClaimAmountSignatureDto
         {
             Seed = seed,
             Signature = signature
-        });
+        };
     }
 
     private string GenerateSignature(byte[] privateKey, Hash poolId, long amount, Address account, Hash seed)
@@ -199,5 +238,10 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
         return transactionOutput.TransactionId;
+    }
+
+    public async Task<EarlyStakeInfoDto> GetEarlyStakeInfoAsync(GetEarlyStakeInfoInput input)
+    {
+        return await _tokenStakingService.GetStakedInfoAsync(input.TokenName);
     }
 }

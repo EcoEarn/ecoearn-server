@@ -10,7 +10,7 @@ namespace EcoEarnServer.Controllers;
 [RemoteService]
 [Area("app")]
 [ControllerName("TokenStakingController")]
-[Route("api/app/token/staking")]
+[Route("api/app/simple/staking")]
 public class TokenStakingController
 {
     private readonly ITokenStakingService _tokenStakingService;
@@ -24,5 +24,11 @@ public class TokenStakingController
     public async Task<List<TokenPoolsDto>> GetTokenPoolsAsync(GetTokenPoolsInput input)
     {
         return await _tokenStakingService.GetTokenPoolsAsync(input);
+    }
+    
+    [HttpPost("staked/sum")]
+    public async Task<long> GetTokenPoolStakedSumAsync(GetTokenPoolStakedSumInput input)
+    {
+        return await _tokenStakingService.GetTokenPoolStakedSumAsync(input);
     }
 }

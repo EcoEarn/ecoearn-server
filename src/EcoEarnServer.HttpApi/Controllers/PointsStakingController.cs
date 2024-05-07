@@ -43,4 +43,10 @@ public class PointsStakingController : EcoEarnServerController
     {
         return await _pointsStakingService.ClaimAsync(input);
     }
+    
+    [HttpPost("early/stake/info")]
+    public async Task<EarlyStakeInfoDto> GetEarlyStakeInfoAsync(GetEarlyStakeInfoInput input)
+    {
+        return await _pointsStakingService.GetEarlyStakeInfoAsync(input);
+    }
 }

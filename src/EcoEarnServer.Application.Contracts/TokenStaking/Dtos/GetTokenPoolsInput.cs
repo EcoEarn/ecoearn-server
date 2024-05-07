@@ -5,4 +5,5 @@ namespace EcoEarnServer.TokenStaking.Dtos;
 public class GetTokenPoolsInput : PagedAndSortedResultRequestDto
 {
     public string Name { get; set; }
+    public string Address { get; set; }
 }

@@ -7,6 +7,7 @@ public class PointsSnapshotIndex : AbstractEntity<string>, IIndexBuild
 {
     public string Domain { get; set; }
     public string Address { get; set; }
+    public string DappId { get; set; }
     public string FirstSymbolAmount { get; set; }
     public string SecondSymbolAmount { get; set; }
     public string ThirdSymbolAmount { get; set; }

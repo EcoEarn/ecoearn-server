@@ -10,6 +10,7 @@ public class ProjectItemOptions
 public class ProjectItem
 {
     public string DappName { get; set; }
+    public string DappId { get; set; }
     public string ProjectOwner { get; set; }
     public string Icon { get; set; }
     public bool IsOpenStake { get; set; }
