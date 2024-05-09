@@ -3,7 +3,7 @@ using Volo.Abp.EventBus;
 
 namespace EcoEarnServer.PointsStakeRewards;
 
-[EventName("PointsStakeRewardsSumEto")]
+[EventName("PointsStakeRewardsSumListEto")]
 public class PointsStakeRewardsSumListEto
 {
     public List<PointsStakeRewardsSumEto> EventDataList { get; set; }

@@ -11,4 +11,5 @@ public class PointsSnapshotOptions
 
     public string PointsServerBaseUrl { get; set; }
     public string DappId { get; set; }
+    public int SettleRewardsBeforeDays { get; set; } = 0;
 }

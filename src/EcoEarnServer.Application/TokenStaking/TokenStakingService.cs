@@ -81,7 +81,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                         .CurrentCulture);
                 tokenPoolsDto.StakedAmount = stakedInfo.StakedAmount.ToString();
                 tokenPoolsDto.EarlyStakedAmount = stakedInfo.EarlyStakedAmount.ToString();
-                tokenPoolsDto.UnlockTime = stakedInfo.StakedTime + stakedInfo.Period * 86400000;
+                tokenPoolsDto.UnlockTime = stakedInfo.StakedTime + stakedInfo.Period;
                 tokenPoolsDto.StakeApr = tokenPoolsDto.AprMin * (1 + (double)stakedInfo.Period / 360);
                 tokenPoolsDto.StakedTime = stakedInfo.StakedTime;
                 tokenPoolsDto.Period = stakedInfo.Period;

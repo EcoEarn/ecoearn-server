@@ -30,7 +30,7 @@ public class SettlePointsRewardsWorker : AsyncPeriodicBackgroundWorkerBase
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
         _logger.LogInformation("begin execute SettlePointsRewardsWorker. begin time: {time}", DateTime.UtcNow);
-        await _settlePointsRewardsService.SettlePointsRewardsAsync();
+        await _settlePointsRewardsService.SettlePointsRewardsAsync(_options.SettleRewardsBeforeDays);
         _logger.LogInformation("finish execute SettlePointsRewardsWorker. finish time: {time}", DateTime.UtcNow);
     }
 }

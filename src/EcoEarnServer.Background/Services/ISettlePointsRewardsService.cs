@@ -19,7 +19,7 @@ namespace EcoEarnServer.Background.Services;
 
 public interface ISettlePointsRewardsService
 {
-    Task SettlePointsRewardsAsync();
+    Task SettlePointsRewardsAsync(int settleRewardsBeforeDays);
 }
 
 public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingletonDependency
@@ -48,7 +48,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         _poolOptions = poolOptions.Value;
     }
 
-    public async Task SettlePointsRewardsAsync()
+    public async Task SettlePointsRewardsAsync(int settleRewardsBeforeDays)
     {
         await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix);
 
@@ -66,13 +66,15 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
 
         try
         {
-            var list = await GetYesterdaySnapshotAsync();
+            var list = await GetYesterdaySnapshotAsync(settleRewardsBeforeDays);
             var stakeSumDic = GetYesterdayStakeSumDic(list);
             list.ForEach(snapshot =>
                 BackgroundJob.Enqueue(() =>
                     _pointsPoolService.UpdatePointsPoolAddressStakeAsync(snapshot, stakeSumDic)));
             //update the staked sum for each points pool
             await _pointsPoolService.UpdatePointsPoolStakeSumAsync(stakeSumDic);
+            
+            await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSettleKey(), true);
         }
         catch (Exception e)
         {
@@ -163,13 +165,13 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         return poolStakeDic;
     }
 
-    private async Task<List<PointsSnapshotIndex>> GetYesterdaySnapshotAsync()
+    private async Task<List<PointsSnapshotIndex>> GetYesterdaySnapshotAsync(int settleRewardsBeforeDays)
     {
         var res = new List<PointsSnapshotIndex>();
         var skipCount = 0;
         var maxResultCount = 5000;
         List<PointsSnapshotIndex> list;
-        var yesterday = DateTime.UtcNow.ToString("yyyyMMdd");
+        var yesterday = DateTime.UtcNow.AddDays(settleRewardsBeforeDays).ToString("yyyyMMdd");
         do
         {
             list = await _settlePointsRewardsProvider.GetSnapshotListAsync(yesterday, skipCount, maxResultCount);
