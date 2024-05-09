@@ -24,7 +24,7 @@ public interface IPointsSnapshotService
 public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependency
 {
     private readonly IPointsSnapshotProvider _pointsSnapshotProvider;
-    private readonly IPointsSnapshotStateProvider _pointsSnapshotStateProvider;
+    private readonly IStateProvider _stateProvider;
     private readonly IAbpDistributedLock _distributedLock;
 
     private readonly ILogger<PointsSnapshotService> _logger;
@@ -34,11 +34,11 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
     private readonly IObjectMapper _objectMapper;
     private readonly ISnapshotGeneratorService _snapshotGeneratorService;
 
-    private const string LockKeyPrefix = "EcoEarnServer:PointsSnapshot:";
+    private const string LockKeyPrefix = "EcoEarnServer:PointsSnapshot:Lock:";
 
 
     public PointsSnapshotService(IPointsSnapshotProvider pointsSnapshotProvider, IAbpDistributedLock distributedLock,
-        ILogger<PointsSnapshotService> logger, IPointsSnapshotStateProvider pointsSnapshotStateProvider,
+        ILogger<PointsSnapshotService> logger, IStateProvider stateProvider,
         //IOptionsSnapshot<SelfIncreaseRateOptions> selfIncreaseRateOptions,
         IOptionsSnapshot<PointsSnapshotOptions> pointsSnapshotOptions, IObjectMapper objectMapper,
         ISnapshotGeneratorService snapshotGeneratorService)
@@ -46,7 +46,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
         _pointsSnapshotProvider = pointsSnapshotProvider;
         _distributedLock = distributedLock;
         _logger = logger;
-        _pointsSnapshotStateProvider = pointsSnapshotStateProvider;
+        _stateProvider = stateProvider;
         _objectMapper = objectMapper;
         _snapshotGeneratorService = snapshotGeneratorService;
         _pointsSnapshotOptions = pointsSnapshotOptions.Value;
@@ -62,7 +62,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
             _logger.LogWarning("do not get lock, keys already exits.");
             return;
         }
-        if (await _pointsSnapshotStateProvider.CheckPointsSnapshotStateAsync())
+        if (await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateSnapshotKey()))
         {
             _logger.LogInformation("today has already created points snapshot.");
             return;
@@ -76,17 +76,18 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
             _logger.LogInformation("need to snapshot count .{count}", pointsSumList.Count);
             await PointsBatchSnapshotAsync(pointsSumList);
 
-            await _pointsSnapshotStateProvider.SetPointsSnapshotStateAsync(true);
+            await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSnapshotKey(), true);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "CreatePointsSnapshot fail.");
-            await _pointsSnapshotStateProvider.SetPointsSnapshotStateAsync(false);
+            await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSnapshotKey(), false);
         }
     }
 
     private async Task PointsBatchSnapshotAsync(List<PointsListDto> pointsSumList)
     {
+        var today = DateTime.UtcNow.ToString("yyyyMMdd");
         var recurCount = pointsSumList.Count / _pointsSnapshotOptions.BatchSnapshotCount + 1;
         for (var i = 0; i < recurCount; i++)
         {
@@ -95,7 +96,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
 
             if (list.IsNullOrEmpty()) return;
             list.ForEach(pointsRecord =>
-                BackgroundJob.Enqueue(() => _snapshotGeneratorService.GenerateSnapshotAsync(pointsRecord)));
+                BackgroundJob.Enqueue(() => _snapshotGeneratorService.GenerateSnapshotAsync(pointsRecord, today)));
         }
     }
 

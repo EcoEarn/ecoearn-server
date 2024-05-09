@@ -12,19 +12,19 @@ public class TokenPoolsDto
     public string EarnedSymbol { get; set; }
     public double AprMin { get; set; }
     public double AprMax { get; set; }
-    public string TotalStake { get; set; }
-    public string TotalStakeInUsd { get; set; }
+    public string TotalStake { get; set; } = "0";
+    public string TotalStakeInUsd { get; set; } = "0";
     public long YearlyRewards { get; set; }
     public List<string> Icons { get; set; }
 
     //stake info
     public string StakeId { get; set; }
-    public string Earned { get; set; }
-    public string EarnedInUsd { get; set; }
-    public string Staked { get; set; }
-    public string StakedInUsd { get; set; }
-    public string StakedAmount { get; set; }
-    public string EarlyStakedAmount { get; set; }
+    public string Earned { get; set; } = "0";
+    public string EarnedInUsd { get; set; } = "0";
+    public string Staked { get; set; } = "0";
+    public string StakedInUsd { get; set; } = "0";
+    public string StakedAmount { get; set; } = "0";
+    public string EarlyStakedAmount { get; set; } = "0";
     public long UnlockTime { get; set; }
     public double StakeApr { get; set; }
     public long StakedTime { get; set; }

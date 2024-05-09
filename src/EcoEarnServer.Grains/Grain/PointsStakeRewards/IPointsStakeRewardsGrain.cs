@@ -1,3 +1,4 @@
+using EcoEarnServer.Common;
 using EcoEarnServer.Grains.State;
 using Orleans;
 using Volo.Abp.ObjectMapping;
@@ -17,9 +18,31 @@ public class PointsStakeRewardsGrain : Grain<PointsStakeRewardsState>, IPointsSt
     {
         _objectMapper = objectMapper;
     }
-
-    public Task<GrainResultDto<PointsStakeRewardsDto>> CreateOrUpdateAsync(PointsStakeRewardsDto input)
+    
+    public override async Task OnActivateAsync()
     {
-        throw new NotImplementedException();
+        await ReadStateAsync();
+        await base.OnActivateAsync();
+    }
+
+    public override async Task OnDeactivateAsync()
+    {
+        await WriteStateAsync();
+        await base.OnDeactivateAsync();
+    }
+
+    public async Task<GrainResultDto<PointsStakeRewardsDto>> CreateOrUpdateAsync(PointsStakeRewardsDto input)
+    {
+        State = _objectMapper.Map<PointsStakeRewardsDto, PointsStakeRewardsState>(input);
+        State.Id = this.GetPrimaryKeyString();
+        State.CreateTime = DateTime.UtcNow.ToUtcMilliSeconds();
+
+        await WriteStateAsync();
+
+        return new GrainResultDto<PointsStakeRewardsDto>
+        {
+            Success = true,
+            Data = _objectMapper.Map<PointsStakeRewardsState, PointsStakeRewardsDto>(State)
+        };
     }
 }

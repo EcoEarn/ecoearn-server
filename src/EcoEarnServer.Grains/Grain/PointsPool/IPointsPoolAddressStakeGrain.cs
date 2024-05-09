@@ -1,3 +1,5 @@
+using EcoEarnServer.Common;
+using EcoEarnServer.Grains.Grain.PointsSnapshot;
 using EcoEarnServer.Grains.State;
 using Orleans;
 using Volo.Abp.ObjectMapping;
@@ -18,8 +20,30 @@ public class PointsPoolAddressStakeGrain : Grain<PointsPoolAddressStakeState>, I
         _objectMapper = objectMapper;
     }
 
-    public Task<GrainResultDto<PointsPoolAddressStakeDto>> CreateOrUpdateAsync(PointsPoolAddressStakeDto input)
+    public override async Task OnActivateAsync()
     {
-        throw new NotImplementedException();
+        await ReadStateAsync();
+        await base.OnActivateAsync();
+    }
+
+    public override async Task OnDeactivateAsync()
+    {
+        await WriteStateAsync();
+        await base.OnDeactivateAsync();
+    }
+
+    public async Task<GrainResultDto<PointsPoolAddressStakeDto>> CreateOrUpdateAsync(PointsPoolAddressStakeDto input)
+    {
+        State = _objectMapper.Map<PointsPoolAddressStakeDto, PointsPoolAddressStakeState>(input);
+        State.Id = this.GetPrimaryKeyString();
+        State.CreateTime = DateTime.UtcNow.ToUtcMilliSeconds();
+
+        await WriteStateAsync();
+
+        return new GrainResultDto<PointsPoolAddressStakeDto>
+        {
+            Success = true,
+            Data = _objectMapper.Map<PointsPoolAddressStakeState, PointsPoolAddressStakeDto>(State)
+        };
     }
 }

@@ -64,12 +64,11 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             if (tokenPoolStakedSum != 0)
             {
                 tokenPoolsDto.TotalStakeInUsd = (rate * tokenPoolStakedSum).ToString(CultureInfo.CurrentCulture);
+                tokenPoolsDto.TotalStake = tokenPoolStakedSum.ToString();
+                tokenPoolsDto.YearlyRewards = YearlyBlocks * tokenPoolsIndexerDto.TokenPoolConfig.RewardPerBlock;
+                tokenPoolsDto.AprMin = (double)tokenPoolsDto.YearlyRewards / tokenPoolStakedSum * 100;
+                tokenPoolsDto.AprMax = tokenPoolsDto.AprMin * 2;
             }
-
-            tokenPoolsDto.TotalStake = tokenPoolStakedSum.ToString();
-            tokenPoolsDto.YearlyRewards = YearlyBlocks * tokenPoolsIndexerDto.TokenPoolConfig.RewardPerBlock;
-            tokenPoolsDto.AprMin = (double)tokenPoolsDto.YearlyRewards / tokenPoolStakedSum * 100;
-            tokenPoolsDto.AprMax = tokenPoolsDto.AprMin * 2;
 
             if (addressStakedInPoolDic.TryGetValue(tokenPoolsDto.PoolId, out var stakedInfo))
             {
@@ -111,12 +110,10 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                     ContractConstants.StakedSumMethodName, Hash.LoadFromHex(input.PoolId))
                 .Result
                 .transaction;
-            var totalStakedAmount =
-                _contractProvider.CallTransactionAsync<PoolDataDto>(input.ChainId, transaction).Result
-                    .TotalStakedAmount;
+            var transactionResult = await _contractProvider.CallTransactionAsync<PoolDataDto>(input.ChainId, transaction);
             await RedisDatabase.StringSetAsync(TokenPoolStakedSumRedisKeyPrefix + input.PoolId,
-                _serializer.Serialize(totalStakedAmount));
-            return long.Parse(totalStakedAmount);
+                transactionResult.TotalStakedAmount, TimeSpan.FromSeconds(5));
+            return long.Parse(transactionResult.TotalStakedAmount);
         }
         catch (Exception e)
         {

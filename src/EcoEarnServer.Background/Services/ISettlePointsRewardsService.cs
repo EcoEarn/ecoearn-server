@@ -8,9 +8,11 @@ using EcoEarnServer.Constants;
 using EcoEarnServer.Grains.Grain.PointsPool;
 using EcoEarnServer.PointsSnapshot;
 using Hangfire;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NUglify.Helpers;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.DistributedLocking;
 using Volo.Abp.ObjectMapping;
 
 namespace EcoEarnServer.Background.Services;
@@ -22,31 +24,61 @@ public interface ISettlePointsRewardsService
 
 public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingletonDependency
 {
+    private const string LockKeyPrefix = "EcoEarnServer:SettlePointsRewards:Lock:";
+
     private readonly ISettlePointsRewardsProvider _settlePointsRewardsProvider;
     private readonly PointsPoolOptions _poolOptions;
     private readonly IPointsPoolService _pointsPoolService;
     private readonly IObjectMapper _objectMapper;
+    private readonly IAbpDistributedLock _distributedLock;
+    private readonly ILogger<SettlePointsRewardsService> _logger;
+    private readonly IStateProvider _stateProvider;
 
     public SettlePointsRewardsService(ISettlePointsRewardsProvider settlePointsRewardsProvider,
         IOptionsSnapshot<PointsPoolOptions> poolOptions, IPointsPoolService pointsPoolService,
-        IObjectMapper objectMapper)
+        IObjectMapper objectMapper, IAbpDistributedLock distributedLock, ILogger<SettlePointsRewardsService> logger,
+        IStateProvider stateProvider)
     {
         _settlePointsRewardsProvider = settlePointsRewardsProvider;
         _pointsPoolService = pointsPoolService;
         _objectMapper = objectMapper;
+        _distributedLock = distributedLock;
+        _logger = logger;
+        _stateProvider = stateProvider;
         _poolOptions = poolOptions.Value;
     }
 
-
     public async Task SettlePointsRewardsAsync()
     {
-        var list = await GetYesterdaySnapshotAsync();
-        var stakeSumDic = GetYesterdayStakeSumDic(list);
-        list.ForEach(snapshot =>
-            BackgroundJob.Enqueue(() =>
-                _pointsPoolService.UpdatePointsPoolAddressStakeAsync(snapshot, stakeSumDic)));
-        //update the staked sum for each points pool
-        await _pointsPoolService.UpdatePointsPoolStakeSumAsync(stakeSumDic);
+        await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix);
+
+        if (handle == null)
+        {
+            _logger.LogWarning("do not get lock, keys already exits.");
+            return;
+        }
+
+        if (await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateSettleKey()))
+        {
+            _logger.LogInformation("today has already created points snapshot.");
+            return;
+        }
+
+        try
+        {
+            var list = await GetYesterdaySnapshotAsync();
+            var stakeSumDic = GetYesterdayStakeSumDic(list);
+            list.ForEach(snapshot =>
+                BackgroundJob.Enqueue(() =>
+                    _pointsPoolService.UpdatePointsPoolAddressStakeAsync(snapshot, stakeSumDic)));
+            //update the staked sum for each points pool
+            await _pointsPoolService.UpdatePointsPoolStakeSumAsync(stakeSumDic);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "CreatePointsSnapshot fail.");
+            await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSettleKey(), false);
+        }
     }
 
     private Dictionary<string, PointsPoolStakeSumDto> GetYesterdayStakeSumDic(
@@ -80,25 +112,53 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             nineSum += BigInteger.Parse(pointsSnapshot.NineSymbolAmount);
         }
 
+        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.FirstSymbolAmount)],
+                out var first))
+        {
+            first.StakeAmount = firstSum.ToString();
+        }
 
-        poolStakeDic[PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.FirstSymbolAmount)]].StakeAmount =
-            firstSum.ToString();
-        poolStakeDic[PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.SecondSymbolAmount)]].StakeAmount =
-            secondSum.ToString();
-        poolStakeDic[PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.ThirdSymbolAmount)]].StakeAmount =
-            thirdSum.ToString();
-        poolStakeDic[PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.FourSymbolAmount)]].StakeAmount =
-            fourSum.ToString();
-        poolStakeDic[PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.FiveSymbolAmount)]].StakeAmount =
-            fiveSum.ToString();
-        poolStakeDic[PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.SixSymbolAmount)]].StakeAmount =
-            sixSum.ToString();
-        poolStakeDic[PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.SevenSymbolAmount)]].StakeAmount =
-            sevenSum.ToString();
-        poolStakeDic[PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.EightSymbolAmount)]].StakeAmount =
-            eightSum.ToString();
-        poolStakeDic[PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.NineSymbolAmount)]].StakeAmount =
-            nineSum.ToString();
+        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.ThirdSymbolAmount)],
+                out var third))
+        {
+            third.StakeAmount = thirdSum.ToString();
+        }
+
+        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.FourSymbolAmount)],
+                out var four))
+        {
+            four.StakeAmount = fourSum.ToString();
+        }
+
+        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.FiveSymbolAmount)],
+                out var five))
+        {
+            five.StakeAmount = fiveSum.ToString();
+        }
+
+        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.SixSymbolAmount)],
+                out var six))
+        {
+            six.StakeAmount = sixSum.ToString();
+        }
+
+        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.SevenSymbolAmount)],
+                out var seven))
+        {
+            seven.StakeAmount = sevenSum.ToString();
+        }
+
+        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.EightSymbolAmount)],
+                out var eight))
+        {
+            eight.StakeAmount = eightSum.ToString();
+        }
+
+        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.NineSymbolAmount)],
+                out var nine))
+        {
+            nine.StakeAmount = nineSum.ToString();
+        }
 
         return poolStakeDic;
     }
@@ -109,7 +169,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         var skipCount = 0;
         var maxResultCount = 5000;
         List<PointsSnapshotIndex> list;
-        var yesterday = DateTime.UtcNow.AddDays(-1).ToString("yyyyMMdd");
+        var yesterday = DateTime.UtcNow.ToString("yyyyMMdd");
         do
         {
             list = await _settlePointsRewardsProvider.GetSnapshotListAsync(yesterday, skipCount, maxResultCount);

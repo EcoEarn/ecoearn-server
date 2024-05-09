@@ -18,8 +18,29 @@ public class PointsPoolStakeSumGrain : Grain<PointsPoolStakeSumState>, IPointsPo
         _objectMapper = objectMapper;
     }
 
-    public Task<GrainResultDto<PointsPoolStakeSumDto>> CreateOrUpdateAsync(PointsPoolStakeSumDto input)
+    public override async Task OnActivateAsync()
     {
-        throw new NotImplementedException();
+        await ReadStateAsync();
+        await base.OnActivateAsync();
+    }
+
+    public override async Task OnDeactivateAsync()
+    {
+        await WriteStateAsync();
+        await base.OnDeactivateAsync();
+    }
+
+    public async Task<GrainResultDto<PointsPoolStakeSumDto>> CreateOrUpdateAsync(PointsPoolStakeSumDto input)
+    {
+        State = _objectMapper.Map<PointsPoolStakeSumDto, PointsPoolStakeSumState>(input);
+        State.Id = this.GetPrimaryKeyString();
+
+        await WriteStateAsync();
+
+        return new GrainResultDto<PointsPoolStakeSumDto>
+        {
+            Success = true,
+            Data = _objectMapper.Map<PointsPoolStakeSumState, PointsPoolStakeSumDto>(State)
+        };
     }
 }

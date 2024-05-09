@@ -17,4 +17,5 @@ public class PointsSnapshotDto
     public string NineSymbolAmount { get; set; } = "0";
     public long UpdateTime { get; set; }
     public long CreateTime { get; set; }
+    public string SnapshotDate { get; set; }
 }

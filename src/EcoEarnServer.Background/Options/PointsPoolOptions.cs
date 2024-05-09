@@ -12,4 +12,5 @@ public class PointsPoolInfo
     public string Index { get; set; }
     public string PoolId { get; set; }
     public string PoolName { get; set; }
+    public string DappId { get; set; }
 }

@@ -14,7 +14,7 @@ namespace EcoEarnServer.Background.Services;
 
 public interface ISnapshotGeneratorService
 {
-    Task GenerateSnapshotAsync(PointsListDto dto);
+    Task GenerateSnapshotAsync(PointsListDto dto, string snapshotDate);
 }
 
 public class SnapshotGeneratorService : ISnapshotGeneratorService, ITransientDependency
@@ -34,14 +34,15 @@ public class SnapshotGeneratorService : ISnapshotGeneratorService, ITransientDep
     }
 
     [AutomaticRetry(Attempts = 20, DelaysInSeconds = new[] { 40 })]
-    public async Task GenerateSnapshotAsync(PointsListDto dto)
+    public async Task GenerateSnapshotAsync(PointsListDto dto, string snapshotDate)
     {
-        var recordId = $"{dto.Address}-{DateTime.UtcNow:yyyy-MM-dd}";
+        var recordId = $"{dto.Address}-{snapshotDate}";
         try
         {
             _logger.LogInformation("begin create, recordId:{recordId}", recordId);
 
             var input = _objectMapper.Map<PointsListDto, PointsSnapshotDto>(dto);
+            input.SnapshotDate = snapshotDate;
             var recordGrain = _clusterClient.GetGrain<IPointsSnapshotGrain>(recordId);
             var result = await recordGrain.CreateAsync(input);
 
