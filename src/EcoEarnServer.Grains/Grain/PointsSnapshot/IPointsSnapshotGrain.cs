@@ -18,10 +18,23 @@ public class PointsSnapshotGrain : Grain<PointsSnapshotState>, IPointsSnapshotGr
     {
         _objectMapper = objectMapper;
     }
+    
+    public override async Task OnActivateAsync()
+    {
+        await ReadStateAsync();
+        await base.OnActivateAsync();
+    }
+
+    public override async Task OnDeactivateAsync()
+    {
+        await WriteStateAsync();
+        await base.OnDeactivateAsync();
+    }
 
     public async Task<GrainResultDto<PointsSnapshotDto>> CreateAsync(PointsSnapshotDto input)
     {
         State = _objectMapper.Map<PointsSnapshotDto, PointsSnapshotState>(input);
+        State.Id = this.GetPrimaryKeyString();
         State.CreateTime = DateTime.UtcNow.ToUtcMilliSeconds();
 
         await WriteStateAsync();

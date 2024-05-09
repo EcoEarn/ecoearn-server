@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace EcoEarnServer.TokenStaking.Dtos;
 
 public class TokenPoolsDto
@@ -13,6 +15,7 @@ public class TokenPoolsDto
     public string TotalStake { get; set; }
     public string TotalStakeInUsd { get; set; }
     public long YearlyRewards { get; set; }
+    public List<string> Icons { get; set; }
 
     //stake info
     public string StakeId { get; set; }

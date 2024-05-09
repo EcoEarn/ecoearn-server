@@ -62,7 +62,6 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
             _logger.LogWarning("do not get lock, keys already exits.");
             return;
         }
-
         if (await _pointsSnapshotStateProvider.CheckPointsSnapshotStateAsync())
         {
             _logger.LogInformation("today has already created points snapshot.");

@@ -2,6 +2,7 @@ namespace EcoEarnServer.Grains.Grain.PointsSnapshot;
 
 public class PointsSnapshotDto
 {
+    public string Id { get; set; }
     public string Domain { get; set; }
     public string Address { get; set; }
     public string DappId { get; set; }

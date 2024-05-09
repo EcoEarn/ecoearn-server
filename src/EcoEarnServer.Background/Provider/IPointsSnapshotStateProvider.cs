@@ -43,7 +43,8 @@ public class PointsSnapshotStateProvider : AbpRedisCache, IPointsSnapshotStatePr
     {
         await ConnectAsync();
         var currentDate = DateTime.UtcNow.ToString("yyyyMMdd");
-        await RedisDatabase.StringSetAsync(SnapshotStateRedisKeyPrefix + currentDate, state);
+        await RedisDatabase.StringSetAsync(SnapshotStateRedisKeyPrefix + currentDate, _serializer.Serialize(state),
+            TimeSpan.FromHours(25));
         _logger.LogInformation("set snapshot state success");
     }
 }

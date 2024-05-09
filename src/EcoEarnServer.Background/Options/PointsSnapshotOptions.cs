@@ -6,7 +6,7 @@ public class PointsSnapshotOptions
     public int CheckSnapshotPeriod { get; set; } = 1;
     public int SettlePointsRewardsPeriod { get; set; } = 20;
 
-    public int BatchSnapshotCount { get; set; } = 200;
+    public int BatchSnapshotCount { get; set; } = 100;
     public int BatchQueryCount { get; set; } = 5000;
 
     public string PointsServerBaseUrl { get; set; }

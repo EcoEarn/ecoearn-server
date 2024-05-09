@@ -1,16 +1,17 @@
 using AElf.Indexing.Elasticsearch;
 using EcoEarnServer.Entities;
+using Nest;
 
 namespace EcoEarnServer.PointsStakeRewards;
 
 public class PointsStakeRewardsSumIndex : AbstractEntity<string>, IIndexBuild
 {
-    public string Address { get; set; }
-    public string PoolId { get; set; }
-    public string PoolName { get; set; }
-    public string DappId { get; set; }
-    public string Rewards { get; set; }
-    public string SettleDate { get; set; }
+    [Keyword] public string Address { get; set; }
+    [Keyword] public string PoolId { get; set; }
+    [Keyword] public string PoolName { get; set; }
+    [Keyword] public string DappId { get; set; }
+    [Keyword] public string Rewards { get; set; }
+    [Keyword] public string SettleDate { get; set; }
     public long UpdateTime { get; set; }
     public long CreateTime { get; set; }
 }

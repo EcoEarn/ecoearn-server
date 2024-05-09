@@ -29,13 +29,13 @@ public class PointsSnapshotHandler : IDistributedEventHandler<PointsSnapshotEto>
     {
         try
         {
-            var contact = _objectMapper.Map<PointsSnapshotEto, PointsSnapshotIndex>(eventData);
-            await _repository.AddOrUpdateAsync(contact);
-            _logger.LogDebug("HandleEventAsync PointsSnapshotEto success");
+            var index = _objectMapper.Map<PointsSnapshotEto, PointsSnapshotIndex>(eventData);
+            await _repository.AddOrUpdateAsync(index);
+            _logger.LogDebug("HandleEventAsync PointsSnapshotEto success. {id}", index.Id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "HandleEventAsync PointsSnapshotEto fail. {Message}", JsonConvert.SerializeObject(eventData));
         }
     }
 }

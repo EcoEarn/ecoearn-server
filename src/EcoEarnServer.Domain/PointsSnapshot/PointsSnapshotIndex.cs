@@ -1,23 +1,24 @@
 using AElf.Indexing.Elasticsearch;
 using EcoEarnServer.Entities;
+using Nest;
 
 namespace EcoEarnServer.PointsSnapshot;
 
 public class PointsSnapshotIndex : AbstractEntity<string>, IIndexBuild
 {
-    public string Domain { get; set; }
-    public string Address { get; set; }
-    public string DappId { get; set; }
-    public string FirstSymbolAmount { get; set; }
-    public string SecondSymbolAmount { get; set; }
-    public string ThirdSymbolAmount { get; set; }
-    public string FourSymbolAmount { get; set; }
-    public string FiveSymbolAmount { get; set; }
-    public string SixSymbolAmount { get; set; }
-    public string SevenSymbolAmount { get; set; }
-    public string EightSymbolAmount { get; set; }
-    public string NineSymbolAmount { get; set; }
+    [Keyword] public string Domain { get; set; }
+    [Keyword] public string Address { get; set; }
+    [Keyword] public string DappId { get; set; }
+    [Keyword] public string FirstSymbolAmount { get; set; }
+    [Keyword] public string SecondSymbolAmount { get; set; }
+    [Keyword] public string ThirdSymbolAmount { get; set; }
+    [Keyword] public string FourSymbolAmount { get; set; }
+    [Keyword] public string FiveSymbolAmount { get; set; }
+    [Keyword] public string SixSymbolAmount { get; set; }
+    [Keyword] public string SevenSymbolAmount { get; set; }
+    [Keyword] public string EightSymbolAmount { get; set; }
+    [Keyword] public string NineSymbolAmount { get; set; }
     public long UpdateTime { get; set; }
     public long CreateTime { get; set; }
-    public string SnapshotDate { get; set; }
+    [Keyword] public string SnapshotDate { get; set; }
 }

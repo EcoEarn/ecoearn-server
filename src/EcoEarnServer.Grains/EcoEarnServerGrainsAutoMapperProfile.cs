@@ -1,4 +1,6 @@
 using AutoMapper;
+using EcoEarnServer.Grains.Grain.PointsSnapshot;
+using EcoEarnServer.Grains.State;
 using EcoEarnServer.Grains.State.Users;
 using EcoEarnServer.Users;
 using EcoEarnServer.Users.Eto;
@@ -11,5 +13,6 @@ public class EcoEarnServerGrainsAutoMapperProfile : Profile
     {
         CreateMap<UserGrainDto, UserState>().ReverseMap();
         CreateMap<UserGrainDto, UserInformationEto>().ReverseMap();
+        CreateMap<PointsSnapshotDto, PointsSnapshotState>().ReverseMap();
     }
 }

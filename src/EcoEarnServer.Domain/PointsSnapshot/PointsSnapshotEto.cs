@@ -5,6 +5,7 @@ namespace EcoEarnServer.PointsSnapshot;
 [EventName("PointsSnapshotEto")]
 public class PointsSnapshotEto
 {
+    public string Id { get; set; }
     public string Domain { get; set; }
     public string Address { get; set; }
     public string DappId { get; set; }

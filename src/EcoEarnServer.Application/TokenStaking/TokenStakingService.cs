@@ -60,7 +60,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 
             var tokenPoolsDto = _objectMapper.Map<TokenPoolsIndexerDto, TokenPoolsDto>(tokenPoolsIndexerDto);
             var tokenPoolStakedSum = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
-                { PoolId = tokenPoolsDto.PoolId, ChainId = input.ChainId});
+                { PoolId = tokenPoolsDto.PoolId, ChainId = input.ChainId });
             if (tokenPoolStakedSum != 0)
             {
                 tokenPoolsDto.TotalStakeInUsd = (rate * tokenPoolStakedSum).ToString(CultureInfo.CurrentCulture);
@@ -112,8 +112,10 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 .Result
                 .transaction;
             var totalStakedAmount =
-                _contractProvider.CallTransactionAsync<PoolDataDto>(input.ChainId, transaction).Result.TotalStakedAmount;
-            await RedisDatabase.StringSetAsync(TokenPoolStakedSumRedisKeyPrefix + input.PoolId, totalStakedAmount);
+                _contractProvider.CallTransactionAsync<PoolDataDto>(input.ChainId, transaction).Result
+                    .TotalStakedAmount;
+            await RedisDatabase.StringSetAsync(TokenPoolStakedSumRedisKeyPrefix + input.PoolId,
+                _serializer.Serialize(totalStakedAmount));
             return long.Parse(totalStakedAmount);
         }
         catch (Exception e)
