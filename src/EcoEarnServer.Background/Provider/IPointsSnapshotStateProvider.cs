@@ -17,7 +17,7 @@ public interface IPointsSnapshotStateProvider
 
 public class PointsSnapshotStateProvider : AbpRedisCache, IPointsSnapshotStateProvider, ISingletonDependency
 {
-    private const string SnapshotStateRedisKeyPrefix = "EcoEarnServer:SnapshotStateRedisKey:";
+    private const string SnapshotStateRedisKeyPrefix = "EcoEarnServer:SnapshotState:";
 
     private readonly IDistributedCacheSerializer _serializer;
     private readonly ILogger<PointsSnapshotStateProvider> _logger;

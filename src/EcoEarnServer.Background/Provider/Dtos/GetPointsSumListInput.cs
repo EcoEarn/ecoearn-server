@@ -5,5 +5,5 @@ namespace EcoEarnServer.Background.Provider.Dtos;
 
 public class GetPointsSumListInput : PagedAndSortedResultRequestDto
 {
-    public DateTime BeforeTime { get; set; }
+    public DateTime EndTime { get; set; }
 }

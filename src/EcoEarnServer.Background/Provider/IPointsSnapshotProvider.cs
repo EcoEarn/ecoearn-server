@@ -47,7 +47,7 @@ public class PointsSnapshotProvider : IPointsSnapshotProvider, ISingletonDepende
         var apiInfo = new ApiInfo(HttpMethod.Post, "api/app/points/list");
         var input = new GetPointsSumListInput()
         {
-            BeforeTime = DateTime.UtcNow.Date,
+            EndTime = DateTime.UtcNow.Date,
             SkipCount = 0,
             MaxResultCount = _pointsSnapshotOptions.BatchQueryCount
         };

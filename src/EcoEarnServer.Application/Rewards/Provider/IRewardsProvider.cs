@@ -32,30 +32,28 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<RewardsListQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($keyword:String!, $dappId:String!, $sortingKeyWord:SortingKeywordType!, $sorting:String!, $skipCount:Int!,$maxResultCount:Int!){
-                    getRankingList(input: {keyword:$keyword,dappId:$dappId,sortingKeyWord:$sortingKeyWord,sorting:$sorting,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($poolType:PoolType, $filterUnlocked:Boolean, $skipCount:Int!,$maxResultCount:Int!){
+                    getClaimInfoList(input: {poolType:$poolType,filterUnlocked:$filterUnlocked,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
-                        domain,
-                        address,
-                        firstSymbolAmount,
-                        secondSymbolAmount,
-                        thirdSymbolAmount,
-    					fourSymbolAmount,
-    					fiveSymbolAmount,
-    					sixSymbolAmount,
-    					sevenSymbolAmount,
-    					eightSymbolAmount,
-    					nineSymbolAmount,
-    					updateTime,
-    					dappName,
-    					role,
+                        claimId,
+                        poolId,
+                        claimedAmount,
+                        claimedSymbol,
+                        claimedBlockNumber,
+    					claimedTime,
+    					unlockTime,
+    					withdrawTime,
+    					earlyStakeTime,
+    					account,
+    					poolType
                     }
                 }
             }",
                 Variables = new
                 {
-                    skipCount = 0, maxResultCount = 5000,
+                    poolType = input.PoolType, filterUnlocked = input.FilterUnlocked, oskipCount = 0,
+                    maxResultCount = 5000,
                 }
             });
 
@@ -63,7 +61,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "GetPointsPools Indexer error");
+            _logger.LogError(e, "getClaimInfoList Indexer error");
             return new List<RewardsListIndexerDto>();
         }
     }

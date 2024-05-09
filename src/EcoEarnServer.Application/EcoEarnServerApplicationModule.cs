@@ -1,4 +1,5 @@
 using EcoEarnServer.Grains;
+using EcoEarnServer.TokenStaking;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
@@ -27,7 +28,7 @@ public class EcoEarnServerApplicationModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<EcoEarnServerApplicationModule>(); });
-
+        context.Services.AddSingleton<ITokenStakingService, TokenStakingService>();
         context.Services.AddHttpClient();
     }
 }

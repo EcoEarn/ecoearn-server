@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using EcoEarnServer.Common.GraphQL;
+using EcoEarnServer.TokenStaking.Dtos;
 using GraphQL;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
@@ -11,7 +12,7 @@ namespace EcoEarnServer.TokenStaking.Provider;
 
 public interface ITokenStakingProvider
 {
-    Task<List<TokenPoolsIndexerDto>> GetTokenPoolsAsync();
+    Task<List<TokenPoolsIndexerDto>> GetTokenPoolsAsync(GetTokenPoolsInput input);
     Task<TokenStakedIndexerDto> GetStakedInfoAsync(string tokenName);
 
     Task<Dictionary<string, TokenStakedIndexerDto>> GetAddressStakedInPoolDicAsync(List<string> pools, string address);
@@ -29,20 +30,19 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
         _logger = logger;
     }
 
-    public async Task<List<TokenPoolsIndexerDto>> GetTokenPoolsAsync()
+    public async Task<List<TokenPoolsIndexerDto>> GetTokenPoolsAsync(GetTokenPoolsInput input)
     {
         try
         {
             var indexerResult = await _graphQlHelper.QueryAsync<TokenPoolsQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($keyword:String!, $dappId:String!, $sortingKeyWord:SortingKeywordType!, $sorting:String!, $skipCount:Int!,$maxResultCount:Int!){
-                    getTokenPoolList(input: {keyword:$keyword,dappId:$dappId,sortingKeyWord:$sortingKeyWord,sorting:$sorting,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($tokenName:String!, $poolType:PoolType!, $skipCount:Int!,$maxResultCount:Int!){
+                    getTokenPoolList(input: {tokenName:$tokenName,poolType:$poolType,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         dappId,
                         poolId,
-                        poolAddress,
                         amount,
                         tokenPoolConfig{
                             rewardToken
@@ -52,24 +52,25 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                             updateAddress
                             stakingToken
                             fixedBoostFactor
-                            minimalAmount
+                            minimumAmount
                             releasePeriod
                             maximumStakeDuration
                             rewardTokenContract
                             stakeTokenContract
-                            minimalClaimAmount
+                            minimumClaimAmount
                         },
-    					createTime
+    					createTime,
+    					poolType
                     }
                 }
             }",
                 Variables = new
                 {
-                    skipCount = 0, maxResultCount = 5000,
+                    tokenName = "", poolType = input.PoolType, skipCount = 0, maxResultCount = 5000,
                 }
             });
 
-            return indexerResult.GetTokenPools.Data;
+            return indexerResult.GetTokenPoolList.Data;
         }
         catch (Exception e)
         {
@@ -85,30 +86,35 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<TokenStakedQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($keyword:String!, $dappId:String!, $sortingKeyWord:SortingKeywordType!, $sorting:String!, $skipCount:Int!,$maxResultCount:Int!){
-                    getRankingList(input: {keyword:$keyword,dappId:$dappId,sortingKeyWord:$sortingKeyWord,sorting:$sorting,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($tokenName:String!, $skipCount:Int!,$maxResultCount:Int!){
+                    getStakedInfoList(input: {tokenName:$tokenName,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
-                        domain,
-                        address,
-                        firstSymbolAmount,
-                        secondSymbolAmount,
-                        thirdSymbolAmount,
-    					fourSymbolAmount,
-    					fiveSymbolAmount,
-    					sixSymbolAmount,
-    					sevenSymbolAmount,
-    					eightSymbolAmount,
-    					nineSymbolAmount,
+                        stakeId,
+                        poolId,
+                        stakingToken,
+                        stakedAmount,
+                        earlyStakedAmount,
+    					claimedAmount,
+    					stakedBlockNumber,
+    					stakedTime,
+    					period,
+    					account,
+    					boostedAmount,
+    					rewardDebt,
+    					withdrawTime,
+    					rewardAmount,
+    					lockedRewardAmount,
+    					lastOperationTime,
+    					createTime,
     					updateTime,
-    					dappName,
-    					role,
+    					poolType,
                     }
                 }
             }",
                 Variables = new
                 {
-                    skipCount = 0, maxResultCount = 5000,
+                    tokenName = tokenName, skipCount = 0, maxResultCount = 5000,
                 }
             });
 
@@ -129,38 +135,43 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<TokenStakedListQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($keyword:String!, $dappId:String!, $sortingKeyWord:SortingKeywordType!, $sorting:String!, $skipCount:Int!,$maxResultCount:Int!){
-                    getRankingList(input: {keyword:$keyword,dappId:$dappId,sortingKeyWord:$sortingKeyWord,sorting:$sorting,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($address:String!,$tokenName:String!,$poolIds:[String!]!, $skipCount:Int!,$maxResultCount:Int!){
+                    getStakedInfoList(input: {address:$address,tokenName:$tokenName,poolIds:$poolIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
-                        domain,
-                        address,
-                        firstSymbolAmount,
-                        secondSymbolAmount,
-                        thirdSymbolAmount,
-    					fourSymbolAmount,
-    					fiveSymbolAmount,
-    					sixSymbolAmount,
-    					sevenSymbolAmount,
-    					eightSymbolAmount,
-    					nineSymbolAmount,
+                        stakeId,
+                        poolId,
+                        stakingToken,
+                        stakedAmount,
+                        earlyStakedAmount,
+    					claimedAmount,
+    					stakedBlockNumber,
+    					stakedTime,
+    					period,
+    					account,
+    					boostedAmount,
+    					rewardDebt,
+    					withdrawTime,
+    					rewardAmount,
+    					lockedRewardAmount,
+    					lastOperationTime,
+    					createTime,
     					updateTime,
-    					dappName,
-    					role,
+    					poolType,
                     }
                 }
             }",
                 Variables = new
                 {
-                    skipCount = 0, maxResultCount = 5000,
+                    address = string.IsNullOrEmpty(address) ? "" : address, tokenName = "", poolIds = poolIds, skipCount = 0, maxResultCount = 5000,
                 }
             });
-            return indexerResult.GetTokenStakedInfoList.Data.GroupBy(x => x.PoolId)
+            return indexerResult.GetStakedInfoList.Data.GroupBy(x => x.PoolId)
                 .ToDictionary(g => g.Key, g => g.First());
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "GetPointsPools Indexer error");
+            _logger.LogError(e, "getStakedInfoList Indexer error");
             return new Dictionary<string, TokenStakedIndexerDto>();
         }
     }
@@ -172,8 +183,8 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<TokenPoolsQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($keyword:String!, $dappId:String!, $sortingKeyWord:SortingKeywordType!, $sorting:String!, $skipCount:Int!,$maxResultCount:Int!){
-                    getTokenPoolList(input: {keyword:$keyword,dappId:$dappId,sortingKeyWord:$sortingKeyWord,sorting:$sorting,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($tokenName:String!, $skipCount:Int!,$maxResultCount:Int!){
+                    getTokenPoolList(input: {tokenName:$tokenName,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         dappId,
@@ -188,24 +199,25 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                             updateAddress
                             stakingToken
                             fixedBoostFactor
-                            minimalAmount
+                            minimumAmount
                             releasePeriod
                             maximumStakeDuration
                             rewardTokenContract
                             stakeTokenContract
-                            minimalClaimAmount
+                            minimumClaimAmount
                         },
-    					createTime
+    					createTime,
+    					poolType
                     }
                 }
             }",
                 Variables = new
                 {
-                    skipCount = 0, maxResultCount = 1,
+                    tokenName = tokenName, skipCount = 0, maxResultCount = 5000,
                 }
             });
 
-            return indexerResult.GetTokenPools.Data[0];
+            return indexerResult.GetTokenPoolList.Data[0];
         }
         catch (Exception e)
         {

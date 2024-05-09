@@ -26,6 +26,7 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.StakeSymbol, m => m.MapFrom(f => f.TokenPoolConfig.StakingToken))
             .ForMember(t => t.ProjectOwner, m => m.MapFrom(f => PoolInfoConst.ProjectOwnerDic[f.DappId]))
             ;
-        
+        CreateMap<TokenPoolsIndexerDto, TokenPoolsDto>().ReverseMap();
+
     }
 }

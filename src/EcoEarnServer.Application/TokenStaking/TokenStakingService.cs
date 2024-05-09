@@ -48,7 +48,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 
     public async Task<List<TokenPoolsDto>> GetTokenPoolsAsync(GetTokenPoolsInput input)
     {
-        var tokenPoolsIndexerDtos = await _tokenStakingProvider.GetTokenPoolsAsync();
+        var tokenPoolsIndexerDtos = await _tokenStakingProvider.GetTokenPoolsAsync(input);
         var poolIds = tokenPoolsIndexerDtos.Select(x => x.PoolId).Distinct().ToList();
         var addressStakedInPoolDic = await _tokenStakingProvider.GetAddressStakedInPoolDicAsync(poolIds, input.Address);
 
@@ -60,7 +60,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 
             var tokenPoolsDto = _objectMapper.Map<TokenPoolsIndexerDto, TokenPoolsDto>(tokenPoolsIndexerDto);
             var tokenPoolStakedSum = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
-                { TokenPool = tokenPoolsDto.PoolId });
+                { PoolId = tokenPoolsDto.PoolId, ChainId = input.ChainId});
             if (tokenPoolStakedSum != 0)
             {
                 tokenPoolsDto.TotalStakeInUsd = (rate * tokenPoolStakedSum).ToString(CultureInfo.CurrentCulture);
@@ -76,8 +76,12 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 tokenPoolsDto.StakeId = stakedInfo.StakeId;
                 tokenPoolsDto.Earned = stakedInfo.StakeId;
                 tokenPoolsDto.EarnedInUsd = stakedInfo.StakeId;
-                tokenPoolsDto.Staked = stakedInfo.StakedAmount.ToString();
-                tokenPoolsDto.StakedInUsd = (rate * stakedInfo.StakedAmount).ToString(CultureInfo.CurrentCulture);
+                tokenPoolsDto.Staked = (stakedInfo.StakedAmount + stakedInfo.EarlyStakedAmount).ToString();
+                tokenPoolsDto.StakedInUsd =
+                    (rate * (stakedInfo.StakedAmount + stakedInfo.EarlyStakedAmount)).ToString(CultureInfo
+                        .CurrentCulture);
+                tokenPoolsDto.StakedAmount = stakedInfo.StakedAmount.ToString();
+                tokenPoolsDto.EarlyStakedAmount = stakedInfo.EarlyStakedAmount.ToString();
                 tokenPoolsDto.UnlockTime = stakedInfo.StakedTime + stakedInfo.Period * 86400000;
                 tokenPoolsDto.StakeApr = tokenPoolsDto.AprMin * (1 + (double)stakedInfo.Period / 360);
                 tokenPoolsDto.StakedTime = stakedInfo.StakedTime;
@@ -95,7 +99,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         try
         {
             await ConnectAsync();
-            var redisValue = await RedisDatabase.StringGetAsync(TokenPoolStakedSumRedisKeyPrefix + input.TokenPool);
+            var redisValue = await RedisDatabase.StringGetAsync(TokenPoolStakedSumRedisKeyPrefix + input.PoolId);
             if (redisValue.HasValue)
             {
                 _logger.LogInformation("get token pool stated sum: {sum}", redisValue);
@@ -103,18 +107,18 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             }
 
             var transaction = _contractProvider
-                .CreateTransaction(input.ChainId, ContractConstants.StakedSumMethodName, ContractConstants.ContractName,
-                    ContractConstants.SenderName, Hash.LoadFromHex(input.TokenPool))
+                .CreateTransaction(input.ChainId, ContractConstants.SenderName, ContractConstants.ContractName,
+                    ContractConstants.StakedSumMethodName, Hash.LoadFromHex(input.PoolId))
                 .Result
                 .transaction;
             var totalStakedAmount =
-                _contractProvider.CallTransactionAsync<PoolData>(input.ChainId, transaction).Result.TotalStakedAmount;
-            await RedisDatabase.StringSetAsync(TokenPoolStakedSumRedisKeyPrefix + input.TokenPool, totalStakedAmount);
-            return totalStakedAmount;
+                _contractProvider.CallTransactionAsync<PoolDataDto>(input.ChainId, transaction).Result.TotalStakedAmount;
+            await RedisDatabase.StringSetAsync(TokenPoolStakedSumRedisKeyPrefix + input.PoolId, totalStakedAmount);
+            return long.Parse(totalStakedAmount);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "get token pool staked sum fail. poolId: {poolId}", input.TokenPool);
+            _logger.LogError(e, "get token pool staked sum fail. poolId: {poolId}", input.PoolId);
             throw new UserFriendlyException("get token pool staked sum fail.");
         }
     }
@@ -125,7 +129,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         var tokenPoolIndexerDto = await _tokenStakingProvider.GetTokenPoolByTokenAsync(tokenName);
         var yearlyRewards = YearlyBlocks * tokenPoolIndexerDto.TokenPoolConfig.RewardPerBlock;
         var tokenPoolStakedSum = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
-            { TokenPool = tokenPoolIndexerDto.PoolId });
+            { PoolId = tokenPoolIndexerDto.PoolId });
         var stakeInfoDto = new EarlyStakeInfoDto
         {
             StakeId = stakedInfoIndexerDtos.StakeId,

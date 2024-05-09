@@ -20,6 +20,8 @@ public class TokenPoolsDto
     public string EarnedInUsd { get; set; }
     public string Staked { get; set; }
     public string StakedInUsd { get; set; }
+    public string StakedAmount { get; set; }
+    public string EarlyStakedAmount { get; set; }
     public long UnlockTime { get; set; }
     public double StakeApr { get; set; }
     public long StakedTime { get; set; }

@@ -5,7 +5,6 @@ namespace EcoEarnServer.Background.Dtos;
 
 public class PointsListDto
 {
-    public string Domain { get; set; }
     public string Address { get; set; }
     public string DappId { get; set; }
     public string FirstSymbolAmount { get; set; } = "0";
@@ -18,7 +17,6 @@ public class PointsListDto
     public string EightSymbolAmount { get; set; } = "0";
     public string NineSymbolAmount { get; set; } = "0";
     public long UpdateTime { get; set; }
-    public OperatorRole Role { get; set; }
 }
 
 public enum OperatorRole

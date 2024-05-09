@@ -152,24 +152,8 @@ public class HttpProvider : IHttpProvider
             request.Content = new StringContent(body, Encoding.UTF8, "application/json");
 
         // send
-        var stopwatch = Stopwatch.StartNew();
         var client = _httpClientFactory.CreateClient();
         var response = await client.SendAsync(request);
-        var content = await response.Content.ReadAsStringAsync();
-        var time = stopwatch.ElapsedMilliseconds;
-        // log
-        if (withLog)
-            _logger.LogInformation(
-                "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}, body={Body}, resp={Content}",
-                fullUrl, response.StatusCode, time, builder.Query, body, content);
-        else if (debugLog)
-            _logger.LogDebug(
-                "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}, header={Header}, body={Body}, resp={Content}",
-                fullUrl, response.StatusCode, time, builder.Query, request.Headers.ToString(), body, content);
-        else
-            _logger.LogDebug(
-                "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}",
-                fullUrl, response.StatusCode, time, builder.Query);
         return response;
     }
 

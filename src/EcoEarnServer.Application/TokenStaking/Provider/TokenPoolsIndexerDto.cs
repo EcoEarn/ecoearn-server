@@ -21,17 +21,17 @@ public class TokenPoolConfigIndexerDto
     public string UpdateAddress { get; set; }
     public string StakingToken { get; set; }
     public long FixedBoostFactor { get; set; }
-    public long MinimalAmount { get; set; }
+    public long MinimumAmount { get; set; }
     public long ReleasePeriod { get; set; }
     public long MaximumStakeDuration { get; set; }
     public string RewardTokenContract { get; set; }
     public string StakeTokenContract { get; set; }
-    public long MinimalClaimAmount { get; set; }
+    public long MinimumClaimAmount { get; set; }
 }
 
 public class TokenPoolsQuery
 {
-    public TokenPoolsIndexerResult GetTokenPools { get; set; }
+    public TokenPoolsIndexerResult GetTokenPoolList { get; set; }
 }
 
 public class TokenPoolsIndexerResult

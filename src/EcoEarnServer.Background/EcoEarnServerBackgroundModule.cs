@@ -1,4 +1,6 @@
 using System;
+using EcoEarnServer.Background.Options;
+using EcoEarnServer.Background.Provider;
 using EcoEarnServer.Background.Services;
 using EcoEarnServer.Background.Workers;
 using EcoEarnServer.Common;
@@ -52,10 +54,15 @@ public class EcoEarnServerBackgroundModule : AbpModule
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<EcoEarnServerBackgroundModule>(); });
 
         var configuration = context.Services.GetConfiguration();
-
+        Configure<PointsSnapshotOptions>(configuration.GetSection("PointsSnapshot"));
+        context.Services.AddSingleton<IPointsSnapshotService, PointsSnapshotService>();
+        context.Services.AddSingleton<IPointsSnapshotProvider, PointsSnapshotProvider>();
+        context.Services.AddSingleton<IPointsSnapshotStateProvider, PointsSnapshotStateProvider>();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
         ConfigureRedis(context, configuration, hostingEnvironment);
         ConfigureCache(configuration);
+        context.Services.AddHostedService<EcoEarnServerHostService>();
+
         context.Services.AddHttpClient();
         ConfigureHangfire(context, configuration);
         ConfigureOrleans(context, configuration);
