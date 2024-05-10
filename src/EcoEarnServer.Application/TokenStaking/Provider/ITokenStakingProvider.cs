@@ -130,6 +130,11 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
     public async Task<Dictionary<string, TokenStakedIndexerDto>> GetAddressStakedInPoolDicAsync(List<string> poolIds,
         string address)
     {
+        if (string.IsNullOrEmpty(address) || poolIds.IsNullOrEmpty())
+        {
+            return new Dictionary<string, TokenStakedIndexerDto>();
+        }
+
         try
         {
             var indexerResult = await _graphQlHelper.QueryAsync<TokenStakedListQuery>(new GraphQLRequest
@@ -163,7 +168,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    address = string.IsNullOrEmpty(address) ? "" : address, tokenName = "", poolIds = poolIds, skipCount = 0, maxResultCount = 5000,
+                    address = address, tokenName = "", poolIds = poolIds, skipCount = 0, maxResultCount = 5000,
                 }
             });
             return indexerResult.GetStakedInfoList.Data.GroupBy(x => x.PoolId)
