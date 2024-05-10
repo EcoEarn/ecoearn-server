@@ -18,7 +18,8 @@ public class RewardsListDto
 
 public enum PoolTypeEnums
 {
-    Points,
-    Token,
-    Lp
+    Points = 0,
+    Token = 1,
+    Lp = 2,
+    All = -1,
 }

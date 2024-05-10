@@ -6,4 +6,5 @@ public class GetRewardsListInput : PagedResultRequestDto
 {
     public PoolTypeEnums PoolType { get; set; }
     public bool FilterUnlocked { get; set; }
+    public string Address { get; set; }
 }

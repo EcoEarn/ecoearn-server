@@ -7,6 +7,7 @@ public class RewardsListIndexerDto
 {
     public string Id { get; set; }
     public string ClaimId { get; set; }
+    public string StakeId { get; set; }
     public string PoolId { get; set; }
     public string ClaimedAmount { get; set; }
     public string ClaimedSymbol { get; set; }

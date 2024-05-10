@@ -4,15 +4,20 @@ public class RewardsAggregationDto
 {
     public PointsPoolAggDto PointsPoolAgg { get; set; }
     public TokenPoolAggDto TokenPoolAgg { get; set; }
+    public TokenPoolAggDto LpPoolAgg { get; set; }
 }
 
 public class PointsPoolAggDto
 {
-    public long Total { get; set; }
-    public long RewardsTotal { get; set; }
+    public string Total { get; set; }
+    public string TotalInUsd { get; set; } = "0";
+    public string RewardsTotal { get; set; }
+    public string RewardsTotalInUsd { get; set; } = "0";
+    public string RewardsTokenName { get; set; }
 }
 
 public class TokenPoolAggDto
 {
     public long RewardsTotal { get; set; }
+    public long RewardsTotalInUsd { get; set; }
 }

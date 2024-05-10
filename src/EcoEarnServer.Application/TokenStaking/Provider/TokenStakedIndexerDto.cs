@@ -40,3 +40,8 @@ public class TokenStakedListResult
 {
     public List<TokenStakedIndexerDto> Data { get; set; }
 }
+
+public class UnLockedStakeIdsQuery
+{
+    public List<string> GetUnLockedStakeIdsAsync { get; set; }
+}

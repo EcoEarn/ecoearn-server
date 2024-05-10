@@ -7,5 +7,5 @@ namespace EcoEarnServer.Rewards;
 public interface IRewardsService
 {
     Task<List<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input);
-    Task<RewardsAggregationDto> GetRewardsAggregationAsync();
+    Task<RewardsAggregationDto> GetRewardsAggregationAsync(GetRewardsAggregationInput input);
 }

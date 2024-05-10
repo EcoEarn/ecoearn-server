@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using EcoEarnServer.Rewards;
 using EcoEarnServer.Rewards.Dtos;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
@@ -28,9 +27,8 @@ public class RewardsController : EcoEarnServerController
     }
 
     [HttpPost("aggregation")]
-    [Authorize]
-    public async Task<RewardsAggregationDto> GetRewardsAggregationAsync()
+    public async Task<RewardsAggregationDto> GetRewardsAggregationAsync(GetRewardsAggregationInput input)
     {
-        return await _rewardsService.GetRewardsAggregationAsync();
+        return await _rewardsService.GetRewardsAggregationAsync(input);
     }
 }
