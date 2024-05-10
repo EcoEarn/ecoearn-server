@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Types;
-using EcoEarn.Contracts.Tokens;
 using EcoEarnServer.Common;
 using EcoEarnServer.Common.AElfSdk;
 using EcoEarnServer.PointsStaking.Dtos;
@@ -24,6 +23,7 @@ namespace EcoEarnServer.TokenStaking;
 public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISingletonDependency
 {
     private const string TokenPoolStakedSumRedisKeyPrefix = "EcoEarnServer:TokenPoolStakedSum:";
+    private const string TokenPoolStakedRewardsRedisKeyPrefix = "EcoEarnServer:TokenPoolStakedRewards:";
     private const long YearlyBlocks = 172800 * 360;
 
     private readonly ITokenStakingProvider _tokenStakingProvider;
@@ -72,9 +72,15 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 
             if (addressStakedInPoolDic.TryGetValue(tokenPoolsDto.PoolId, out var stakedInfo))
             {
+                var rewardData = await GetStakedRewardsAsync(stakedInfo.StakeId, input.ChainId);
+                if (rewardData.Amount != "0")
+                {
+                    //var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{rewardData.Symbol.ToUpper()}_USDT");
+                    tokenPoolsDto.Earned = rewardData.Amount;
+                    //tokenPoolsDto.EarnedInUsd = rewardData.Amount * usdtRate ;
+                }
+
                 tokenPoolsDto.StakeId = stakedInfo.StakeId;
-                tokenPoolsDto.Earned = stakedInfo.StakeId;
-                tokenPoolsDto.EarnedInUsd = stakedInfo.StakeId;
                 tokenPoolsDto.Staked = (stakedInfo.StakedAmount + stakedInfo.EarlyStakedAmount).ToString();
                 tokenPoolsDto.StakedInUsd =
                     (rate * (stakedInfo.StakedAmount + stakedInfo.EarlyStakedAmount)).ToString(CultureInfo
@@ -110,7 +116,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                     ContractConstants.StakedSumMethodName, Hash.LoadFromHex(input.PoolId))
                 .Result
                 .transaction;
-            var transactionResult = await _contractProvider.CallTransactionAsync<PoolDataDto>(input.ChainId, transaction);
+            var transactionResult =
+                await _contractProvider.CallTransactionAsync<PoolDataDto>(input.ChainId, transaction);
             await RedisDatabase.StringSetAsync(TokenPoolStakedSumRedisKeyPrefix + input.PoolId,
                 transactionResult.TotalStakedAmount, TimeSpan.FromSeconds(5));
             return long.Parse(transactionResult.TotalStakedAmount);
@@ -142,5 +149,35 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             YearlyRewards = yearlyRewards
         };
         return stakeInfoDto;
+    }
+
+
+    private async Task<RewardDataDto> GetStakedRewardsAsync(string stakeId, string chainId)
+    {
+        try
+        {
+            await ConnectAsync();
+            var redisValue = await RedisDatabase.StringGetAsync(TokenPoolStakedRewardsRedisKeyPrefix + stakeId);
+            if (redisValue.HasValue)
+            {
+                _logger.LogInformation("get staked rewards: {rewards}", redisValue);
+                return _serializer.Deserialize<RewardDataDto>(redisValue);
+            }
+
+            var transaction = _contractProvider
+                .CreateTransaction(chainId, ContractConstants.SenderName, ContractConstants.ContractName,
+                    ContractConstants.StakedRewardsMethodName, Hash.LoadFromHex(stakeId))
+                .Result
+                .transaction;
+            var transactionResult = await _contractProvider.CallTransactionAsync<RewardDataDto>(chainId, transaction);
+            await RedisDatabase.StringSetAsync(TokenPoolStakedRewardsRedisKeyPrefix + stakeId,
+                _serializer.Serialize(transactionResult), TimeSpan.FromSeconds(5));
+            return transactionResult;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "get staked rewards: fail. stakeId: {stakeId}", stakeId);
+            return new RewardDataDto();
+        }
     }
 }

@@ -21,12 +21,11 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
     
         CreateMap<TokenPoolsIndexerDto, TokenPoolsDto>()
             .ForMember(t => t.PoolId, m => m.MapFrom(f => f.PoolId))
-            .ForMember(t => t.PoolName, m => m.MapFrom(f => f.TokenPoolConfig.StakingToken))
-            .ForMember(t => t.EarnedSymbol, m => m.MapFrom(f => f.TokenPoolConfig.RewardToken))
-            .ForMember(t => t.StakeSymbol, m => m.MapFrom(f => f.TokenPoolConfig.StakingToken))
-            .ForMember(t => t.ProjectOwner, m => m.MapFrom(f => PoolInfoConst.ProjectOwnerDic[f.DappId]))
-            ;
-        CreateMap<TokenPoolsIndexerDto, TokenPoolsDto>().ReverseMap();
+            .ForPath(t => t.PoolName, m => m.MapFrom(f => f.TokenPoolConfig.StakingToken))
+            .ForPath(t => t.EarnedSymbol, m => m.MapFrom(f => f.TokenPoolConfig.RewardToken))
+            .ForPath(t => t.StakeSymbol, m => m.MapFrom(f => f.TokenPoolConfig.StakingToken))
+            .ForPath(t => t.ProjectOwner, m => m.MapFrom(f => PoolInfoConst.ProjectOwnerDic[f.DappId]))
+            .ReverseMap();
 
     }
 }

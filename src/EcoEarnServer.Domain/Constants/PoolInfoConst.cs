@@ -32,6 +32,6 @@ public class PoolInfoConst
     
     public static readonly Dictionary<string, string> ProjectOwnerDic = new()
     {
-        { "dappId", "Schrodinger" },
+        { "d1f6bad87a9f1c4452f4233393f9b0b07e879dfb30c66eeee64cb8d3cd17cb0d", "Schrodinger" },
     };
 }
