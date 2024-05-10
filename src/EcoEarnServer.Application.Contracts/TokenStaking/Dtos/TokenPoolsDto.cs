@@ -29,4 +29,5 @@ public class TokenPoolsDto
     public double StakeApr { get; set; }
     public long StakedTime { get; set; }
     public long Period { get; set; }
+    public int Decimal { get; set; } = 8;
 }

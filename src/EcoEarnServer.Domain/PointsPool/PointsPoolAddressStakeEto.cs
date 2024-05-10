@@ -11,6 +11,7 @@ public class PointsPoolAddressStakeListEto
 
 public class PointsPoolAddressStakeEto
 {
+    public string Id { get; set; }
     public string Address { get; set; }
     public string PoolId { get; set; }
     public string PoolName { get; set; }

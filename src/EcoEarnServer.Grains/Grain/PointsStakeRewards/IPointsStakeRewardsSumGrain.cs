@@ -1,3 +1,4 @@
+using System.Numerics;
 using EcoEarnServer.Common;
 using EcoEarnServer.Grains.State;
 using Orleans;
@@ -33,9 +34,18 @@ public class PointsStakeRewardsSumGrain : Grain<PointsStakeRewardsSumState>, IPo
 
     public async Task<GrainResultDto<PointsStakeRewardsSumDto>> CreateOrUpdateAsync(PointsStakeRewardsSumDto input)
     {
-        State = _objectMapper.Map<PointsStakeRewardsSumDto, PointsStakeRewardsSumState>(input);
-        State.Id = this.GetPrimaryKeyString();
-        State.CreateTime = DateTime.UtcNow.ToUtcMilliSeconds();
+        if (string.IsNullOrEmpty(State.Id))
+        {
+            State = _objectMapper.Map<PointsStakeRewardsSumDto, PointsStakeRewardsSumState>(input);
+            State.Id = this.GetPrimaryKeyString();
+            State.CreateTime = DateTime.UtcNow.ToUtcMilliSeconds();
+        }
+        else
+        {
+            var oldRewards = BigInteger.Parse(State.Rewards);
+            var newRewards = oldRewards + BigInteger.Parse(input.Rewards);
+            State.Rewards = newRewards.ToString();
+        }
 
         await WriteStateAsync();
 

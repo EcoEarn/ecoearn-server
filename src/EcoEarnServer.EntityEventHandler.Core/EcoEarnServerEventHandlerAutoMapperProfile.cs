@@ -1,6 +1,8 @@
 using AutoMapper;
 using EcoEarnServer.Entities;
+using EcoEarnServer.PointsPool;
 using EcoEarnServer.PointsSnapshot;
+using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.Users;
 
 namespace EcoEarnServer.EntityEventHandler.Core;
@@ -11,5 +13,9 @@ public class EcoEarnServerEventHandlerAutoMapperProfile : Profile
     {
         CreateMap<UserGrainDto, UserIndex>();
         CreateMap<PointsSnapshotEto, PointsSnapshotIndex>();
+        CreateMap<PointsPoolAddressStakeEto, PointsPoolAddressStakeIndex>();
+        CreateMap<PointsPoolStakeSumEto, PointsPoolStakeSumIndex>();
+        CreateMap<PointsStakeRewardsEto, PointsStakeRewardsIndex>();
+        CreateMap<PointsStakeRewardsSumEto, PointsStakeRewardsSumIndex>();
     }
 }
