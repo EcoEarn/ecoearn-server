@@ -81,7 +81,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
     private async Task<Dictionary<string, ProjectItemAggDto>> GetProjectItemAggDataDic()
     {
-        var snapshotDate = DateTime.UtcNow.AddDays(-1).ToString("yyyyMMdd");
+        var snapshotDate = DateTime.UtcNow.ToString("yyyyMMdd");
         var res = new List<PointsSnapshotIndex>();
         var skipCount = 0;
         var maxResultCount = 5000;
