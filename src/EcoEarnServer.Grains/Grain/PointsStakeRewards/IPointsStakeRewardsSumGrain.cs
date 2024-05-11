@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Numerics;
 using EcoEarnServer.Common;
 using EcoEarnServer.Grains.State;
@@ -42,9 +43,9 @@ public class PointsStakeRewardsSumGrain : Grain<PointsStakeRewardsSumState>, IPo
         }
         else
         {
-            var oldRewards = BigInteger.Parse(State.Rewards);
-            var newRewards = oldRewards + BigInteger.Parse(input.Rewards);
-            State.Rewards = newRewards.ToString();
+            var oldRewards = decimal.Parse(State.Rewards);
+            var newRewards = oldRewards + decimal.Parse(input.Rewards);
+            State.Rewards = newRewards.ToString(CultureInfo.InvariantCulture);
         }
 
         await WriteStateAsync();
