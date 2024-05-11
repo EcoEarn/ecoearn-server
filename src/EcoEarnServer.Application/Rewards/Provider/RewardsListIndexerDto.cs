@@ -22,7 +22,7 @@ public class RewardsListIndexerDto
 
 public class RewardsListQuery
 {
-    public RewardsListIndexerResult GetRewardsList { get; set; }
+    public RewardsListIndexerResult GetClaimInfoList { get; set; }
 }
 
 public class RewardsListIndexerResult

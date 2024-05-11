@@ -78,16 +78,15 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
                         dappId,
                         poolId,
                         pointsName,
-                        poolAddress,
                         amount,
     					createTime,
-    					pointsPoolConfig{rewardsToken,startBlockNumber,endBlockNumber,rewardPerBlock,releasePeriod,updateAddress}
+    					pointsPoolConfig{rewardToken,startBlockNumber,endBlockNumber,rewardPerBlock,releasePeriod,updateAddress}
                     }
                 }
             }",
                 Variables = new
                 {
-                    name = name, skipCount = 0, maxResultCount = 5000
+                    name = string.IsNullOrEmpty(name) ? "" : name, skipCount = 0, maxResultCount = 5000
                 }
             });
 
@@ -123,7 +122,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
 
         var (total, list) = await _addressStakeSumRepository.GetListAsync(Filter,
             skip: 0, limit: 5000);
-        return list.ToDictionary(x => x.PoolId, x => x.StakeAmount);
+        return list.ToDictionary(x => x.Address, x => x.StakeAmount);
     }
 
     public async Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address)
@@ -137,6 +136,6 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
 
         var (total, list) = await _addressStakeRewardsRepository.GetListAsync(Filter,
             skip: 0, limit: 5000);
-        return list.ToDictionary(x => x.PoolId, x => x.Rewards);
+        return list.ToDictionary(x => x.Address, x => x.Rewards);
     }
 }

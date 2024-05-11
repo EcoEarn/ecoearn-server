@@ -73,10 +73,10 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             if (addressStakedInPoolDic.TryGetValue(tokenPoolsDto.PoolId, out var stakedInfo))
             {
                 var rewardData = await GetStakedRewardsAsync(stakedInfo.StakeId, input.ChainId);
-                if (rewardData.Amount != "0")
+                if (rewardData.Amount != 0)
                 {
                     //var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{rewardData.Symbol.ToUpper()}_USDT");
-                    tokenPoolsDto.Earned = rewardData.Amount;
+                    tokenPoolsDto.Earned = rewardData.Amount.ToString();
                     //tokenPoolsDto.EarnedInUsd = rewardData.Amount * usdtRate ;
                 }
 

@@ -92,12 +92,58 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
     private async Task<TokenPoolAggDto> GetTokenPoolRewardsAggAsync(List<RewardsListIndexerDto> list, string address)
     {
-        return new TokenPoolAggDto();
+        var tokenPoolAggDto = new TokenPoolAggDto();
+        if (list.IsNullOrEmpty())
+        {
+            return tokenPoolAggDto;
+        }
+
+        var stakeIds = list
+            .Where(x => !string.IsNullOrEmpty(x.StakeId))
+            .Select(x => x.StakeId)
+            .Distinct().ToList();
+        var unLockedStakeIds = await _rewardsProvider.GetUnLockedStakeIdsAsync(stakeIds, address);
+
+        var stakingList = list
+            .Where(x => x.EarlyStakeTime == 0 || unLockedStakeIds.Contains(x.StakeId))
+            .ToList();
+
+        var unlockList = stakingList
+            .Where(x => DateTime.UtcNow.ToUtcMilliSeconds() > x.UnlockTime)
+            .ToList();
+
+        tokenPoolAggDto.RewardsTotal = unlockList.Select(x => BigInteger.Parse(x.ClaimedAmount))
+            .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString();
+
+        return tokenPoolAggDto;
     }
 
     private async Task<TokenPoolAggDto> GetLpPoolRewardsAggAsync(List<RewardsListIndexerDto> list, string address)
     {
-        return new TokenPoolAggDto();
+        var tokenPoolAggDto = new TokenPoolAggDto();
+        if (list.IsNullOrEmpty())
+        {
+            return tokenPoolAggDto;
+        }
+
+        var stakeIds = list
+            .Where(x => !string.IsNullOrEmpty(x.StakeId))
+            .Select(x => x.StakeId)
+            .Distinct().ToList();
+        var unLockedStakeIds = await _rewardsProvider.GetUnLockedStakeIdsAsync(stakeIds, address);
+
+        var stakingList = list
+            .Where(x => x.EarlyStakeTime == 0 || unLockedStakeIds.Contains(x.StakeId))
+            .ToList();
+
+        var unlockList = stakingList
+            .Where(x => DateTime.UtcNow.ToUtcMilliSeconds() > x.UnlockTime)
+            .ToList();
+
+        tokenPoolAggDto.RewardsTotal = unlockList.Select(x => BigInteger.Parse(x.ClaimedAmount))
+            .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString();
+
+        return tokenPoolAggDto;
     }
 
 

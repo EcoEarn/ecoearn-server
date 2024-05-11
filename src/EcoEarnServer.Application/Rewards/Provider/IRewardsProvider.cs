@@ -42,8 +42,8 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<RewardsListQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($poolType:PoolType, $filterUnlocked:Boolean,$filterWithdraw:Boolean,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
-                    getClaimInfoList(input: {poolType:$poolType,filterUnlocked:$filterUnlocked,filterWithdraw:$filterWithdraw,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($poolType:PoolType!, $filterUnlock:Boolean!,$filterWithdraw:Boolean!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
+                    getClaimInfoList(input: {poolType:$poolType,filterUnlock:$filterUnlock,filterWithdraw:$filterWithdraw,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         claimId,
@@ -62,12 +62,12 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    poolType = poolType, filterUnlocked = filterUnlocked, filterWithdraw = filterWithdraw,
+                    poolType = poolType, filterUnlock = filterUnlocked, filterWithdraw = filterWithdraw,
                     address = address, skipCount = skipCount, maxResultCount = maxResultCount,
                 }
             });
 
-            return indexerResult.GetRewardsList.Data;
+            return indexerResult.GetClaimInfoList.Data;
         }
         catch (Exception e)
         {

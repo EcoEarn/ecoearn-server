@@ -18,6 +18,6 @@ public class PointsPoolAggDto
 
 public class TokenPoolAggDto
 {
-    public long RewardsTotal { get; set; }
-    public long RewardsTotalInUsd { get; set; }
+    public string RewardsTotal { get; set; }
+    public string RewardsTotalInUsd { get; set; } = "0";
 }

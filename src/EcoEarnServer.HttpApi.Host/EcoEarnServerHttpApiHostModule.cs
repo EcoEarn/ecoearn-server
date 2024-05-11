@@ -59,6 +59,7 @@ namespace EcoEarnServer
             var hostingEnvironment = context.Services.GetHostingEnvironment();
             Configure<ChainOption>(configuration.GetSection("ChainOption"));
             Configure<ProjectItemOptions>(configuration.GetSection("ProjectItems"));
+            Configure<ProjectKeyPairInfoOptions>(configuration.GetSection("ProjectKeyPairInfo"));
 
             ConfigureConventionalControllers();
             // ConfigureAuthentication(context, configuration);

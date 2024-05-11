@@ -39,12 +39,13 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly ILogger<PointsStakingService> _logger;
     private readonly ITokenStakingService _tokenStakingService;
+    private readonly ChainOption _chainOption;
 
     public PointsStakingService(IOptionsSnapshot<ProjectItemOptions> projectItemOptions, IObjectMapper objectMapper,
         IPointsStakingProvider pointsStakingProvider, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
         ContractProvider contractProvider, IOptionsSnapshot<ProjectKeyPairInfoOptions> projectKeyPairInfoOptions,
         IClusterClient clusterClient, IDistributedEventBus distributedEventBus, ILogger<PointsStakingService> logger,
-        ITokenStakingService tokenStakingService)
+        ITokenStakingService tokenStakingService, IOptionsSnapshot<ChainOption> chainOption)
     {
         _objectMapper = objectMapper;
         _pointsStakingProvider = pointsStakingProvider;
@@ -53,6 +54,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         _distributedEventBus = distributedEventBus;
         _logger = logger;
         _tokenStakingService = tokenStakingService;
+        _chainOption = chainOption.Value;
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
         _earnContractOptions = earnContractOptions.Value;
         _projectItemOptions = projectItemOptions.Value;
@@ -147,20 +149,21 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
     public async Task<ClaimAmountSignatureDto> ClaimAmountSignatureAsync(ClaimAmountSignatureInput input)
     {
-        if (!_projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(input.PoolId, out var privateKey))
+        
+        if (!_chainOption.AccountPrivateKey.TryGetValue(ContractConstants.SenderName, out var privateKey))
         {
             throw new UserFriendlyException("invalid pool");
         }
 
         var addressStakeRewardsDic = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(input.Address);
 
-        if (!addressStakeRewardsDic.TryGetValue(input.PoolId, out var earned) || long.Parse(earned) - input.Amount < 0)
+        if (!addressStakeRewardsDic.TryGetValue(input.Address, out var earned) || long.Parse(earned) - input.Amount < 0)
         {
             throw new UserFriendlyException("invalid amount");
         }
 
         var seed = Guid.NewGuid().ToString();
-        var signature = GenerateSignature(ByteArrayHelper.HexStringToByteArray(privateKey.PrivateKey),
+        var signature = GenerateSignature(ByteArrayHelper.HexStringToByteArray(privateKey),
             Hash.LoadFromHex(input.PoolId), input.Amount, Address.FromBase58(input.Address),
             HashHelper.ComputeFrom(seed));
 

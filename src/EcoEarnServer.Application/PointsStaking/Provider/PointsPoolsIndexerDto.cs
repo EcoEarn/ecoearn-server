@@ -7,7 +7,6 @@ public class PointsPoolsIndexerDto
     public string DappId { get; set; }
     public string PoolId { get; set; }
     public string PointsName { get; set; }
-    public string PoolAddress { get; set; }
     public string Amount { get; set; }
     public PointsPoolConfigDto PointsPoolConfig { get; set; }
     public long CreateTime { get; set; }
