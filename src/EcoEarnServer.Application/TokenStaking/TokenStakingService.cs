@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AElf.Types;
 using EcoEarnServer.Common;
 using EcoEarnServer.Common.AElfSdk;
+using EcoEarnServer.Options;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
@@ -32,11 +33,15 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
     private readonly IDistributedCacheSerializer _serializer;
     private readonly IContractProvider _contractProvider;
     private readonly IPriceProvider _priceProvider;
+    private readonly TokenPoolIconsOptions _tokenPoolIconsOptions;
+    private readonly LpPoolRateOptions _lpPoolRateOptions;
 
     public TokenStakingService(ITokenStakingProvider tokenStakingProvider, IObjectMapper objectMapper,
         ILogger<TokenStakingService> logger, IOptions<RedisCacheOptions> optionsAccessor,
         IDistributedCacheSerializer serializer, IContractProvider contractProvider,
-        IPriceProvider priceProvider) : base(optionsAccessor)
+        IPriceProvider priceProvider,
+        IOptionsSnapshot<TokenPoolIconsOptions> tokenPoolIconsOptions,
+        IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions) : base(optionsAccessor)
     {
         _tokenStakingProvider = tokenStakingProvider;
         _objectMapper = objectMapper;
@@ -44,6 +49,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         _serializer = serializer;
         _contractProvider = contractProvider;
         _priceProvider = priceProvider;
+        _lpPoolRateOptions = lpPoolRateOptions.Value;
+        _tokenPoolIconsOptions = tokenPoolIconsOptions.Value;
     }
 
     public async Task<List<TokenPoolsDto>> GetTokenPoolsAsync(GetTokenPoolsInput input)
@@ -69,6 +76,16 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 tokenPoolsDto.AprMin = (double)tokenPoolsDto.YearlyRewards / tokenPoolStakedSum * 100;
                 tokenPoolsDto.AprMax = tokenPoolsDto.AprMin * 2;
             }
+
+            tokenPoolsDto.Icons =
+                _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(tokenPoolsDto.PoolId, out var icons)
+                    ? icons
+                    : new List<string>();
+            tokenPoolsDto.Rate =
+                _lpPoolRateOptions.LpPoolRateDic.TryGetValue(tokenPoolsDto.PoolId, out var poolRate)
+                    ? poolRate
+                    : 0;
+
 
             if (addressStakedInPoolDic.TryGetValue(tokenPoolsDto.PoolId, out var stakedInfo))
             {

@@ -60,6 +60,8 @@ namespace EcoEarnServer
             Configure<ChainOption>(configuration.GetSection("ChainOption"));
             Configure<ProjectItemOptions>(configuration.GetSection("ProjectItems"));
             Configure<ProjectKeyPairInfoOptions>(configuration.GetSection("ProjectKeyPairInfo"));
+            Configure<TokenPoolIconsOptions>(configuration.GetSection("TokenPoolIcons"));
+            Configure<LpPoolRateOptions>(configuration.GetSection("LpPoolRate"));
 
             ConfigureConventionalControllers();
             // ConfigureAuthentication(context, configuration);

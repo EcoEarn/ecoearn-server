@@ -68,7 +68,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         var projectItemAggDataDic = await GetProjectItemAggDataDic();
         projectItemListDtos.ForEach(dto =>
         {
-            if (!projectItemAggDataDic.TryGetValue(dto.DappName, out var aggData))
+            if (!projectItemAggDataDic.TryGetValue(dto.DappId, out var aggData))
             {
                 return;
             }

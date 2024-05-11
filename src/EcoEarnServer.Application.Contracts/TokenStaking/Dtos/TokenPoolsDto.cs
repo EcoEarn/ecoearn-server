@@ -16,6 +16,7 @@ public class TokenPoolsDto
     public string TotalStakeInUsd { get; set; } = "0";
     public long YearlyRewards { get; set; }
     public List<string> Icons { get; set; }
+    public double Rate { get; set; }
 
     //stake info
     public string StakeId { get; set; }

@@ -14,6 +14,7 @@ public class RewardsListDto
     public List<string> TokenIcon { get; set; }
     public long Date { get; set; }
     public long LockUpPeriod { get; set; }
+    public string PoolId { get; set; }
 }
 
 public enum PoolTypeEnums

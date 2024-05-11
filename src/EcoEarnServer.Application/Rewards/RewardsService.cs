@@ -4,9 +4,11 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using EcoEarnServer.Common;
+using EcoEarnServer.Options;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.Rewards.Provider;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
@@ -17,19 +19,31 @@ public class RewardsService : IRewardsService, ISingletonDependency
     private readonly IRewardsProvider _rewardsProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<RewardsService> _logger;
+    private readonly TokenPoolIconsOptions _tokenPoolIconsOptions;
 
-    public RewardsService(IRewardsProvider rewardsProvider, IObjectMapper objectMapper, ILogger<RewardsService> logger)
+    public RewardsService(IRewardsProvider rewardsProvider, IObjectMapper objectMapper, ILogger<RewardsService> logger,
+        IOptionsSnapshot<TokenPoolIconsOptions> tokenPoolIconsOptions)
     {
         _rewardsProvider = rewardsProvider;
         _objectMapper = objectMapper;
         _logger = logger;
+        _tokenPoolIconsOptions = tokenPoolIconsOptions.Value;
     }
 
     public async Task<List<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input)
     {
         var rewardsIndexerList = await _rewardsProvider.GetRewardsListAsync(input.PoolType, input.Address,
             input.SkipCount, input.MaxResultCount, filterUnlocked: input.FilterUnlocked);
-        return _objectMapper.Map<List<RewardsListIndexerDto>, List<RewardsListDto>>(rewardsIndexerList);
+        var result = _objectMapper.Map<List<RewardsListIndexerDto>, List<RewardsListDto>>(rewardsIndexerList);
+        foreach (var rewardsListDto in result)
+        {
+            rewardsListDto.TokenIcon =
+                _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(rewardsListDto.PoolId, out var icons)
+                    ? icons
+                    : new List<string>();
+        }
+
+        return result;
     }
 
     public async Task<RewardsAggregationDto> GetRewardsAggregationAsync(GetRewardsAggregationInput input)
