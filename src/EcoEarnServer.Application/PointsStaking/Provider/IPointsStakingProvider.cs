@@ -108,6 +108,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         QueryContainer Filter(QueryContainerDescriptor<PointsPoolStakeSumIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (total, list) = await _poolStakeSumRepository.GetListAsync(Filter,
             skip: 0, limit: 5000);
+        _logger.LogInformation("GetPointsPoolStakeSumDicAsync: {total}", total);
         return list.ToDictionary(x => x.PoolId, x => x.StakeAmount);
     }
 
@@ -122,6 +123,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
 
         var (total, list) = await _addressStakeSumRepository.GetListAsync(Filter,
             skip: 0, limit: 5000);
+        _logger.LogInformation("GetAddressStakeAmountDicAsync: {total}", total);
         return list.ToDictionary(x => x.Address, x => x.StakeAmount);
     }
 
@@ -136,6 +138,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
 
         var (total, list) = await _addressStakeRewardsRepository.GetListAsync(Filter,
             skip: 0, limit: 5000);
+        _logger.LogInformation("GetAddressStakeRewardsDicAsync: {total}", total);
         return list.ToDictionary(x => x.Address, x => x.Rewards);
     }
 }
