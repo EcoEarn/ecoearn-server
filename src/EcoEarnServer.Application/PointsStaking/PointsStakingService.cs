@@ -144,7 +144,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             dto.Staked = addressStakeAmountDic.TryGetValue(dto.PoolId, out var staked) ? staked : "0";
             dto.Earned = addressStakeRewardsDic.TryGetValue(dto.PoolId, out var earned) ? earned : "0";
         });
-        return pointsPoolsDtos;
+        return input.Type == PoolQueryType.Staked ? pointsPoolsDtos.Where(x => x.Staked != "0").ToList() : pointsPoolsDtos;
     }
 
     public async Task<ClaimAmountSignatureDto> ClaimAmountSignatureAsync(ClaimAmountSignatureInput input)
