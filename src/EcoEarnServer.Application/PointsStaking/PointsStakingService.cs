@@ -141,8 +141,8 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         pointsPoolsDtos.ForEach(dto =>
         {
             dto.TotalStake = pointsPoolStakeSumDic.TryGetValue(dto.PoolId, out var totalStake) ? totalStake : "0";
-            dto.Staked = addressStakeAmountDic.TryGetValue(dto.PoolId, out var staked) ? staked : "0";
-            dto.Earned = addressStakeRewardsDic.TryGetValue(dto.PoolId, out var earned) ? earned : "0";
+            dto.Staked = addressStakeAmountDic.TryGetValue(input.Address, out var staked) ? staked : "0";
+            dto.Earned = addressStakeRewardsDic.TryGetValue(input.Address, out var earned) ? earned : "0";
         });
         return input.Type == PoolQueryType.Staked ? pointsPoolsDtos.Where(x => x.Staked != "0").ToList() : pointsPoolsDtos;
     }
