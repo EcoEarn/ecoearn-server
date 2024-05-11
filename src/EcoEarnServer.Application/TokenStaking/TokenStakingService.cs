@@ -82,7 +82,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                     ? icons
                     : new List<string>();
             tokenPoolsDto.Rate =
-                _lpPoolRateOptions.LpPoolRateDic.TryGetValue(tokenPoolsDto.PoolId, out var poolRate)
+                _lpPoolRateOptions.LpPoolRateDic.TryGetValue(tokenPoolsIndexerDto.TokenPoolConfig.StakeTokenContract, out var poolRate)
                     ? poolRate
                     : 0;
 
