@@ -147,7 +147,7 @@ public class EcoEarnServerBackgroundModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        //context.AddBackgroundWorkerAsync<PointsSnapshotWorker>();
+        context.AddBackgroundWorkerAsync<PointsSnapshotWorker>();
         context.AddBackgroundWorkerAsync<SettlePointsRewardsWorker>();
         InitRecurringJob(context.ServiceProvider);
         StartOrleans(context.ServiceProvider);

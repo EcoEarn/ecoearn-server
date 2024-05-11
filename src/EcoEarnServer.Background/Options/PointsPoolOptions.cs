@@ -13,4 +13,5 @@ public class PointsPoolInfo
     public string PoolId { get; set; }
     public string PoolName { get; set; }
     public string DappId { get; set; }
+    public long DailyReward { get; set; } = 10000;
 }

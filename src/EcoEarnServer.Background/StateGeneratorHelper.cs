@@ -9,6 +9,6 @@ public static class StateGeneratorHelper
 
     public static string GenerateSnapshotKey() => SnapshotStateRedisKeyPrefix + DateTime.UtcNow.ToString("yyyyMMdd");
 
-    public static string GenerateSettleKey() =>
-        SettleStateRedisKeyPrefix + DateTime.UtcNow.AddDays(-1).ToString("yyyyMMdd");
+    public static string GenerateSettleKey(int settleRewardsBeforeDays) =>
+        SettleStateRedisKeyPrefix + DateTime.UtcNow.AddDays(settleRewardsBeforeDays).ToString("yyyyMMdd");
 }

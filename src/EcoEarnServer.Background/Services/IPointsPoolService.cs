@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Numerics;
 using System.Threading.Tasks;
 using EcoEarnServer.Common;
@@ -88,7 +89,7 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                 stakeListEto.Add(_objectMapper.Map<PointsPoolAddressStakeDto, PointsPoolAddressStakeEto>(result.Data));
 
                 //record the rewards of the previous day
-                var rewards = BigInteger.Parse(value.ToString()) / BigInteger.Parse(pointsPoolStakeSumDto.StakeAmount);
+                var rewards = decimal.Parse(value.ToString()) / decimal.Parse(pointsPoolStakeSumDto.StakeAmount) *  pointsPoolStakeSumDto.DailyReward;
                 var rewardsId = GuidHelper.GenerateId(pointsSnapshot.Address, poolIndex, yesterday);
                 var rewardsDto = new PointsStakeRewardsDto
                 {
@@ -96,7 +97,7 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                     PoolId = pointsPoolStakeSumDto.PoolId,
                     PoolName = pointsPoolStakeSumDto.PoolName,
                     DappId = pointsPoolStakeSumDto.DappId,
-                    Rewards = rewards.ToString(),
+                    Rewards = rewards.ToString(CultureInfo.InvariantCulture),
                     Address = pointsSnapshot.Address,
                     SettleDate = yesterday
                 };
@@ -119,10 +120,10 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                     PoolId = pointsPoolStakeSumDto.PoolId,
                     PoolName = pointsPoolStakeSumDto.PoolName,
                     DappId = pointsPoolStakeSumDto.DappId,
-                    Rewards = rewards.ToString(),
+                    Rewards = rewards.ToString(CultureInfo.InvariantCulture),
                     Address = pointsSnapshot.Address,
                 };
-                var rewardsSumGrain = _clusterClient.GetGrain<IPointsStakeRewardsSumGrain>(rewardsId);
+                var rewardsSumGrain = _clusterClient.GetGrain<IPointsStakeRewardsSumGrain>(id);
                 var rewardsSumResult = await rewardsSumGrain.CreateOrUpdateAsync(rewardsSumDto);
 
                 if (!rewardsSumResult.Success)

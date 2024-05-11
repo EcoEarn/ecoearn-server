@@ -1,5 +1,4 @@
 using EcoEarnServer.Common;
-using EcoEarnServer.Grains.Grain.PointsSnapshot;
 using EcoEarnServer.Grains.State;
 using Orleans;
 using Volo.Abp.ObjectMapping;

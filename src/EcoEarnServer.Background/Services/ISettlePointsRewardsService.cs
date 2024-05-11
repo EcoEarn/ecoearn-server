@@ -58,7 +58,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             return;
         }
 
-        if (await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateSettleKey()))
+        if (await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateSettleKey(settleRewardsBeforeDays)))
         {
             _logger.LogInformation("today has already created points snapshot.");
             return;
@@ -74,12 +74,12 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             //update the staked sum for each points pool
             await _pointsPoolService.UpdatePointsPoolStakeSumAsync(stakeSumDic);
             
-            await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSettleKey(), true);
+            await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSettleKey(settleRewardsBeforeDays), true);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "CreatePointsSnapshot fail.");
-            await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSettleKey(), false);
+            await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSettleKey(settleRewardsBeforeDays), false);
         }
     }
 
