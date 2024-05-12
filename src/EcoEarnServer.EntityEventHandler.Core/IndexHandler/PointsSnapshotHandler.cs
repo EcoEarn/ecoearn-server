@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using EcoEarnServer.Common;
 using EcoEarnServer.PointsSnapshot;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -27,15 +28,18 @@ public class PointsSnapshotHandler : IDistributedEventHandler<PointsSnapshotEto>
 
     public async Task HandleEventAsync(PointsSnapshotEto eventData)
     {
+        _logger.LogInformation("HandleEventAsync PointsSnapshotEto index. {index}", CommonConstant.Index);
         try
         {
             var index = _objectMapper.Map<PointsSnapshotEto, PointsSnapshotIndex>(eventData);
             await _repository.AddOrUpdateAsync(index);
+            CommonConstant.Index++;
             _logger.LogDebug("HandleEventAsync PointsSnapshotEto success. {id}", index.Id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "HandleEventAsync PointsSnapshotEto fail. {Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "HandleEventAsync PointsSnapshotEto fail. {Message}",
+                JsonConvert.SerializeObject(eventData));
         }
     }
 }
