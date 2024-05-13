@@ -94,9 +94,8 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                 stakeListEto.Add(_objectMapper.Map<PointsPoolAddressStakeDto, PointsPoolAddressStakeEto>(result.Data));
 
                 //record the rewards of the previous day
-                var rewardsDecimal = decimal.Parse(value.ToString()) / decimal.Parse(pointsPoolStakeSumDto.StakeAmount) *
-                              pointsPoolStakeSumDto.DailyReward;
-                var rewards = Convert.ToInt64(Math.Round(double.Parse(rewardsDecimal.ToString()) * Math.Pow(10, 8)));
+                
+                var rewards = decimal.Round(decimal.Parse(value.ToString()) / decimal.Parse(pointsPoolStakeSumDto.StakeAmount) * pointsPoolStakeSumDto.DailyReward, 8);
                 var rewardsId = GuidHelper.GenerateId(pointsSnapshot.Address, poolIndex, yesterday);
                 var rewardsDto = new PointsStakeRewardsDto
                 {
