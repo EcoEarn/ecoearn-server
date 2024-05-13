@@ -19,7 +19,7 @@ namespace EcoEarnServer.PointsStaking.Provider;
 public interface IPointsStakingProvider
 {
     Task<List<PointsSnapshotIndex>> GetProjectItemAggDataAsync(string snapshotDate, int skipCount, int maxResultCount);
-    Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name);
+    Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name, List<string> poolIds = null);
 
     Task<Dictionary<string, string>> GetPointsPoolStakeSumDicAsync(List<string> poolIds);
     Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address);
@@ -65,15 +65,15 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         return list;
     }
 
-    public async Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name)
+    public async Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name, List<string> poolIds = null)
     {
         try
         {
             var indexerResult = await _graphQlHelper.QueryAsync<PointsPoolsQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($name:String!, $skipCount:Int!,$maxResultCount:Int!){
-                    getPointsPoolList(input: {name:$name,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($name:String!, $poolIds:[String!]!, $skipCount:Int!,$maxResultCount:Int!){
+                    getPointsPoolList(input: {name:$name,poolIds:$poolIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         dappId,
@@ -87,7 +87,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
             }",
                 Variables = new
                 {
-                    name = string.IsNullOrEmpty(name) ? "" : name, skipCount = 0, maxResultCount = 5000
+                    name = string.IsNullOrEmpty(name) ? "" : name, poolIds = poolIds, skipCount = 0, maxResultCount = 5000
                 }
             });
 

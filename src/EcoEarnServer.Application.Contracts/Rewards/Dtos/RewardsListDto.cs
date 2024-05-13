@@ -7,7 +7,7 @@ public class RewardsListDto
     public PoolTypeEnums PooType { get; set; }
     public string ProjectOwner { get; set; }
     public string RewardsToken { get; set; }
-    public string RewardsInUsd { get; set; }
+    public string RewardsInUsd { get; set; } = "0";
     public string Rewards { get; set; }
     public string ClaimedId { get; set; }
     public string TokenName { get; set; }

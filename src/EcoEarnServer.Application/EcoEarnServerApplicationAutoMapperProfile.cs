@@ -31,7 +31,15 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.ProjectOwner, m => m.MapFrom(f => PoolInfoConst.ProjectOwnerDic[f.DappId]))
             .ReverseMap();
 
-        CreateMap<RewardsListIndexerDto, RewardsListDto>().ReverseMap();
+        CreateMap<RewardsListIndexerDto, RewardsListDto>()
+            .ForPath(t => t.ProjectOwner, m => m.MapFrom(f => ""))
+            .ForPath(t => t.RewardsToken, m => m.MapFrom(f => f.ClaimedSymbol))
+            .ForPath(t => t.Rewards, m => m.MapFrom(f => f.ClaimedAmount))
+            .ForPath(t => t.ClaimedId, m => m.MapFrom(f => f.ClaimId))
+            .ForPath(t => t.TokenName, m => m.MapFrom(f => ""))
+            .ForPath(t => t.Date, m => m.MapFrom(f => f.ClaimedTime))
+            .ForPath(t => t.LockUpPeriod, m => m.MapFrom(f => f.UnlockTime))
+            .ReverseMap();
         CreateMap<PointsStakeRewardsSumDto, PointsStakeRewardsSumEto>().ReverseMap();
     }
 }

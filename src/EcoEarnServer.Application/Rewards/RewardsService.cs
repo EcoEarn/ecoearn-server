@@ -4,9 +4,13 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using EcoEarnServer.Common;
+using EcoEarnServer.Constants;
 using EcoEarnServer.Options;
+using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.Rewards.Provider;
+using EcoEarnServer.TokenStaking;
+using EcoEarnServer.TokenStaking.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
@@ -20,13 +24,18 @@ public class RewardsService : IRewardsService, ISingletonDependency
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<RewardsService> _logger;
     private readonly TokenPoolIconsOptions _tokenPoolIconsOptions;
+    private readonly IPointsStakingProvider _pointsStakingProvider;
+    private readonly ITokenStakingProvider _tokenStakingProvider;
 
     public RewardsService(IRewardsProvider rewardsProvider, IObjectMapper objectMapper, ILogger<RewardsService> logger,
-        IOptionsSnapshot<TokenPoolIconsOptions> tokenPoolIconsOptions)
+        IOptionsSnapshot<TokenPoolIconsOptions> tokenPoolIconsOptions, IPointsStakingProvider pointsStakingProvider,
+        ITokenStakingProvider tokenStakingProvider)
     {
         _rewardsProvider = rewardsProvider;
         _objectMapper = objectMapper;
         _logger = logger;
+        _pointsStakingProvider = pointsStakingProvider;
+        _tokenStakingProvider = tokenStakingProvider;
         _tokenPoolIconsOptions = tokenPoolIconsOptions.Value;
     }
 
@@ -35,13 +44,34 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var rewardsIndexerList = await _rewardsProvider.GetRewardsListAsync(input.PoolType, input.Address,
             input.SkipCount, input.MaxResultCount, filterUnlocked: input.FilterUnlocked);
         var result = _objectMapper.Map<List<RewardsListIndexerDto>, List<RewardsListDto>>(rewardsIndexerList);
+        var pointsPoolIds = result
+            .Where(x => x.PooType == PoolTypeEnums.Points)
+            .Select(x => x.PoolId)
+            .ToList();
+        var tokenPoolIds = result
+            .Where(x => x.PooType is PoolTypeEnums.Token or PoolTypeEnums.Lp)
+            .Select(x => x.PoolId)
+            .ToList();
+        var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("", pointsPoolIds);
+        var poolsIdDic = pointsPoolsIndexerDtos.ToDictionary(x => x.PoolId, x => x);
         foreach (var rewardsListDto in result)
         {
             rewardsListDto.TokenIcon =
                 _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(rewardsListDto.PoolId, out var icons)
                     ? icons
                     : new List<string>();
+            if (!poolsIdDic.TryGetValue(rewardsListDto.PoolId, out var poolData))
+            {
+                continue;
+            }
+
+            rewardsListDto.TokenName = poolData.PointsName;
+            rewardsListDto.ProjectOwner =
+                PoolInfoConst.ProjectOwnerDic.TryGetValue(poolData.DappId, out var projectOwner)
+                    ? projectOwner
+                    : "";
         }
+
 
         return result;
     }
