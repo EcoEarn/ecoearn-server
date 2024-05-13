@@ -217,7 +217,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         var poolId = claimInput.PoolId.ToHex();
         var address = claimInput.Account.ToBase58();
         var id = GuidHelper.GenerateId(address, poolId);
-        var claimAmount = claimInput.Amount;
+        var claimAmount = - claimInput.Amount;
         var rewardsSumDto = new PointsStakeRewardsSumDto()
         {
             Id = id,

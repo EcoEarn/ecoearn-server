@@ -56,6 +56,11 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
             var rewardsSumList = new List<PointsStakeRewardsSumEto>();
             foreach (var (poolIndex, pointsPoolStakeSumDto) in stakeSumDic)
             {
+                if (string.IsNullOrEmpty(pointsPoolStakeSumDto.PoolId))
+                {
+                    continue;
+                }
+
                 var id = GuidHelper.GenerateId(pointsSnapshot.Address, pointsPoolStakeSumDto.PoolId);
                 var symbolFieldName = PoolInfoConst.PoolIndexSymbolDic[poolIndex];
                 var property = typeof(PointsSnapshotIndex).GetProperty(symbolFieldName);
@@ -89,7 +94,9 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                 stakeListEto.Add(_objectMapper.Map<PointsPoolAddressStakeDto, PointsPoolAddressStakeEto>(result.Data));
 
                 //record the rewards of the previous day
-                var rewards = decimal.Parse(value.ToString()) / decimal.Parse(pointsPoolStakeSumDto.StakeAmount) *  pointsPoolStakeSumDto.DailyReward;
+                var rewardsDecimal = decimal.Parse(value.ToString()) / decimal.Parse(pointsPoolStakeSumDto.StakeAmount) *
+                              pointsPoolStakeSumDto.DailyReward;
+                var rewards = Convert.ToInt64(Math.Round(double.Parse(rewardsDecimal.ToString()) * Math.Pow(10, 8)));
                 var rewardsId = GuidHelper.GenerateId(pointsSnapshot.Address, poolIndex, yesterday);
                 var rewardsDto = new PointsStakeRewardsDto
                 {
@@ -150,6 +157,7 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         {
             _logger.LogError(e, "UpdatePointsPoolAddressStakeAsync fail. {pointsSnapshot}", pointsSnapshot.Address);
         }
+
         _logger.LogInformation("UpdatePointsPoolAddressStakeAsync end. id:{id}", pointsSnapshot.Id);
     }
 
