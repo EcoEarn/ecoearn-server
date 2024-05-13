@@ -37,8 +37,8 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<TokenPoolsQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($tokenName:String!, $poolType:PoolType!, $skipCount:Int!,$maxResultCount:Int!){
-                    getTokenPoolList(input: {tokenName:$tokenName,poolType:$poolType,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($tokenName:String!, $poolType:PoolType!, $poolIds:[String!]!,$skipCount:Int!,$maxResultCount:Int!){
+                    getTokenPoolList(input: {tokenName:$tokenName,poolType:$poolType,poolIds:$poolIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         dappId,
@@ -67,6 +67,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                 Variables = new
                 {
                     tokenName = "", poolType = input.PoolType, skipCount = 0, maxResultCount = 5000,
+                    poolIds = input.PoolIds
                 }
             });
 

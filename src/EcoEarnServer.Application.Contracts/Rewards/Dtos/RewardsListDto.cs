@@ -17,6 +17,12 @@ public class RewardsListDto
     public string PoolId { get; set; }
 }
 
+public class PoolIdDataDto
+{
+    public string DappId { get; set; }
+    public string PointsName { get; set; }
+}
+
 public enum PoolTypeEnums
 {
     Points = 0,

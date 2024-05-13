@@ -10,6 +10,7 @@ using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.Rewards.Provider;
 using EcoEarnServer.TokenStaking;
+using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -44,16 +45,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var rewardsIndexerList = await _rewardsProvider.GetRewardsListAsync(input.PoolType, input.Address,
             input.SkipCount, input.MaxResultCount, filterUnlocked: input.FilterUnlocked);
         var result = _objectMapper.Map<List<RewardsListIndexerDto>, List<RewardsListDto>>(rewardsIndexerList);
-        var pointsPoolIds = result
-            .Where(x => x.PooType == PoolTypeEnums.Points)
-            .Select(x => x.PoolId)
-            .ToList();
-        var tokenPoolIds = result
-            .Where(x => x.PooType is PoolTypeEnums.Token or PoolTypeEnums.Lp)
-            .Select(x => x.PoolId)
-            .ToList();
-        var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("", pointsPoolIds);
-        var poolsIdDic = pointsPoolsIndexerDtos.ToDictionary(x => x.PoolId, x => x);
+
+        var poolsIdDic = await GetPoolIdDicAsync(result);
+
         foreach (var rewardsListDto in result)
         {
             rewardsListDto.TokenIcon =
@@ -66,14 +60,45 @@ public class RewardsService : IRewardsService, ISingletonDependency
             }
 
             rewardsListDto.TokenName = poolData.PointsName;
-            rewardsListDto.ProjectOwner =
-                PoolInfoConst.ProjectOwnerDic.TryGetValue(poolData.DappId, out var projectOwner)
-                    ? projectOwner
-                    : "";
+            rewardsListDto.ProjectOwner = "Schrodinger";
         }
 
 
         return result;
+    }
+
+    private async Task<Dictionary<string, PoolIdDataDto>> GetPoolIdDicAsync(List<RewardsListDto> result)
+    {
+        var pointsPoolIds = result
+            .Where(x => x.PooType == PoolTypeEnums.Points)
+            .Select(x => x.PoolId)
+            .ToList();
+        var tokenPoolIds = result
+            .Where(x => x.PooType is PoolTypeEnums.Token or PoolTypeEnums.Lp)
+            .Select(x => x.PoolId)
+            .ToList();
+        var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("", pointsPoolIds);
+        var poolIdDic = pointsPoolsIndexerDtos.ToDictionary(x => x.PoolId, x => new PoolIdDataDto
+        {
+            PointsName = x.PointsName,
+            DappId = x.DappId
+        });
+        var input = new GetTokenPoolsInput()
+        {
+            PoolIds = tokenPoolIds,
+            PoolType = PoolTypeEnums.All
+        };
+        var tokenPoolsIndexerDtos = await _tokenStakingProvider.GetTokenPoolsAsync(input);
+        var tokenPoolIdDic = tokenPoolsIndexerDtos.ToDictionary(x => x.PoolId, x => new PoolIdDataDto
+        {
+            DappId = x.DappId,
+            PointsName = x.TokenPoolConfig.StakingToken
+        });
+        foreach (var poolIdDataDto in tokenPoolIdDic)
+        {
+            poolIdDic[poolIdDataDto.Key] = poolIdDataDto.Value;
+        }
+        return poolIdDic;
     }
 
     public async Task<RewardsAggregationDto> GetRewardsAggregationAsync(GetRewardsAggregationInput input)
