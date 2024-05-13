@@ -16,6 +16,7 @@ using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.TokenStaking;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -40,12 +41,14 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
     private readonly ILogger<PointsStakingService> _logger;
     private readonly ITokenStakingService _tokenStakingService;
     private readonly ChainOption _chainOption;
+    private readonly ISecretProvider _secretProvider;
 
     public PointsStakingService(IOptionsSnapshot<ProjectItemOptions> projectItemOptions, IObjectMapper objectMapper,
         IPointsStakingProvider pointsStakingProvider, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
         ContractProvider contractProvider, IOptionsSnapshot<ProjectKeyPairInfoOptions> projectKeyPairInfoOptions,
         IClusterClient clusterClient, IDistributedEventBus distributedEventBus, ILogger<PointsStakingService> logger,
-        ITokenStakingService tokenStakingService, IOptionsSnapshot<ChainOption> chainOption)
+        ITokenStakingService tokenStakingService, IOptionsSnapshot<ChainOption> chainOption,
+        ISecretProvider secretProvider)
     {
         _objectMapper = objectMapper;
         _pointsStakingProvider = pointsStakingProvider;
@@ -54,6 +57,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         _distributedEventBus = distributedEventBus;
         _logger = logger;
         _tokenStakingService = tokenStakingService;
+        _secretProvider = secretProvider;
         _chainOption = chainOption.Value;
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
         _earnContractOptions = earnContractOptions.Value;
@@ -141,15 +145,22 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         pointsPoolsDtos.ForEach(dto =>
         {
             dto.TotalStake = pointsPoolStakeSumDic.TryGetValue(dto.PoolId, out var totalStake) ? totalStake : "0";
-            dto.Staked = addressStakeAmountDic.TryGetValue(GuidHelper.GenerateId(input.Address, dto.PoolId), out var staked) ? staked : "0";
-            dto.Earned = addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(input.Address, dto.PoolId), out var earned) ? earned : "0";
+            dto.Staked =
+                addressStakeAmountDic.TryGetValue(GuidHelper.GenerateId(input.Address, dto.PoolId), out var staked)
+                    ? staked
+                    : "0";
+            dto.Earned =
+                addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(input.Address, dto.PoolId), out var earned)
+                    ? earned
+                    : "0";
         });
-        return input.Type == PoolQueryType.Staked ? pointsPoolsDtos.Where(x => x.Staked != "0").ToList() : pointsPoolsDtos;
+        return input.Type == PoolQueryType.Staked
+            ? pointsPoolsDtos.Where(x => x.Staked != "0").ToList()
+            : pointsPoolsDtos;
     }
 
     public async Task<ClaimAmountSignatureDto> ClaimAmountSignatureAsync(ClaimAmountSignatureInput input)
     {
-        
         if (!_chainOption.AccountPrivateKey.TryGetValue(ContractConstants.SenderName, out var privateKey))
         {
             throw new UserFriendlyException("invalid pool");
@@ -157,11 +168,12 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
         var addressStakeRewardsDic = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(input.Address);
 
-        
-        if (!addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(input.Address, input.PoolId), out var earned) || Math.Floor(decimal.Parse(earned) * 100000000) - input.Amount < 0)
-        {
-            throw new UserFriendlyException("invalid amount");
-        }
+
+        // if (!addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(input.Address, input.PoolId), out var earned) ||
+        //     Math.Floor(decimal.Parse(earned) * 100000000) - input.Amount < 0)
+        // {
+        //     throw new UserFriendlyException("invalid amount");
+        // }
 
         var seed = Guid.NewGuid().ToString();
         var signature = GenerateSignature(ByteArrayHelper.HexStringToByteArray(privateKey),
@@ -174,8 +186,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             Signature = signature
         };
     }
-
-    private string GenerateSignature(byte[] privateKey, Hash poolId, long amount, Address account, Hash seed)
+    private ByteString GenerateSignature(byte[] privateKey, Hash poolId, long amount, Address account, Hash seed)
     {
         var data = new ClaimInput
         {
@@ -186,7 +197,20 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         };
         var dataHash = HashHelper.ComputeFrom(data);
         var signature = CryptoHelper.SignWithPrivateKey(privateKey, dataHash.ToByteArray());
-        return signature.ToHex();
+        return ByteStringHelper.FromHexString(signature.ToHex());
+    }
+    private async Task<string> GenerateSignatureByPubKeyAsync(string pubKey, Hash poolId, long amount, Address account,
+        Hash seed)
+    {
+        var data = new ClaimInput
+        {
+            PoolId = poolId,
+            Account = account,
+            Amount = amount,
+            Seed = seed
+        };
+        var dataHash = HashHelper.ComputeFrom(data);
+        return await _secretProvider.GetSignatureFromHashAsync("", dataHash);
     }
 
     public async Task<string> ClaimAsync(PointsClaimInput input)
@@ -215,10 +239,11 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             throw new UserFriendlyException("Invalid transaction");
         }
 
+        var recoverAddressFromSignature = RecoverAddressFromSignature(claimInput);
         var poolId = claimInput.PoolId.ToHex();
         var address = claimInput.Account.ToBase58();
         var id = GuidHelper.GenerateId(address, poolId);
-        var claimAmount = - claimInput.Amount;
+        var claimAmount = -claimInput.Amount;
         var rewardsSumDto = new PointsStakeRewardsSumDto()
         {
             Id = id,
@@ -242,6 +267,39 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
         return transactionOutput.TransactionId;
+    }
+
+    private Address RecoverAddressFromSignature(ClaimInput input)
+    {
+        if (!_chainOption.AccountPrivateKey.TryGetValue(ContractConstants.SenderName, out var privateKey))
+        {
+            throw new UserFriendlyException("invalid pool");
+        }
+
+
+
+        // if (!addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(input.Address, input.PoolId), out var earned) ||
+        //     Math.Floor(decimal.Parse(earned) * 100000000) - input.Amount < 0)
+        // {
+        //     throw new UserFriendlyException("invalid amount");
+        // }
+        
+        
+        var computedHash = ComputeConfirmInputHash(input);
+        CryptoHelper.RecoverPublicKey(input.Signature.ToByteArray(), computedHash.ToByteArray(), out var publicKey);
+        var hex = publicKey.ToHex();
+        return Address.FromPublicKey(publicKey);
+    }
+
+    private Hash ComputeConfirmInputHash(ClaimInput input)
+    {
+        return HashHelper.ComputeFrom(new ClaimInput
+        {
+            PoolId = input.PoolId,
+            Account = input.Account,
+            Amount = input.Amount,
+            Seed = input.Seed,
+        }.ToByteArray());
     }
 
     public async Task<EarlyStakeInfoDto> GetEarlyStakeInfoAsync(GetEarlyStakeInfoInput input)

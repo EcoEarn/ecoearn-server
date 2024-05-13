@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -33,6 +32,13 @@ public interface IHttpProvider : ISingletonDependency
         Dictionary<string, string> param = null,
         string body = null,
         Dictionary<string, string> header = null, bool withInfoLog = false, bool withDebugLog = true);
+
+    Task<T> InvokeAsync<T>(HttpMethod method, string url,
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
+        string body = null,
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withInfoLog = false,
+        bool withDebugLog = true);
 
     Task<HttpResponseMessage> InvokeResponseAsync(HttpMethod method, string url,
         Dictionary<string, string> pathParams = null,
@@ -123,6 +129,22 @@ public class HttpProvider : IHttpProvider
         }
 
         return content;
+    }
+
+    public async Task<T> InvokeAsync<T>(HttpMethod method, string url, Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
+        string body = null, Dictionary<string, string> header = null, JsonSerializerSettings settings = null,
+        bool withInfoLog = false, bool withDebugLog = true)
+    {
+        var resp = await InvokeAsync(method, url, pathParams, param, body, header, withInfoLog, withDebugLog);
+        try
+        {
+            return JsonConvert.DeserializeObject<T>(resp, settings ?? DefaultJsonSettings);
+        }
+        catch (Exception ex)
+        {
+            throw new HttpRequestException($"Error deserializing service [{url}] response body: {resp}", ex);
+        }
     }
 
     public async Task<HttpResponseMessage> InvokeResponseAsync(HttpMethod method, string url,
