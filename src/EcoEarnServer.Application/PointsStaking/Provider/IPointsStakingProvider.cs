@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using EcoEarnServer.Common;
 using EcoEarnServer.Common.GraphQL;
 using EcoEarnServer.PointsPool;
 using EcoEarnServer.PointsSnapshot;
@@ -124,7 +125,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         var (total, list) = await _addressStakeSumRepository.GetListAsync(Filter,
             skip: 0, limit: 5000);
         _logger.LogInformation("GetAddressStakeAmountDicAsync: {total}", total);
-        return list.ToDictionary(x => x.Address, x => x.StakeAmount);
+        return list.ToDictionary(x => GuidHelper.GenerateId(x.Address, x.PoolId), x => x.StakeAmount);
     }
 
     public async Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address)
@@ -139,6 +140,6 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         var (total, list) = await _addressStakeRewardsRepository.GetListAsync(Filter,
             skip: 0, limit: 5000);
         _logger.LogInformation("GetAddressStakeRewardsDicAsync: {total}", total);
-        return list.ToDictionary(x => x.Address, x => x.Rewards);
+        return list.ToDictionary(x => GuidHelper.GenerateId(x.Address, x.PoolId), x => x.Rewards);
     }
 }

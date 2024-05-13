@@ -67,7 +67,7 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                 var value = property != null ? property.GetValue(pointsSnapshot) : null;
                 if (value == null)
                 {
-                    _logger.LogError("get address stake amount fail, id: {id}", id);
+                    _logger.LogWarning("get address stake amount fail, id: {id}", id);
                     continue;
                 }
 

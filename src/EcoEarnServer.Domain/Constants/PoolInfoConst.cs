@@ -14,7 +14,10 @@ public class PoolInfoConst
         { "XPSGR-6", "SixSymbolAmount" },
         { "XPSGR-7", "SevenSymbolAmount" },
         { "XPSGR-8", "EightSymbolAmount" },
-        { "XPSGR-9", "NineSymbolAmount" }
+        { "XPSGR-9", "NineSymbolAmount" },
+        { "XPSGR-10", "TenSymbolAmount" },
+        { "XPSGR-11", "ElevenSymbolAmount" },
+        { "XPSGR-12", "TwelveSymbolAmount" },
     };
 
     public static readonly Dictionary<string, string> SymbolPoolIndexDic = new()
@@ -27,7 +30,10 @@ public class PoolInfoConst
         { "SixSymbolAmount", "XPSGR-6" },
         { "SevenSymbolAmount", "XPSGR-7" },
         { "EightSymbolAmount", "XPSGR-8" },
-        { "NineSymbolAmount", "XPSGR-9" }
+        { "NineSymbolAmount", "XPSGR-9" },
+        { "TenSymbolAmount", "XPSGR-10" },
+        { "ElevenSymbolAmount", "XPSGR-11" },
+        { "TwelveSymbolAmount", "XPSGR-12" },
     };
     
     public static readonly Dictionary<string, string> ProjectOwnerDic = new()
