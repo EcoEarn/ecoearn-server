@@ -9,4 +9,5 @@ public class PointsPoolsDto
     public string TotalStake { get; set; }
     public string Earned { get; set; }
     public string Staked { get; set; }
+    public int Decimal { get; set; } = 8;
 }

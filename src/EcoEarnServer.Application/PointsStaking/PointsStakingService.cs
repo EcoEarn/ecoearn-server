@@ -157,7 +157,8 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
         var addressStakeRewardsDic = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(input.Address);
 
-        if (!addressStakeRewardsDic.TryGetValue(input.Address, out var earned) || long.Parse(earned) - input.Amount < 0)
+        
+        if (!addressStakeRewardsDic.TryGetValue(input.Address, out var earned) || Math.Floor(decimal.Parse(earned) * 100000000) - input.Amount < 0)
         {
             throw new UserFriendlyException("invalid amount");
         }
