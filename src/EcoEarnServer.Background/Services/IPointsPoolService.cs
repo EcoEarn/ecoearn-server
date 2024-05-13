@@ -95,7 +95,7 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
 
                 //record the rewards of the previous day
                 
-                var rewards = decimal.Round(decimal.Parse(value.ToString()) / decimal.Parse(pointsPoolStakeSumDto.StakeAmount) * pointsPoolStakeSumDto.DailyReward, 8);
+                var rewards = Math.Floor(decimal.Parse(value.ToString()) / decimal.Parse(pointsPoolStakeSumDto.StakeAmount) * pointsPoolStakeSumDto.DailyReward * 100000000) / 100000000;
                 var rewardsId = GuidHelper.GenerateId(pointsSnapshot.Address, poolIndex, yesterday);
                 var rewardsDto = new PointsStakeRewardsDto
                 {
