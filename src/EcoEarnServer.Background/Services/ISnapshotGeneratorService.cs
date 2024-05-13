@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using EcoEarnServer.Background.Dtos;
+using EcoEarnServer.Common;
 using EcoEarnServer.Grains.Grain.PointsSnapshot;
 using EcoEarnServer.PointsSnapshot;
 using Hangfire;
@@ -36,6 +37,7 @@ public class SnapshotGeneratorService : ISnapshotGeneratorService, ITransientDep
     [AutomaticRetry(Attempts = 20, DelaysInSeconds = new[] { 40 })]
     public async Task GenerateSnapshotAsync(PointsListDto dto, string snapshotDate)
     {
+        _logger.LogInformation("GenerateSnapshotAsync index:{index}", CommonConstant.HangfireIndex);
         var recordId = $"{dto.Address}-{snapshotDate}";
         try
         {
@@ -55,7 +57,7 @@ public class SnapshotGeneratorService : ISnapshotGeneratorService, ITransientDep
             }
 
             var recordEto = _objectMapper.Map<PointsSnapshotDto, PointsSnapshotEto>(result.Data);
-            await _distributedEventBus.PublishAsync(recordEto, false, false);
+            await _distributedEventBus.PublishAsync(recordEto);
             _logger.LogInformation("end generate snapshot, recordId:{recordId}", recordId);
         }
         catch (Exception e)

@@ -138,13 +138,13 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
             }
 
             var pointsPoolAddressStakeListEto = new PointsPoolAddressStakeListEto { EventDataList = stakeListEto };
-            await _distributedEventBus.PublishAsync(pointsPoolAddressStakeListEto, false, false);
+            await _distributedEventBus.PublishAsync(pointsPoolAddressStakeListEto);
 
             var rewardsListEto = new PointsStakeRewardsListEto { EventDataList = rewardsList };
-            await _distributedEventBus.PublishAsync(rewardsListEto, false, false);
+            await _distributedEventBus.PublishAsync(rewardsListEto);
 
             var rewardsSumListEto = new PointsStakeRewardsSumListEto { EventDataList = rewardsSumList };
-            await _distributedEventBus.PublishAsync(rewardsSumListEto, false, false);
+            await _distributedEventBus.PublishAsync(rewardsSumListEto);
         }
         catch (Exception e)
         {
@@ -185,6 +185,6 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         }
 
         var rewardsSumListEto = new PointsPoolStakeSumListEto { EventDataList = stakeSumList };
-        await _distributedEventBus.PublishAsync(rewardsSumListEto, false, false);
+        await _distributedEventBus.PublishAsync(rewardsSumListEto);
     }
 }

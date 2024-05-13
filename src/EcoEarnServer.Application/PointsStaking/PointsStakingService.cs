@@ -237,7 +237,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
         var eto = _objectMapper.Map<PointsStakeRewardsSumDto, PointsStakeRewardsSumEto>(result.Data);
         var listEto = new PointsStakeRewardsSumListEto { EventDataList = new List<PointsStakeRewardsSumEto> { eto } };
-        await _distributedEventBus.PublishAsync(listEto, false, false);
+        await _distributedEventBus.PublishAsync(listEto);
 
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
         return transactionOutput.TransactionId;
