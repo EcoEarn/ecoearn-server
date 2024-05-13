@@ -169,11 +169,11 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         var addressStakeRewardsDic = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(input.Address);
 
 
-        // if (!addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(input.Address, input.PoolId), out var earned) ||
-        //     Math.Floor(decimal.Parse(earned) * 100000000) - input.Amount < 0)
-        // {
-        //     throw new UserFriendlyException("invalid amount");
-        // }
+        if (!addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(input.Address, input.PoolId), out var earned) ||
+            Math.Floor(decimal.Parse(earned) * 100000000) - input.Amount < 0)
+        {
+            throw new UserFriendlyException("invalid amount");
+        }
 
         var seed = Guid.NewGuid().ToString();
         var signature = GenerateSignature(ByteArrayHelper.HexStringToByteArray(privateKey),
@@ -186,6 +186,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             Signature = signature
         };
     }
+
     private ByteString GenerateSignature(byte[] privateKey, Hash poolId, long amount, Address account, Hash seed)
     {
         var data = new ClaimInput
@@ -199,6 +200,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         var signature = CryptoHelper.SignWithPrivateKey(privateKey, dataHash.ToByteArray());
         return ByteStringHelper.FromHexString(signature.ToHex());
     }
+
     private async Task<string> GenerateSignatureByPubKeyAsync(string pubKey, Hash poolId, long amount, Address account,
         Hash seed)
     {
@@ -239,7 +241,6 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             throw new UserFriendlyException("Invalid transaction");
         }
 
-        var recoverAddressFromSignature = RecoverAddressFromSignature(claimInput);
         var poolId = claimInput.PoolId.ToHex();
         var address = claimInput.Account.ToBase58();
         var id = GuidHelper.GenerateId(address, poolId);
@@ -267,39 +268,6 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
         return transactionOutput.TransactionId;
-    }
-
-    private Address RecoverAddressFromSignature(ClaimInput input)
-    {
-        if (!_chainOption.AccountPrivateKey.TryGetValue(ContractConstants.SenderName, out var privateKey))
-        {
-            throw new UserFriendlyException("invalid pool");
-        }
-
-
-
-        // if (!addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(input.Address, input.PoolId), out var earned) ||
-        //     Math.Floor(decimal.Parse(earned) * 100000000) - input.Amount < 0)
-        // {
-        //     throw new UserFriendlyException("invalid amount");
-        // }
-        
-        
-        var computedHash = ComputeConfirmInputHash(input);
-        CryptoHelper.RecoverPublicKey(input.Signature.ToByteArray(), computedHash.ToByteArray(), out var publicKey);
-        var hex = publicKey.ToHex();
-        return Address.FromPublicKey(publicKey);
-    }
-
-    private Hash ComputeConfirmInputHash(ClaimInput input)
-    {
-        return HashHelper.ComputeFrom(new ClaimInput
-        {
-            PoolId = input.PoolId,
-            Account = input.Account,
-            Amount = input.Amount,
-            Seed = input.Seed,
-        }.ToByteArray());
     }
 
     public async Task<EarlyStakeInfoDto> GetEarlyStakeInfoAsync(GetEarlyStakeInfoInput input)
