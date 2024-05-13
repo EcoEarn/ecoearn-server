@@ -68,11 +68,12 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             var tokenPoolsDto = _objectMapper.Map<TokenPoolsIndexerDto, TokenPoolsDto>(tokenPoolsIndexerDto);
             var tokenPoolStakedSum = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
                 { PoolId = tokenPoolsDto.PoolId, ChainId = input.ChainId });
+            
+            tokenPoolsDto.YearlyRewards = YearlyBlocks * tokenPoolsIndexerDto.TokenPoolConfig.RewardPerBlock;
             if (tokenPoolStakedSum != 0)
             {
                 tokenPoolsDto.TotalStakeInUsd = (rate * tokenPoolStakedSum).ToString(CultureInfo.CurrentCulture);
                 tokenPoolsDto.TotalStake = tokenPoolStakedSum.ToString();
-                tokenPoolsDto.YearlyRewards = YearlyBlocks * tokenPoolsIndexerDto.TokenPoolConfig.RewardPerBlock;
                 tokenPoolsDto.AprMin = (double)tokenPoolsDto.YearlyRewards / tokenPoolStakedSum * 100;
                 tokenPoolsDto.AprMax = tokenPoolsDto.AprMin * 2;
             }
