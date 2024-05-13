@@ -170,7 +170,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
         return new ClaimAmountSignatureDto
         {
-            Seed = seed,
+            Seed = HashHelper.ComputeFrom(seed).ToHex(),
             Signature = signature
         };
     }
