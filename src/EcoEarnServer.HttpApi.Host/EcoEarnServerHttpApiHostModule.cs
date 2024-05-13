@@ -62,6 +62,7 @@ namespace EcoEarnServer
             Configure<ProjectKeyPairInfoOptions>(configuration.GetSection("ProjectKeyPairInfo"));
             Configure<TokenPoolIconsOptions>(configuration.GetSection("TokenPoolIcons"));
             Configure<LpPoolRateOptions>(configuration.GetSection("LpPoolRate"));
+            Configure<EcoEarnContractOptions>(configuration.GetSection("EcoEarnContract"));
 
             ConfigureConventionalControllers();
             // ConfigureAuthentication(context, configuration);

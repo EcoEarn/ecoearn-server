@@ -1,6 +1,8 @@
 using AutoMapper;
 using EcoEarnServer.Constants;
+using EcoEarnServer.Grains.Grain.PointsStakeRewards;
 using EcoEarnServer.Options;
+using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.Rewards.Dtos;
@@ -30,5 +32,6 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ReverseMap();
 
         CreateMap<RewardsListIndexerDto, RewardsListDto>().ReverseMap();
+        CreateMap<PointsStakeRewardsSumDto, PointsStakeRewardsSumEto>().ReverseMap();
     }
 }

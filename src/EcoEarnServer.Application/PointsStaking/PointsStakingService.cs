@@ -199,14 +199,14 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             transaction.MethodName == "ManagerForwardCall")
         {
             var managerForwardCallInput = ManagerForwardCallInput.Parser.ParseFrom(transaction.Params);
-            if (managerForwardCallInput.MethodName == "ApplyToBeAdvocate" &&
+            if (managerForwardCallInput.MethodName == "Claim" &&
                 managerForwardCallInput.ContractAddress.ToBase58() == _earnContractOptions.EcoEarnContractAddress)
             {
                 claimInput = ClaimInput.Parser.ParseFrom(managerForwardCallInput.Args);
             }
         }
         else if (transaction.To.ToBase58() == _earnContractOptions.EcoEarnContractAddress &&
-                 transaction.MethodName == "ApplyToBeAdvocate")
+                 transaction.MethodName == "Claim")
         {
             claimInput = ClaimInput.Parser.ParseFrom(transaction.Params);
         }
