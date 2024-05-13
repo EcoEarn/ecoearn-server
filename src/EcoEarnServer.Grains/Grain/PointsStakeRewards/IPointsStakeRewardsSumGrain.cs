@@ -9,7 +9,7 @@ namespace EcoEarnServer.Grains.Grain.PointsStakeRewards;
 
 public interface IPointsStakeRewardsSumGrain : IGrainWithStringKey
 {
-    Task<GrainResultDto<PointsStakeRewardsSumDto>> CreateOrUpdateAsync(PointsStakeRewardsSumDto input);
+    Task<GrainResultDto<PointsStakeRewardsSumDto>> CreateOrUpdateAsync(PointsStakeRewardsSumDto input, bool reSettle = false);
 }
 
 public class PointsStakeRewardsSumGrain : Grain<PointsStakeRewardsSumState>, IPointsStakeRewardsSumGrain
@@ -33,9 +33,9 @@ public class PointsStakeRewardsSumGrain : Grain<PointsStakeRewardsSumState>, IPo
         await base.OnDeactivateAsync();
     }
 
-    public async Task<GrainResultDto<PointsStakeRewardsSumDto>> CreateOrUpdateAsync(PointsStakeRewardsSumDto input)
+    public async Task<GrainResultDto<PointsStakeRewardsSumDto>> CreateOrUpdateAsync(PointsStakeRewardsSumDto input, bool reSettle = false)
     {
-        if (string.IsNullOrEmpty(State.Id))
+        if (string.IsNullOrEmpty(State.Id) && reSettle)
         {
             State = _objectMapper.Map<PointsStakeRewardsSumDto, PointsStakeRewardsSumState>(input);
             State.Id = this.GetPrimaryKeyString();

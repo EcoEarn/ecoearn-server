@@ -130,7 +130,7 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                     Address = pointsSnapshot.Address,
                 };
                 var rewardsSumGrain = _clusterClient.GetGrain<IPointsStakeRewardsSumGrain>(id);
-                var rewardsSumResult = await rewardsSumGrain.CreateOrUpdateAsync(rewardsSumDto);
+                var rewardsSumResult = await rewardsSumGrain.CreateOrUpdateAsync(rewardsSumDto, true);
 
                 if (!rewardsSumResult.Success)
                 {
