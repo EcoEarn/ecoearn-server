@@ -27,16 +27,18 @@ public class RewardsService : IRewardsService, ISingletonDependency
     private readonly TokenPoolIconsOptions _tokenPoolIconsOptions;
     private readonly IPointsStakingProvider _pointsStakingProvider;
     private readonly ITokenStakingProvider _tokenStakingProvider;
+    private readonly LpPoolRateOptions _lpPoolRateOptions;
 
     public RewardsService(IRewardsProvider rewardsProvider, IObjectMapper objectMapper, ILogger<RewardsService> logger,
         IOptionsSnapshot<TokenPoolIconsOptions> tokenPoolIconsOptions, IPointsStakingProvider pointsStakingProvider,
-        ITokenStakingProvider tokenStakingProvider)
+        ITokenStakingProvider tokenStakingProvider, IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions)
     {
         _rewardsProvider = rewardsProvider;
         _objectMapper = objectMapper;
         _logger = logger;
         _pointsStakingProvider = pointsStakingProvider;
         _tokenStakingProvider = tokenStakingProvider;
+        _lpPoolRateOptions = lpPoolRateOptions.Value;
         _tokenPoolIconsOptions = tokenPoolIconsOptions.Value;
     }
 
@@ -48,17 +50,22 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var poolsIdDic = await GetPoolIdDicAsync(result);
 
+        
         foreach (var rewardsListDto in result)
         {
             rewardsListDto.TokenIcon =
                 _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(rewardsListDto.PoolId, out var icons)
                     ? icons
                     : new List<string>();
+            
             if (!poolsIdDic.TryGetValue(rewardsListDto.PoolId, out var poolData))
             {
                 continue;
             }
-
+            rewardsListDto.Rate =
+                _lpPoolRateOptions.LpPoolRateDic.TryGetValue(poolData.StakeTokenContract, out var poolRate)
+                    ? poolRate
+                    : 0;
             rewardsListDto.TokenName = poolData.PointsName;
             rewardsListDto.ProjectOwner = "Schrodinger";
         }
@@ -70,18 +77,18 @@ public class RewardsService : IRewardsService, ISingletonDependency
     private async Task<Dictionary<string, PoolIdDataDto>> GetPoolIdDicAsync(List<RewardsListDto> result)
     {
         var pointsPoolIds = result
-            .Where(x => x.PooType == PoolTypeEnums.Points)
+            .Where(x => x.PoolType == PoolTypeEnums.Points)
             .Select(x => x.PoolId)
             .ToList();
         var tokenPoolIds = result
-            .Where(x => x.PooType is PoolTypeEnums.Token or PoolTypeEnums.Lp)
+            .Where(x => x.PoolType is PoolTypeEnums.Token or PoolTypeEnums.Lp)
             .Select(x => x.PoolId)
             .ToList();
         var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("", pointsPoolIds);
         var poolIdDic = pointsPoolsIndexerDtos.ToDictionary(x => x.PoolId, x => new PoolIdDataDto
         {
             PointsName = x.PointsName,
-            DappId = x.DappId
+            DappId = x.DappId,
         });
         var input = new GetTokenPoolsInput()
         {
@@ -92,7 +99,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var tokenPoolIdDic = tokenPoolsIndexerDtos.ToDictionary(x => x.PoolId, x => new PoolIdDataDto
         {
             DappId = x.DappId,
-            PointsName = x.TokenPoolConfig.StakingToken
+            PointsName = x.TokenPoolConfig.StakingToken,
+            StakeTokenContract = x.TokenPoolConfig.StakeTokenContract,
         });
         foreach (var poolIdDataDto in tokenPoolIdDic)
         {
