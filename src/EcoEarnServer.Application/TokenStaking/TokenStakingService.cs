@@ -66,15 +66,16 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             var rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
 
             var tokenPoolsDto = _objectMapper.Map<TokenPoolsIndexerDto, TokenPoolsDto>(tokenPoolsIndexerDto);
-            var tokenPoolStakedSum = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
+            var tokenPoolStakedSumLong = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
                 { PoolId = tokenPoolsDto.PoolId, ChainId = input.ChainId });
-            
+
+            var tokenPoolStakedSum = (double) tokenPoolStakedSumLong;
             tokenPoolsDto.YearlyRewards = YearlyBlocks * tokenPoolsIndexerDto.TokenPoolConfig.RewardPerBlock;
             if (tokenPoolStakedSum != 0)
             {
                 tokenPoolsDto.TotalStakeInUsd = (rate * tokenPoolStakedSum).ToString(CultureInfo.CurrentCulture);
-                tokenPoolsDto.TotalStake = tokenPoolStakedSum.ToString();
-                tokenPoolsDto.AprMin = (double)tokenPoolsDto.YearlyRewards / tokenPoolStakedSum * 100;
+                tokenPoolsDto.TotalStake = tokenPoolStakedSum.ToString(CultureInfo.InvariantCulture);
+                tokenPoolsDto.AprMin = (double)tokenPoolsDto.YearlyRewards / tokenPoolStakedSum;
                 tokenPoolsDto.AprMax = tokenPoolsDto.AprMin * 2;
             }
 
@@ -160,7 +161,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             Staked = stakedInfoIndexerDtos.StakedAmount.ToString(),
             StakeSymbol = stakedInfoIndexerDtos.StakingToken,
             StakedTime = stakedInfoIndexerDtos.StakedTime,
-            UnlockTime = stakedInfoIndexerDtos.StakedTime + stakedInfoIndexerDtos.Period * 86400000,
+            UnlockTime = stakedInfoIndexerDtos.StakedTime + stakedInfoIndexerDtos.Period,
             StakeApr = (double)yearlyRewards / tokenPoolStakedSum * 100 *
                        (1 + (double)stakedInfoIndexerDtos.Period / 360),
             Period = stakedInfoIndexerDtos.Period,
