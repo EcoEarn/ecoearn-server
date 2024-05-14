@@ -158,6 +158,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         var stakeInfoDto = new EarlyStakeInfoDto
         {
             StakeId = stakedInfoIndexerDtos.StakeId,
+            PoolId = tokenPoolIndexerDto.PoolId,
             Staked = stakedInfoIndexerDtos.StakedAmount.ToString(),
             StakeSymbol = stakedInfoIndexerDtos.StakingToken,
             StakedTime = stakedInfoIndexerDtos.StakedTime,

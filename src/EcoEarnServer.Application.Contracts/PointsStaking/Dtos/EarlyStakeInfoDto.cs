@@ -4,6 +4,7 @@ public class EarlyStakeInfoDto
 {
     public string Staked { get; set; }
     public string StakeId { get; set; }
+    public string PoolId { get; set; }
     public string StakeSymbol { get; set; }
     public long StakedTime { get; set; }
     public long UnlockTime { get; set; }
