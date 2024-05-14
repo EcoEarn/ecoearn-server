@@ -85,7 +85,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
     {
         try
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<TokenStakedQuery>(new GraphQLRequest
+            var indexerResult = await _graphQlHelper.QueryAsync<TokenStakedListQuery>(new GraphQLRequest
             {
                 Query =
                     @"query($tokenName:String!, $address:String!, $poolIds:[String!]!, $skipCount:Int!,$maxResultCount:Int!){
@@ -121,7 +121,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                 }
             });
 
-            return indexerResult.GetTokenStakedInfo;
+            return indexerResult.GetStakedInfoList.Data[0];
         }
         catch (Exception e)
         {
@@ -197,7 +197,6 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                         data{
                         dappId,
                         poolId,
-                        poolAddress,
                         amount,
                         tokenPoolConfig{
                             rewardToken

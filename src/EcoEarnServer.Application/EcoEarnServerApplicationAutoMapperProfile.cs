@@ -21,7 +21,9 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
         CreateMap<UserGrainDto, UserInformationEto>().ReverseMap();
         CreateMap<ProjectItem, ProjectItemListDto>().ReverseMap();
         CreateMap<PointsPoolsIndexerDto, PointsPoolsDto>()
-            .ForMember(t => t.PoolName, m => m.MapFrom(f => f.PointsName));
+            .ForMember(t => t.PoolName, m => m.MapFrom(f => f.PointsName))
+            .ForPath(t => t.RewardsTokenName, m => m.MapFrom(f => f.PointsPoolConfig.RewardToken));
+
 
         CreateMap<TokenPoolsIndexerDto, TokenPoolsDto>()
             .ForMember(t => t.PoolId, m => m.MapFrom(f => f.PoolId))

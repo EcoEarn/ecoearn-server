@@ -147,13 +147,13 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         }
     }
 
-    public async Task<EarlyStakeInfoDto> GetStakedInfoAsync(string tokenName, string address)
+    public async Task<EarlyStakeInfoDto> GetStakedInfoAsync(string tokenName, string address, string chainId)
     {
         var stakedInfoIndexerDtos = await _tokenStakingProvider.GetStakedInfoAsync(tokenName, address);
         var tokenPoolIndexerDto = await _tokenStakingProvider.GetTokenPoolByTokenAsync(tokenName);
         var yearlyRewards = YearlyBlocks * tokenPoolIndexerDto.TokenPoolConfig.RewardPerBlock;
         var tokenPoolStakedSum = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
-            { PoolId = tokenPoolIndexerDto.PoolId });
+            { PoolId = tokenPoolIndexerDto.PoolId, ChainId = chainId});
         var stakeInfoDto = new EarlyStakeInfoDto
         {
             StakeId = stakedInfoIndexerDtos.StakeId,

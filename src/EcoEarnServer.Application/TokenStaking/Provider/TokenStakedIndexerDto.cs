@@ -28,7 +28,7 @@ public class TokenStakedIndexerDto
 
 public class TokenStakedQuery
 {
-    public TokenStakedIndexerDto GetTokenStakedInfo { get; set; }
+    public TokenStakedIndexerDto GetStakedInfoList { get; set; }
 }
 
 public class TokenStakedListQuery
