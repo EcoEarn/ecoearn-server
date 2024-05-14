@@ -50,18 +50,21 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var poolsIdDic = await GetPoolIdDicAsync(result);
 
-        
+
         foreach (var rewardsListDto in result)
         {
             rewardsListDto.TokenIcon =
                 _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(rewardsListDto.PoolId, out var icons)
                     ? icons
-                    : new List<string>();
-            
+                    : rewardsListDto.PoolType == PoolTypeEnums.Points
+                        ? new List<string> { "" }
+                        : new List<string> { "", "" };
+
             if (!poolsIdDic.TryGetValue(rewardsListDto.PoolId, out var poolData))
             {
                 continue;
             }
+
             rewardsListDto.Rate =
                 _lpPoolRateOptions.LpPoolRateDic.TryGetValue(poolData.StakeTokenContract, out var poolRate)
                     ? poolRate
@@ -106,6 +109,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             poolIdDic[poolIdDataDto.Key] = poolIdDataDto.Value;
         }
+
         return poolIdDic;
     }
 

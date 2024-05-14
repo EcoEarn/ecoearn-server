@@ -87,7 +87,8 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
             }",
                 Variables = new
                 {
-                    name = string.IsNullOrEmpty(name) ? "" : name, poolIds = poolIds ?? new List<string>(), skipCount = 0, maxResultCount = 5000
+                    name = string.IsNullOrEmpty(name) ? "" : name, poolIds = poolIds ?? new List<string>(),
+                    skipCount = 0, maxResultCount = 5000
                 }
             });
 
@@ -115,6 +116,11 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
 
     public async Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address)
     {
+        if (string.IsNullOrEmpty(address))
+        {
+            return new Dictionary<string, string>();
+        }
+
         var mustQuery = new List<Func<QueryContainerDescriptor<PointsPoolAddressStakeIndex>, QueryContainer>>();
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
@@ -130,6 +136,11 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
 
     public async Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address)
     {
+        if (string.IsNullOrEmpty(address))
+        {
+            return new Dictionary<string, string>();
+        }
+
         var mustQuery = new List<Func<QueryContainerDescriptor<PointsStakeRewardsSumIndex>, QueryContainer>>();
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
