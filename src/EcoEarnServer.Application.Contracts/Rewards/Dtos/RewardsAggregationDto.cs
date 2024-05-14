@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace EcoEarnServer.Rewards.Dtos;
 
 public class RewardsAggregationDto
@@ -14,10 +16,16 @@ public class PointsPoolAggDto
     public string RewardsTotal { get; set; }
     public string RewardsTotalInUsd { get; set; } = "0";
     public string RewardsTokenName { get; set; }
+    public int Decimal { get; set; } = 8;
+    public List<string> StakeClaimIds { get; set; }
+    public List<string> WithDrawClaimIds { get; set; }
 }
 
 public class TokenPoolAggDto
 {
     public string RewardsTotal { get; set; }
     public string RewardsTotalInUsd { get; set; } = "0";
+    public int Decimal { get; set; } = 8;
+    public string RewardsTokenName { get; set; }
+    public List<string> WithDrawClaimIds { get; set; }
 }

@@ -168,6 +168,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         pointsPoolAggDto.RewardsTotal = unlockList.Select(x => BigInteger.Parse(x.ClaimedAmount))
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString();
         pointsPoolAggDto.RewardsTokenName = stakingList.First().ClaimedSymbol;
+        pointsPoolAggDto.StakeClaimIds = stakingList.Select(x => x.ClaimId).ToList();
+        pointsPoolAggDto.WithDrawClaimIds = unlockList.Select(x => x.ClaimId).ToList();
         return pointsPoolAggDto;
     }
 
@@ -195,7 +197,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         tokenPoolAggDto.RewardsTotal = unlockList.Select(x => BigInteger.Parse(x.ClaimedAmount))
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString();
+        tokenPoolAggDto.RewardsTokenName = stakingList.First().ClaimedSymbol;
 
+        tokenPoolAggDto.WithDrawClaimIds = unlockList.Select(x => x.ClaimId).ToList();
         return tokenPoolAggDto;
     }
 
@@ -223,7 +227,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         tokenPoolAggDto.RewardsTotal = unlockList.Select(x => BigInteger.Parse(x.ClaimedAmount))
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString();
-
+        tokenPoolAggDto.WithDrawClaimIds = unlockList.Select(x => x.ClaimId).ToList();
+        tokenPoolAggDto.RewardsTokenName = stakingList.First().ClaimedSymbol;
         return tokenPoolAggDto;
     }
 
