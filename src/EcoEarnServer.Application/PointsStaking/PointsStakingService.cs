@@ -272,6 +272,6 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
     public async Task<EarlyStakeInfoDto> GetEarlyStakeInfoAsync(GetEarlyStakeInfoInput input)
     {
-        return await _tokenStakingService.GetStakedInfoAsync(input.TokenName);
+        return await _tokenStakingService.GetStakedInfoAsync(input.TokenName, input.Address);
     }
 }

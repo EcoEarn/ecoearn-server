@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using EcoEarnServer.Common.GraphQL;
+using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.TokenStaking.Dtos;
 using GraphQL;
 using Microsoft.Extensions.Logging;
@@ -13,7 +14,7 @@ namespace EcoEarnServer.TokenStaking.Provider;
 public interface ITokenStakingProvider
 {
     Task<List<TokenPoolsIndexerDto>> GetTokenPoolsAsync(GetTokenPoolsInput input);
-    Task<TokenStakedIndexerDto> GetStakedInfoAsync(string tokenName);
+    Task<TokenStakedIndexerDto> GetStakedInfoAsync(string tokenName, string address);
 
     Task<Dictionary<string, TokenStakedIndexerDto>> GetAddressStakedInPoolDicAsync(List<string> pools, string address);
     Task<TokenPoolsIndexerDto> GetTokenPoolByTokenAsync(string tokenName);
@@ -67,7 +68,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                 Variables = new
                 {
                     tokenName = "", poolType = input.PoolType, skipCount = 0, maxResultCount = 5000,
-                    poolIds = input.PoolIds
+                    poolIds = input.PoolIds ?? new List<string>()
                 }
             });
 
@@ -80,15 +81,15 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
         }
     }
 
-    public async Task<TokenStakedIndexerDto> GetStakedInfoAsync(string tokenName)
+    public async Task<TokenStakedIndexerDto> GetStakedInfoAsync(string tokenName, string address)
     {
         try
         {
             var indexerResult = await _graphQlHelper.QueryAsync<TokenStakedQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($tokenName:String!, $skipCount:Int!,$maxResultCount:Int!){
-                    getStakedInfoList(input: {tokenName:$tokenName,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($tokenName:String!, $address:String!, $poolIds:[String!]!, $skipCount:Int!,$maxResultCount:Int!){
+                    getStakedInfoList(input: {tokenName:$tokenName,address:$address,poolIds:$poolIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         stakeId,
@@ -115,7 +116,8 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    tokenName = tokenName, skipCount = 0, maxResultCount = 5000,
+                    tokenName = tokenName, address = address, poolIds = new List<string>(), skipCount = 0,
+                    maxResultCount = 5000,
                 }
             });
 
@@ -189,8 +191,8 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<TokenPoolsQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($tokenName:String!, $skipCount:Int!,$maxResultCount:Int!){
-                    getTokenPoolList(input: {tokenName:$tokenName,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($tokenName:String!, $poolType:PoolType!, $poolIds:[String!]!, $skipCount:Int!,$maxResultCount:Int!){
+                    getTokenPoolList(input: {tokenName:$tokenName,poolType:$poolType,poolIds:$poolIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         dappId,
@@ -219,7 +221,8 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    tokenName = tokenName, skipCount = 0, maxResultCount = 5000,
+                    tokenName = tokenName, poolType = PoolTypeEnums.All, poolIds = new List<string>(), skipCount = 0,
+                    maxResultCount = 5000,
                 }
             });
 
@@ -227,7 +230,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "GetPointsPools Indexer error");
+            _logger.LogError(e, "GetTokenPoolByTokenAsync Indexer error");
             return new TokenPoolsIndexerDto();
         }
     }

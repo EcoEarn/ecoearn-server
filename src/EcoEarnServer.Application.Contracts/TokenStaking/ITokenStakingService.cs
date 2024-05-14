@@ -9,5 +9,5 @@ public interface ITokenStakingService
 {
     Task<List<TokenPoolsDto>> GetTokenPoolsAsync(GetTokenPoolsInput input);
     Task<long> GetTokenPoolStakedSumAsync(GetTokenPoolStakedSumInput input);
-    Task<EarlyStakeInfoDto> GetStakedInfoAsync(string tokenName);
+    Task<EarlyStakeInfoDto> GetStakedInfoAsync(string tokenName, string address);
 }

@@ -87,7 +87,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
             }",
                 Variables = new
                 {
-                    name = string.IsNullOrEmpty(name) ? "" : name, poolIds = poolIds, skipCount = 0, maxResultCount = 5000
+                    name = string.IsNullOrEmpty(name) ? "" : name, poolIds = poolIds ?? new List<string>(), skipCount = 0, maxResultCount = 5000
                 }
             });
 
