@@ -4,16 +4,15 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using EcoEarnServer.Common;
-using EcoEarnServer.Constants;
 using EcoEarnServer.Options;
 using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.Rewards.Provider;
-using EcoEarnServer.TokenStaking;
 using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
@@ -42,11 +41,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
         _tokenPoolIconsOptions = tokenPoolIconsOptions.Value;
     }
 
-    public async Task<List<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input)
+    public async Task<PagedResultDto<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input)
     {
-        var rewardsIndexerList = await _rewardsProvider.GetRewardsListAsync(input.PoolType, input.Address,
+        var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(input.PoolType, input.Address,
             input.SkipCount, input.MaxResultCount, filterUnlocked: input.FilterUnlocked);
-        var result = _objectMapper.Map<List<RewardsListIndexerDto>, List<RewardsListDto>>(rewardsIndexerList);
+        var result =
+            _objectMapper.Map<List<RewardsListIndexerDto>, List<RewardsListDto>>(rewardsListIndexerResult.Data);
 
         var poolsIdDic = await GetPoolIdDicAsync(result);
 
@@ -74,7 +74,11 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }
 
 
-        return result;
+        return new PagedResultDto<RewardsListDto>
+        {
+            Items = result,
+            TotalCount = rewardsListIndexerResult.TotalCount
+        };
     }
 
     private async Task<Dictionary<string, PoolIdDataDto>> GetPoolIdDicAsync(List<RewardsListDto> result)
@@ -241,8 +245,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
         List<RewardsListIndexerDto> list;
         do
         {
-            list = await _rewardsProvider.GetRewardsListAsync(PoolTypeEnums.All, address, skipCount, maxResultCount,
+            var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(PoolTypeEnums.All, address, skipCount, maxResultCount,
                 filterWithdraw: true);
+            list = rewardsListIndexerResult.Data;
             var count = list.Count;
             res.AddRange(list);
             if (list.IsNullOrEmpty() || count < maxResultCount)

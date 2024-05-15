@@ -1,9 +1,9 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using EcoEarnServer.Rewards;
 using EcoEarnServer.Rewards.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 
 namespace EcoEarnServer.Controllers;
 
@@ -21,7 +21,7 @@ public class RewardsController : EcoEarnServerController
     }
 
     [HttpPost("list")]
-    public async Task<List<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input)
+    public async Task<PagedResultDto<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input)
     {
         return await _rewardsService.GetRewardsListAsync(input);
     }

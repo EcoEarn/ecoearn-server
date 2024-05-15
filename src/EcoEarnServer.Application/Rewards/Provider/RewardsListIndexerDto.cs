@@ -28,4 +28,5 @@ public class RewardsListQuery
 public class RewardsListIndexerResult
 {
     public List<RewardsListIndexerDto> Data { get; set; }
+    public long TotalCount { get; set; }
 }

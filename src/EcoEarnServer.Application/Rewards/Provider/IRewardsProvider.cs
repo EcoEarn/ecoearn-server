@@ -12,7 +12,7 @@ namespace EcoEarnServer.Rewards.Provider;
 
 public interface IRewardsProvider
 {
-    Task<List<RewardsListIndexerDto>> GetRewardsListAsync(PoolTypeEnums poolType, string address, int skipCount,
+    Task<RewardsListIndexerResult> GetRewardsListAsync(PoolTypeEnums poolType, string address, int skipCount,
         int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false);
 
     Task<List<string>> GetUnLockedStakeIdsAsync(List<string> stakeIds, string address);
@@ -29,12 +29,12 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         _logger = logger;
     }
 
-    public async Task<List<RewardsListIndexerDto>> GetRewardsListAsync(PoolTypeEnums poolType, string address,
+    public async Task<RewardsListIndexerResult> GetRewardsListAsync(PoolTypeEnums poolType, string address,
         int skipCount, int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false)
     {
         if (string.IsNullOrEmpty(address))
         {
-            return new List<RewardsListIndexerDto>();
+            return new RewardsListIndexerResult();
         }
 
         try
@@ -67,12 +67,12 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
                 }
             });
 
-            return indexerResult.GetClaimInfoList.Data;
+            return indexerResult.GetClaimInfoList;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "getClaimInfoList Indexer error");
-            return new List<RewardsListIndexerDto>();
+            return new RewardsListIndexerResult();
         }
     }
 
