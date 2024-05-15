@@ -54,13 +54,19 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
 
         if (handle == null)
         {
-            _logger.LogWarning("do not get lock, keys already exits.");
+            _logger.LogWarning("do not get settle lock, keys already exits.");
             return;
         }
 
+        if (!await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateSnapshotKey()))
+        {
+            _logger.LogInformation("today points snapshot has not ready.");
+            return;
+        }
+        
         if (await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateSettleKey(settleRewardsBeforeDays)))
         {
-            _logger.LogInformation("today has already created points snapshot.");
+            _logger.LogInformation("today has already settle points rewards.");
             return;
         }
 
