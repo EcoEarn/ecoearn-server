@@ -43,7 +43,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
     private readonly ChainOption _chainOption;
     private readonly ISecretProvider _secretProvider;
 
-    public PointsStakingService(IOptionsSnapshot<ProjectItemOptions> projectItemOptions, IObjectMapper objectMapper,
+    public PointsStakingService(IOptionsMonitor<ProjectItemOptions> projectItemOptions, IObjectMapper objectMapper,
         IPointsStakingProvider pointsStakingProvider, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
         ContractProvider contractProvider, IOptionsSnapshot<ProjectKeyPairInfoOptions> projectKeyPairInfoOptions,
         IClusterClient clusterClient, IDistributedEventBus distributedEventBus, ILogger<PointsStakingService> logger,
@@ -61,7 +61,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         _chainOption = chainOption.Value;
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
         _earnContractOptions = earnContractOptions.Value;
-        _projectItemOptions = projectItemOptions.Value;
+        _projectItemOptions = projectItemOptions.CurrentValue;
     }
 
     public async Task<List<ProjectItemListDto>> GetProjectItemListAsync()
