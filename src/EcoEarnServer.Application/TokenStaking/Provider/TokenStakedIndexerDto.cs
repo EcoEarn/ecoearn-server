@@ -24,6 +24,13 @@ public class TokenStakedIndexerDto
     public long CreateTime { get; set; }
     public long UpdateTime { get; set; }
     public PoolTypeEnums PoolType { get; set; }
+    public LockState LockState { get; set; }
+}
+
+public enum LockState
+{
+    Locking,
+    Unlock
 }
 
 public class TokenStakedQuery

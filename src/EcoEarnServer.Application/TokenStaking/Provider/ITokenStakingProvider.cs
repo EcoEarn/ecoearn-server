@@ -166,6 +166,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
     					createTime,
     					updateTime,
     					poolType,
+    					lockState,
                     }
                 }
             }",
