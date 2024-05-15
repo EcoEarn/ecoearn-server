@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using EcoEarnServer.Background.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -40,6 +41,8 @@ public class Program
     internal static IHostBuilder CreateHostBuilder(string[] args) =>
         Host.CreateDefaultBuilder(args)
             .ConfigureServices((hostContext, services) => { services.AddApplication<EcoEarnServerBackgroundModule>(); })
+            .ConfigureAppConfiguration((h, c) => c.AddJsonFile("apollo.appsettings.json"))
+            .UseApollo()
             .UseAutofac()
             .UseSerilog();
 }

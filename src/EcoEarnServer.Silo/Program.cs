@@ -42,6 +42,8 @@ public class Program
             {
                 services.AddApplication<EcoEarnServerOrleansSiloModule>();
             })
+            .ConfigureAppConfiguration((h, c) => c.AddJsonFile("apollo.appsettings.json"))
+            .UseApollo()
             .UseOrleansSnapshot()
             .UseAutofac()
             .UseSerilog();

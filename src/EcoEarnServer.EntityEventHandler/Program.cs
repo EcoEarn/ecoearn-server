@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using EcoEarnServer.EntityEventHandler.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,7 +23,7 @@ namespace EcoEarnServer.EntityEventHandler
 
             try
             {
-                Log.Information("Starting NFTMarket.EntityEventHandler.");
+                Log.Information("Starting EcoEarn.EntityEventHandler.");
                 await CreateHostBuilder(args).RunConsoleAsync();
                 return 0;
             }
@@ -44,6 +45,8 @@ namespace EcoEarnServer.EntityEventHandler
                 {
                     services.AddApplication<EcoEarnServerEntityEventHandlerModule>();
                 })
+                .ConfigureAppConfiguration((h, c) => c.AddJsonFile("apollo.appsettings.json"))
+                .UseApollo()
                 .UseAutofac()
                 .UseSerilog();
     }

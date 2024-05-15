@@ -23,6 +23,7 @@
         <Content Update="appsettings.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
+        <None Include="apollo.appsettings.json" />
     </ItemGroup>
 
     <ItemGroup>
