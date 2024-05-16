@@ -49,6 +49,6 @@ public class PointsPoolClaimRecordGrain : Grain<PointsPoolClaimRecordState>, IPo
 
     public async Task<PointsPoolClaimRecordDto> GetAsync()
     {
-        return State == null ? null : _objectMapper.Map<PointsPoolClaimRecordDto, PointsPoolClaimRecordState>(State);
+        return State.Id == null ? null : _objectMapper.Map<PointsPoolClaimRecordDto, PointsPoolClaimRecordState>(State);
     }
 }

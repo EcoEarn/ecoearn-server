@@ -18,6 +18,7 @@ using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.TokenStaking;
+using FluentAssertions.Extensions;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
@@ -199,11 +200,11 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
         //prevention of over claim
         var addressStakeRewardsDic = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(address);
-        if (!addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(address, poolId), out var earned) ||
-            Math.Floor(decimal.Parse(earned) * 100000000) - amount < 0 || amount < 0)
-        {
-            throw new UserFriendlyException("invalid amount");
-        }
+        // if (!addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(address, poolId), out var earned) ||
+        //     Math.Floor(decimal.Parse(earned) * 100000000) - amount < 0 || amount < 0)
+        // {
+        //     throw new UserFriendlyException("invalid amount");
+        // }
 
         //generate signature
         if (!_chainOption.AccountPrivateKey.TryGetValue(ContractConstants.SenderName, out var privateKey))
@@ -218,7 +219,8 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         var now = DateTime.UtcNow;
         var expiredTime = new DateTime(now.Year, now.Month, now.Day)
             .AddDays(1)
-            .AddSeconds(-expiredPeriod);
+            .AddSeconds(-expiredPeriod)
+            .AsUtc();
         var seed = Guid.NewGuid().ToString();
         var signature = GenerateSignature(ByteArrayHelper.HexStringToByteArray(privateKey),
             Hash.LoadFromHex(poolId), amount, Address.FromBase58(address),
