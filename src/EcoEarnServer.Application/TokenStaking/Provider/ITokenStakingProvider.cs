@@ -143,8 +143,8 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<TokenStakedListQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($address:String!,$tokenName:String!,$poolIds:[String!]!, $skipCount:Int!,$maxResultCount:Int!){
-                    getStakedInfoList(input: {address:$address,tokenName:$tokenName,poolIds:$poolIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($address:String!,$tokenName:String!,$poolIds:[String!]!,$lockState:LockState!, $skipCount:Int!,$maxResultCount:Int!){
+                    getStakedInfoList(input: {address:$address,tokenName:$tokenName,poolIds:$poolIds,lockState:$lockState,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         stakeId,
@@ -172,7 +172,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    address = address, tokenName = "", poolIds = poolIds, skipCount = 0, maxResultCount = 5000,
+                    address = address, tokenName = "", poolIds = poolIds, lockState =LockState.Locking, skipCount = 0, maxResultCount = 5000,
                 }
             });
             return indexerResult.GetStakedInfoList.Data.GroupBy(x => x.PoolId)
