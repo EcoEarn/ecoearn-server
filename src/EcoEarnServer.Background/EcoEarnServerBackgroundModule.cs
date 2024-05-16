@@ -61,6 +61,7 @@ public class EcoEarnServerBackgroundModule : AbpModule
         context.Services.AddSingleton<IStateProvider, StateProvider>();
         context.Services.AddSingleton<ISettlePointsRewardsService, SettlePointsRewardsService>();
         context.Services.AddSingleton<ISettlePointsRewardsProvider, SettlePointsRewardsProvider>();
+        context.Services.AddSingleton<IUpdatePoolStakeSumService, UpdatePoolStakeSumService>();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
         ConfigureRedis(context, configuration, hostingEnvironment);
         ConfigureCache(configuration);
@@ -149,6 +150,7 @@ public class EcoEarnServerBackgroundModule : AbpModule
     {
         context.AddBackgroundWorkerAsync<PointsSnapshotWorker>();
         context.AddBackgroundWorkerAsync<SettlePointsRewardsWorker>();
+        context.AddBackgroundWorkerAsync<UpdatePoolStakeSumWorker>();
         InitRecurringJob(context.ServiceProvider);
         StartOrleans(context.ServiceProvider);
     }

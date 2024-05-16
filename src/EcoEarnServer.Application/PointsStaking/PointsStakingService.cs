@@ -9,20 +9,24 @@ using AElf.Types;
 using EcoEarn.Contracts.Points;
 using EcoEarnServer.Common;
 using EcoEarnServer.Common.AElfSdk;
+using EcoEarnServer.Grains.Grain.PointsPool;
 using EcoEarnServer.Grains.Grain.PointsStakeRewards;
 using EcoEarnServer.Options;
+using EcoEarnServer.PointsPool;
 using EcoEarnServer.PointsSnapshot;
 using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.TokenStaking;
 using Google.Protobuf;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
@@ -30,6 +34,8 @@ namespace EcoEarnServer.PointsStaking;
 
 public class PointsStakingService : IPointsStakingService, ISingletonDependency
 {
+    private const string LockKeyPrefix = "EcoEarnServer:PointsRewardsClaim:Lock:";
+
     private readonly ProjectItemOptions _projectItemOptions;
     private readonly IObjectMapper _objectMapper;
     private readonly IPointsStakingProvider _pointsStakingProvider;
@@ -42,13 +48,14 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
     private readonly ITokenStakingService _tokenStakingService;
     private readonly ChainOption _chainOption;
     private readonly ISecretProvider _secretProvider;
+    private readonly IAbpDistributedLock _distributedLock;
 
     public PointsStakingService(IOptionsSnapshot<ProjectItemOptions> projectItemOptions, IObjectMapper objectMapper,
         IPointsStakingProvider pointsStakingProvider, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
         ContractProvider contractProvider, IOptionsSnapshot<ProjectKeyPairInfoOptions> projectKeyPairInfoOptions,
         IClusterClient clusterClient, IDistributedEventBus distributedEventBus, ILogger<PointsStakingService> logger,
         ITokenStakingService tokenStakingService, IOptionsSnapshot<ChainOption> chainOption,
-        ISecretProvider secretProvider)
+        ISecretProvider secretProvider, IAbpDistributedLock distributedLock)
     {
         _objectMapper = objectMapper;
         _pointsStakingProvider = pointsStakingProvider;
@@ -58,6 +65,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         _logger = logger;
         _tokenStakingService = tokenStakingService;
         _secretProvider = secretProvider;
+        _distributedLock = distributedLock;
         _chainOption = chainOption.Value;
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
         _earnContractOptions = earnContractOptions.Value;
@@ -161,44 +169,105 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
     public async Task<ClaimAmountSignatureDto> ClaimAmountSignatureAsync(ClaimAmountSignatureInput input)
     {
+        var poolId = input.PoolId;
+        var address = input.Address;
+        var amount = input.Amount;
+
+        //prevention of duplicate claims
+        await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + address);
+
+        if (handle == null)
+        {
+            throw new UserFriendlyException("generating signature.");
+        }
+
+        var today = DateTime.UtcNow.ToString("yyyyMMdd");
+        var id = GuidHelper.GenerateId(address, poolId, today);
+        var pointsPoolClaimRecordGrain = _clusterClient.GetGrain<IPointsPoolClaimRecordGrain>(id);
+        var record = await pointsPoolClaimRecordGrain.GetAsync();
+        if (record != null)
+        {
+            _logger.LogWarning(
+                "already generated signature. id: {id}", id);
+            return new ClaimAmountSignatureDto
+            {
+                Seed = record.Seed,
+                Signature = ByteStringHelper.FromHexString(record.Signature),
+                ExpirationTime = Timestamp.FromDateTime(TimeHelper.GetDateTimeFromTimeStamp(record.ExpiredTime))
+            };
+        }
+
+        //prevention of over claim
+        var addressStakeRewardsDic = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(address);
+        if (!addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(address, poolId), out var earned) ||
+            Math.Floor(decimal.Parse(earned) * 100000000) - amount < 0 || amount < 0)
+        {
+            throw new UserFriendlyException("invalid amount");
+        }
+
+        //generate signature
         if (!_chainOption.AccountPrivateKey.TryGetValue(ContractConstants.SenderName, out var privateKey))
         {
             throw new UserFriendlyException("invalid pool");
         }
 
-        var addressStakeRewardsDic = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(input.Address);
-
-
-        if (!addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(input.Address, input.PoolId), out var earned) ||
-            Math.Floor(decimal.Parse(earned) * 100000000) - input.Amount < 0)
-        {
-            throw new UserFriendlyException("invalid amount");
-        }
-
+        var expiredPeriod =
+            _projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(CommonConstant.Project, out var projectInfo)
+                ? projectInfo.ExpiredSeconds
+                : 600;
+        var now = DateTime.UtcNow;
+        var expiredTime = new DateTime(now.Year, now.Month, now.Day)
+            .AddDays(1)
+            .AddSeconds(-expiredPeriod);
         var seed = Guid.NewGuid().ToString();
         var signature = GenerateSignature(ByteArrayHelper.HexStringToByteArray(privateKey),
-            Hash.LoadFromHex(input.PoolId), input.Amount, Address.FromBase58(input.Address),
-            HashHelper.ComputeFrom(seed));
+            Hash.LoadFromHex(poolId), amount, Address.FromBase58(address),
+            HashHelper.ComputeFrom(seed), expiredTime);
 
+        //save signature
+        var claimRecordDto = new PointsPoolClaimRecordDto()
+        {
+            Id = id,
+            Amount = amount,
+            PoolId = poolId,
+            Address = address,
+            Seed = seed,
+            Signature = signature,
+            ClaimStatus = ClaimStatus.Claiming,
+            ExpiredTime = expiredTime.ToUtcMilliSeconds()
+        };
+
+        var saveResult = await pointsPoolClaimRecordGrain.CreateAsync(claimRecordDto);
+
+        if (!saveResult.Success)
+        {
+            _logger.LogError(
+                "save claim record fail, message:{message}, id: {id}", saveResult.Message, id);
+            throw new UserFriendlyException(saveResult.Message);
+        }
+        await _distributedEventBus.PublishAsync(_objectMapper.Map<PointsPoolClaimRecordDto, PointsPoolClaimRecordEto>(saveResult.Data));
+        
         return new ClaimAmountSignatureDto
         {
             Seed = HashHelper.ComputeFrom(seed).ToHex(),
-            Signature = signature
+            Signature = ByteStringHelper.FromHexString(signature),
+            ExpirationTime = Timestamp.FromDateTime(expiredTime)
         };
     }
 
-    private ByteString GenerateSignature(byte[] privateKey, Hash poolId, long amount, Address account, Hash seed)
+    private string GenerateSignature(byte[] privateKey, Hash poolId, long amount, Address account, Hash seed, DateTime expirationTime)
     {
         var data = new ClaimInput
         {
             PoolId = poolId,
             Account = account,
             Amount = amount,
-            Seed = seed
+            Seed = seed,
+            ExpirationTime = Timestamp.FromDateTime(expirationTime)
         };
         var dataHash = HashHelper.ComputeFrom(data);
         var signature = CryptoHelper.SignWithPrivateKey(privateKey, dataHash.ToByteArray());
-        return ByteStringHelper.FromHexString(signature.ToHex());
+        return signature.ToHex();
     }
 
     private async Task<string> GenerateSignatureByPubKeyAsync(string pubKey, Hash poolId, long amount, Address account,
@@ -241,6 +310,18 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             throw new UserFriendlyException("Invalid transaction");
         }
 
+        var publicKey = RecoverPublicKeyFromSignature(claimInput);
+        if (!_projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(CommonConstant.Project, out var pubKey)
+            || pubKey.PublicKey != publicKey)
+        {
+            throw new UserFriendlyException("invalid Signature");
+        }
+
+        if (claimInput.ExpirationTime.ToDateTime().ToUtcMilliSeconds() < DateTime.UtcNow.ToUtcMilliSeconds())
+        {
+            throw new UserFriendlyException("Please wait for the reward to be settled");
+        }
+
         var poolId = claimInput.PoolId.ToHex();
         var address = claimInput.Account.ToBase58();
         var id = GuidHelper.GenerateId(address, poolId);
@@ -268,6 +349,29 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
         return transactionOutput.TransactionId;
+    }
+
+    private string RecoverPublicKeyFromSignature(ClaimInput input)
+    {
+        var computedHash = ComputeConfirmInputHash(input);
+        if (!CryptoHelper.RecoverPublicKey(input.Signature.ToByteArray(), computedHash.ToByteArray(),
+                out var publicKey))
+        {
+            throw new UserFriendlyException("invalid Signature");
+        }
+
+        return publicKey.ToHex();
+    }
+
+    private Hash ComputeConfirmInputHash(ClaimInput input)
+    {
+        return HashHelper.ComputeFrom(new ClaimInput
+        {
+            PoolId = input.PoolId,
+            Account = input.Account,
+            Amount = input.Amount,
+            Seed = input.Seed
+        }.ToByteArray());
     }
 
     public async Task<EarlyStakeInfoDto> GetEarlyStakeInfoAsync(GetEarlyStakeInfoInput input)

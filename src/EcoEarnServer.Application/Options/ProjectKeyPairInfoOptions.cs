@@ -9,5 +9,6 @@ public class ProjectKeyPairInfoOptions
 
 public class ProjectKeyPairInfo
 {
-    public string PrivateKey { get; set; }
+    public string PublicKey { get; set; }
+    public long ExpiredSeconds { get; set; }
 }

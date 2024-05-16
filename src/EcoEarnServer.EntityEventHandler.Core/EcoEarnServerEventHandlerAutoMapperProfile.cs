@@ -17,5 +17,6 @@ public class EcoEarnServerEventHandlerAutoMapperProfile : Profile
         CreateMap<PointsPoolStakeSumEto, PointsPoolStakeSumIndex>();
         CreateMap<PointsStakeRewardsEto, PointsStakeRewardsIndex>();
         CreateMap<PointsStakeRewardsSumEto, PointsStakeRewardsSumIndex>();
+        CreateMap<PointsPoolClaimRecordEto, PointsPoolClaimRecordIndex>();
     }
 }
