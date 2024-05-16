@@ -372,7 +372,8 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             PoolId = input.PoolId,
             Account = input.Account,
             Amount = input.Amount,
-            Seed = input.Seed
+            Seed = input.Seed,
+            ExpirationTime = input.ExpirationTime
         }.ToByteArray());
     }
 
