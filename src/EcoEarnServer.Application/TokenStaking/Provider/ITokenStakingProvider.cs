@@ -88,8 +88,8 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<TokenStakedListQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($tokenName:String!, $address:String!, $poolIds:[String!]!, $skipCount:Int!,$maxResultCount:Int!){
-                    getStakedInfoList(input: {tokenName:$tokenName,address:$address,poolIds:$poolIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($tokenName:String!, $address:String!, $poolIds:[String!]!, $lockState:LockState!, $skipCount:Int!,$maxResultCount:Int!){
+                    getStakedInfoList(input: {tokenName:$tokenName,address:$address,poolIds:$poolIds,lockState:$lockState,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         stakeId,
@@ -116,12 +116,13 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    tokenName = tokenName, address = address, poolIds = new List<string>(), skipCount = 0,
-                    maxResultCount = 5000,
+                    tokenName = tokenName, address = address, poolIds = new List<string>(),
+                    lockState = LockState.Locking, skipCount = 0, maxResultCount = 5000,
                 }
             });
 
-            return indexerResult.GetStakedInfoList.Data[0];
+            var list = indexerResult.GetStakedInfoList;
+            return list.Data.Count > 0 ? list.Data[0] : new TokenStakedIndexerDto();
         }
         catch (Exception e)
         {
@@ -172,7 +173,8 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    address = address, tokenName = "", poolIds = poolIds, lockState =LockState.Locking, skipCount = 0, maxResultCount = 5000,
+                    address = address, tokenName = "", poolIds = poolIds, lockState = LockState.Locking, skipCount = 0,
+                    maxResultCount = 5000,
                 }
             });
             return indexerResult.GetStakedInfoList.Data.GroupBy(x => x.PoolId)
