@@ -24,7 +24,7 @@ public class UpdatePoolStakeSumWorker : AsyncPeriodicBackgroundWorkerBase
         _logger = logger;
         _updatePoolStakeSumService = updatePoolStakeSumService;
         _options = options.Value;
-        timer.Period = options.Value.SettlePointsRewardsPeriod * 60 * 1000;
+        timer.Period = options.Value.UpdatePoolStakeSumPeriod * 60 * 1000;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
