@@ -7,5 +7,5 @@ public class ClaimAmountSignatureDto
 {
     public string Seed { get; set; }
     public ByteString Signature { get; set; }
-    public Timestamp ExpirationTime { get; set; }
+    public long ExpirationTime { get; set; }
 }

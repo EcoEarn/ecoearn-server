@@ -22,7 +22,7 @@ namespace EcoEarnServer.Background.Services;
 public interface IPointsPoolService
 {
     Task UpdatePointsPoolAddressStakeAsync(PointsSnapshotIndex pointsSnapshot,
-        Dictionary<string, PointsPoolStakeSumDto> stakeSumDic);
+        Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays);
 
     Task UpdatePointsPoolStakeSumAsync(Dictionary<string, PointsPoolStakeSumDto> stakeSumDic);
 }
@@ -45,12 +45,12 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
 
     [AutomaticRetry(Attempts = 20, DelaysInSeconds = new[] { 40 })]
     public async Task UpdatePointsPoolAddressStakeAsync(PointsSnapshotIndex pointsSnapshot,
-        Dictionary<string, PointsPoolStakeSumDto> stakeSumDic)
+        Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays)
     {
         _logger.LogInformation("UpdatePointsPoolAddressStakeAsync start. id:{id}", pointsSnapshot.Id);
         try
         {
-            var yesterday = DateTime.UtcNow.AddDays(-1).ToString("yyyyMMdd");
+            var yesterday = DateTime.UtcNow.AddDays(settleRewardsBeforeDays).ToString("yyyyMMdd");
             var stakeListEto = new List<PointsPoolAddressStakeEto>();
             var rewardsList = new List<PointsStakeRewardsEto>();
             var rewardsSumList = new List<PointsStakeRewardsSumEto>();

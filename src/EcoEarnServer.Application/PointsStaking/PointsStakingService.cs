@@ -192,9 +192,9 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
                 "already generated signature. id: {id}", id);
             return new ClaimAmountSignatureDto
             {
-                Seed = record.Seed,
+                Seed = HashHelper.ComputeFrom(record.Seed).ToHex(),
                 Signature = ByteStringHelper.FromHexString(record.Signature),
-                ExpirationTime = Timestamp.FromDateTime(TimeHelper.GetDateTimeFromTimeStamp(record.ExpiredTime))
+                ExpirationTime = record.ExpiredTime / 1000
             };
         }
 
@@ -220,11 +220,11 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         var expiredTime = new DateTime(now.Year, now.Month, now.Day)
             .AddDays(1)
             .AddSeconds(-expiredPeriod)
-            .AsUtc();
+            .ToUtcMilliSeconds();
         var seed = Guid.NewGuid().ToString();
         var signature = GenerateSignature(ByteArrayHelper.HexStringToByteArray(privateKey),
             Hash.LoadFromHex(poolId), amount, Address.FromBase58(address),
-            HashHelper.ComputeFrom(seed), expiredTime);
+            HashHelper.ComputeFrom(seed), expiredTime / 1000);
 
         //save signature
         var claimRecordDto = new PointsPoolClaimRecordDto()
@@ -236,7 +236,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             Seed = seed,
             Signature = signature,
             ClaimStatus = ClaimStatus.Claiming,
-            ExpiredTime = expiredTime.ToUtcMilliSeconds()
+            ExpiredTime = expiredTime
         };
 
         var saveResult = await pointsPoolClaimRecordGrain.CreateAsync(claimRecordDto);
@@ -253,11 +253,11 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         {
             Seed = HashHelper.ComputeFrom(seed).ToHex(),
             Signature = ByteStringHelper.FromHexString(signature),
-            ExpirationTime = Timestamp.FromDateTime(expiredTime)
+            ExpirationTime = expiredTime / 1000
         };
     }
 
-    private string GenerateSignature(byte[] privateKey, Hash poolId, long amount, Address account, Hash seed, DateTime expirationTime)
+    private string GenerateSignature(byte[] privateKey, Hash poolId, long amount, Address account, Hash seed, long expirationTime)
     {
         var data = new ClaimInput
         {
@@ -265,7 +265,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             Account = account,
             Amount = amount,
             Seed = seed,
-            ExpirationTime = Timestamp.FromDateTime(expirationTime)
+            ExpirationTime = expirationTime
         };
         var dataHash = HashHelper.ComputeFrom(data);
         var signature = CryptoHelper.SignWithPrivateKey(privateKey, dataHash.ToByteArray());
@@ -319,7 +319,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             throw new UserFriendlyException("invalid Signature");
         }
 
-        if (claimInput.ExpirationTime.ToDateTime().ToUtcMilliSeconds() < DateTime.UtcNow.ToUtcMilliSeconds())
+        if (claimInput.ExpirationTime * 1000 < DateTime.UtcNow.ToUtcMilliSeconds())
         {
             throw new UserFriendlyException("Please wait for the reward to be settled");
         }

@@ -30,7 +30,7 @@ public class UpdatePoolStakeSumWorker : AsyncPeriodicBackgroundWorkerBase
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
         _logger.LogInformation("begin execute UpdatePoolStakeSumWorker. begin time: {time}", DateTime.UtcNow);
-        //await _updatePoolStakeSumService.UpdatePoolStakeSumAsync(_options.UpdatePoolStakeSumWorkerDelayPeriod);
+        await _updatePoolStakeSumService.UpdatePoolStakeSumAsync(_options.UpdatePoolStakeSumWorkerDelayPeriod);
         _logger.LogInformation("finish execute UpdatePoolStakeSumWorker. finish time: {time}", DateTime.UtcNow);
     }
 }

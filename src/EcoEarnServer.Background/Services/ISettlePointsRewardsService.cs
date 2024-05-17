@@ -76,7 +76,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             var stakeSumDic = GetYesterdayStakeSumDic(list);
             list.ForEach(snapshot =>
                 BackgroundJob.Enqueue(() =>
-                    _pointsPoolService.UpdatePointsPoolAddressStakeAsync(snapshot, stakeSumDic)));
+                    _pointsPoolService.UpdatePointsPoolAddressStakeAsync(snapshot, stakeSumDic, settleRewardsBeforeDays)));
             //update the staked sum for each points pool
             await _pointsPoolService.UpdatePointsPoolStakeSumAsync(stakeSumDic);
             
