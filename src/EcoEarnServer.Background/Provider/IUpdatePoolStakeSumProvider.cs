@@ -122,7 +122,7 @@ public class UpdatePoolStakeSumProvider : IUpdatePoolStakeSumProvider, ISingleto
         //check transaction result
         BackgroundJob.Schedule(
             () => CheckTransactionResultAsync(transactionResult.TransactionId, stakeId),
-            TimeSpan.FromMilliseconds(5000));
+            TimeSpan.FromMilliseconds(3000));
     }
 
     public async Task CheckTransactionResultAsync(string transactionId, string stakeId)
@@ -132,7 +132,7 @@ public class UpdatePoolStakeSumProvider : IUpdatePoolStakeSumProvider, ISingleto
         {
             _logger.LogWarning("transaction pending.");
             BackgroundJob.Schedule(() => CheckTransactionResultAsync(transactionId, stakeId),
-                TimeSpan.FromMilliseconds(5000));
+                TimeSpan.FromMilliseconds(1000));
             return;
         }
 
@@ -146,7 +146,7 @@ public class UpdatePoolStakeSumProvider : IUpdatePoolStakeSumProvider, ISingleto
         if (txResult.Status != TransactionState.Mined)
         {
             _logger.LogWarning("stakeId update stake sum transaction not Mined, {stakeId}", stakeId);
-            BackgroundJob.Schedule(() => ExecuteUpdateStakeAsync(stakeId), TimeSpan.FromMilliseconds(5000));
+            await ExecuteUpdateStakeAsync(stakeId);
             //TODO Alert
             return;
         }
