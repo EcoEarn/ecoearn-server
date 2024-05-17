@@ -167,8 +167,9 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             StakeSymbol = stakedInfoIndexerDtos.StakingToken,
             StakedTime = stakedInfoIndexerDtos.StakedTime,
             UnlockTime = stakedInfoIndexerDtos.StakedTime + stakedInfoIndexerDtos.Period,
-            StakeApr = (double)yearlyRewards / tokenPoolStakedSum * 100 *
-                       (1 + (double)stakedInfoIndexerDtos.Period / 360),
+            StakeApr = tokenPoolStakedSum == 0
+                ? 0
+                : (double)yearlyRewards / tokenPoolStakedSum * 100 * (1 + (double)stakedInfoIndexerDtos.Period / 360),
             Period = stakedInfoIndexerDtos.Period,
             YearlyRewards = yearlyRewards
         };
