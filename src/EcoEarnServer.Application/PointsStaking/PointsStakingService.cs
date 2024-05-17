@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -18,9 +19,7 @@ using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.TokenStaking;
-using FluentAssertions.Extensions;
 using Google.Protobuf;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -200,11 +199,11 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
         //prevention of over claim
         var addressStakeRewardsDic = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(address);
-        // if (!addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(address, poolId), out var earned) ||
-        //     Math.Floor(decimal.Parse(earned) * 100000000) - amount < 0 || amount < 0)
-        // {
-        //     throw new UserFriendlyException("invalid amount");
-        // }
+        if (!addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(address, poolId), out var earned) ||
+            Math.Floor(decimal.Parse(earned) * 100000000) - amount < 0 || amount < 0)
+        {
+            throw new UserFriendlyException("invalid amount");
+        }
 
         //generate signature
         if (!_chainOption.AccountPrivateKey.TryGetValue(ContractConstants.SenderName, out var privateKey))
@@ -247,8 +246,10 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
                 "save claim record fail, message:{message}, id: {id}", saveResult.Message, id);
             throw new UserFriendlyException(saveResult.Message);
         }
-        await _distributedEventBus.PublishAsync(_objectMapper.Map<PointsPoolClaimRecordDto, PointsPoolClaimRecordEto>(saveResult.Data));
-        
+
+        await _distributedEventBus.PublishAsync(
+            _objectMapper.Map<PointsPoolClaimRecordDto, PointsPoolClaimRecordEto>(saveResult.Data));
+
         return new ClaimAmountSignatureDto
         {
             Seed = HashHelper.ComputeFrom(seed).ToHex(),
@@ -257,7 +258,8 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         };
     }
 
-    private string GenerateSignature(byte[] privateKey, Hash poolId, long amount, Address account, Hash seed, long expirationTime)
+    private string GenerateSignature(byte[] privateKey, Hash poolId, long amount, Address account, Hash seed,
+        long expirationTime)
     {
         var data = new ClaimInput
         {
@@ -327,12 +329,12 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         var poolId = claimInput.PoolId.ToHex();
         var address = claimInput.Account.ToBase58();
         var id = GuidHelper.GenerateId(address, poolId);
-        var claimAmount = -claimInput.Amount;
+        var claimAmount = -((double)claimInput.Amount / 100000000);
         var rewardsSumDto = new PointsStakeRewardsSumDto()
         {
             Id = id,
             PoolId = poolId,
-            Rewards = claimAmount.ToString()
+            Rewards = claimAmount.ToString(CultureInfo.InvariantCulture)
         };
         var rewardsSumGrain = _clusterClient.GetGrain<IPointsStakeRewardsSumGrain>(id);
         var result = await rewardsSumGrain.CreateOrUpdateAsync(rewardsSumDto);
