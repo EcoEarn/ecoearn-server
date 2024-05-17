@@ -41,13 +41,14 @@ public class UpdatePoolStakeSumService : IUpdatePoolStakeSumService, ISingletonD
 
         foreach (var stakeInfo in allStakedInfoList)
         {
-            var executeTme = stakeInfo.StakedTime + stakeInfo.Period * 1000;
+            var executeTme = stakeInfo.StakedTime + stakeInfo.Period * 1000 - optionsUpdatePoolStakeSumWorkerDelayPeriod;
             var grain = _clusterClient.GetGrain<ITokenStakeUpdateWorkerGrain>(stakeInfo.StakeId);
             var dto = await grain.GetAsync();
             if (dto != null)
             {
                 if (dto.ExecuteTime == executeTme)
                 {
+                    _logger.LogWarning("UpdatePoolStakeSumAsync job exist.");
                     continue;
                 }
 

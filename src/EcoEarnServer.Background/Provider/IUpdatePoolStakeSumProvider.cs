@@ -115,7 +115,7 @@ public class UpdatePoolStakeSumProvider : IUpdatePoolStakeSumProvider, ISingleto
 
         var transaction = _contractProvider
             .CreateTransaction("tDVW", ContractConstants.SenderName, ContractConstants.ContractName,
-                ContractConstants.StakedSumMethodName, updateStakeInfoInput)
+                ContractConstants.UpdateStakeInfoSenderName, updateStakeInfoInput)
             .Result
             .transaction;
         var transactionResult = await _contractProvider.SendTransactionAsync("tDVW", transaction);
@@ -125,7 +125,7 @@ public class UpdatePoolStakeSumProvider : IUpdatePoolStakeSumProvider, ISingleto
             TimeSpan.FromMilliseconds(5000));
     }
 
-    private async Task CheckTransactionResultAsync(string transactionId, string stakeId)
+    public async Task CheckTransactionResultAsync(string transactionId, string stakeId)
     {
         var txResult = await _contractProvider.QueryTransactionResult(transactionId, "tDVW");
         if (txResult.Status == TransactionState.Pending)

@@ -6,6 +6,10 @@ using EcoEarnServer.Background.Workers;
 using EcoEarnServer.Common;
 using EcoEarnServer.Grains;
 using EcoEarnServer.MongoDB;
+using EcoEarnServer.Options;
+using GraphQL.Client.Abstractions;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.Newtonsoft;
 using Hangfire;
 using Hangfire.Mongo;
 using Hangfire.Mongo.CosmosDB;
@@ -56,12 +60,14 @@ public class EcoEarnServerBackgroundModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         Configure<PointsSnapshotOptions>(configuration.GetSection("PointsSnapshot"));
         Configure<PointsPoolOptions>(configuration.GetSection("PointsPool"));
+        Configure<ChainOption>(configuration.GetSection("ChainOption"));
         context.Services.AddSingleton<IPointsSnapshotService, PointsSnapshotService>();
         context.Services.AddSingleton<IPointsSnapshotProvider, PointsSnapshotProvider>();
         context.Services.AddSingleton<IStateProvider, StateProvider>();
         context.Services.AddSingleton<ISettlePointsRewardsService, SettlePointsRewardsService>();
         context.Services.AddSingleton<ISettlePointsRewardsProvider, SettlePointsRewardsProvider>();
         context.Services.AddSingleton<IUpdatePoolStakeSumService, UpdatePoolStakeSumService>();
+        context.Services.AddSingleton<IUpdatePoolStakeSumProvider, UpdatePoolStakeSumProvider>();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
         ConfigureRedis(context, configuration, hostingEnvironment);
         ConfigureCache(configuration);
@@ -70,6 +76,7 @@ public class EcoEarnServerBackgroundModule : AbpModule
         context.Services.AddHttpClient();
         ConfigureHangfire(context, configuration);
         ConfigureOrleans(context, configuration);
+        ConfigureGraphQl(context, configuration);
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -102,6 +109,13 @@ public class EcoEarnServerBackgroundModule : AbpModule
         });
     }
 
+    private void ConfigureGraphQl(ServiceConfigurationContext context,
+        IConfiguration configuration)
+    {
+        context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
+            new NewtonsoftJsonSerializer()));
+        context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
+    }
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
     {
         var mongoType = configuration["Hangfire:MongoType"];
@@ -148,8 +162,8 @@ public class EcoEarnServerBackgroundModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        context.AddBackgroundWorkerAsync<PointsSnapshotWorker>();
-        context.AddBackgroundWorkerAsync<SettlePointsRewardsWorker>();
+        //context.AddBackgroundWorkerAsync<PointsSnapshotWorker>();
+        //context.AddBackgroundWorkerAsync<SettlePointsRewardsWorker>();
         context.AddBackgroundWorkerAsync<UpdatePoolStakeSumWorker>();
         InitRecurringJob(context.ServiceProvider);
         StartOrleans(context.ServiceProvider);
