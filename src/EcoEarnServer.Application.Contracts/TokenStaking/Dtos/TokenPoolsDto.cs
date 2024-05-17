@@ -17,6 +17,7 @@ public class TokenPoolsDto
     public long YearlyRewards { get; set; }
     public List<string> Icons { get; set; }
     public double Rate { get; set; }
+    public long FixedBoostFactor { get; set; }
 
     //stake info
     public string StakeId { get; set; }
