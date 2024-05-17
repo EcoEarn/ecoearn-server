@@ -70,7 +70,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
                     ? poolRate
                     : 0;
             rewardsListDto.TokenName = poolData.PointsName;
-            rewardsListDto.ProjectOwner = "Schrodinger";
+            rewardsListDto.ProjectOwner = "AI-powered 404 NFT dApp";
         }
 
 
