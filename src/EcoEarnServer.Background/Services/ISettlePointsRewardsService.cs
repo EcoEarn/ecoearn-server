@@ -107,6 +107,9 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         var sevenSum = BigInteger.Zero;
         var eightSum = BigInteger.Zero;
         var nineSum = BigInteger.Zero;
+        var tenSum = BigInteger.Zero;
+        var elevenSum = BigInteger.Zero;
+        var twelveSum = BigInteger.Zero;
         foreach (var pointsSnapshot in list)
         {
             firstSum += BigInteger.Parse(pointsSnapshot.FirstSymbolAmount);
@@ -118,6 +121,9 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             sevenSum += BigInteger.Parse(pointsSnapshot.SevenSymbolAmount);
             eightSum += BigInteger.Parse(pointsSnapshot.EightSymbolAmount);
             nineSum += BigInteger.Parse(pointsSnapshot.NineSymbolAmount);
+            tenSum += BigInteger.Parse(pointsSnapshot.TenSymbolAmount);
+            elevenSum += BigInteger.Parse(pointsSnapshot.ElevenSymbolAmount);
+            twelveSum += BigInteger.Parse(pointsSnapshot.TwelveSymbolAmount);
         }
 
         if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.FirstSymbolAmount)],
@@ -166,6 +172,24 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
                 out var nine))
         {
             nine.StakeAmount = nineSum.ToString();
+        }
+        
+        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.TenSymbolAmount)],
+                out var ten ))
+        {
+            ten.StakeAmount = tenSum.ToString();
+        }
+        
+        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.ElevenSymbolAmount)],
+                out var eleven))
+        {
+            eleven.StakeAmount = elevenSum.ToString();
+        }
+        
+        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.TwelveSymbolAmount)],
+                out var twelve))
+        {
+            twelve.StakeAmount = twelveSum.ToString();
         }
 
         return poolStakeDic;

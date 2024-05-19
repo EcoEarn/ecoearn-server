@@ -18,6 +18,9 @@ public class PointsSnapshotEto
     public string SevenSymbolAmount { get; set; } = "0";
     public string EightSymbolAmount { get; set; } = "0";
     public string NineSymbolAmount { get; set; } = "0";
+    public string TenSymbolAmount { get; set; }  = "0";
+    public string ElevenSymbolAmount { get; set; }  = "0";
+    public string TwelveSymbolAmount { get; set; }  = "0";
     public long UpdateTime { get; set; }
     public long CreateTime { get; set; }
     public string SnapshotDate { get; set; }

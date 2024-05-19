@@ -130,8 +130,14 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
                     .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
                 var nineSymbolSum = g.Select(x => BigInteger.Parse(x.NineSymbolAmount))
                     .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var tenSymbolSum = g.Select(x => BigInteger.Parse(x.TenSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var elevenSymbolSum = g.Select(x => BigInteger.Parse(x.ElevenSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var twelveSymbolSum = g.Select(x => BigInteger.Parse(x.TwelveSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
                 var tvl = firstSymbolSum + thirdSymbolSum + fourSymbolSum + fiveSymbolSum + sixSymbolSum +
-                          sevenSymbolSum + eightSymbolSum + nineSymbolSum;
+                          sevenSymbolSum + eightSymbolSum + nineSymbolSum + tenSymbolSum + elevenSymbolSum + twelveSymbolSum;
                 return new ProjectItemAggDto
                 {
                     StakingAddress = g.Count(),

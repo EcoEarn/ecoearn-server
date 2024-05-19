@@ -148,6 +148,12 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
                                                   BigInteger.Parse(pointsListDto.EightSymbolAmount)).ToString();
                 newPointList.NineSymbolAmount = (BigInteger.Parse(newPointList.NineSymbolAmount) +
                                                  BigInteger.Parse(pointsListDto.NineSymbolAmount)).ToString();
+                newPointList.TenSymbolAmount = (BigInteger.Parse(newPointList.TenSymbolAmount) +
+                                                 BigInteger.Parse(pointsListDto.TenSymbolAmount)).ToString();
+                newPointList.ElevenSymbolAmount = (BigInteger.Parse(newPointList.ElevenSymbolAmount) +
+                                                 BigInteger.Parse(pointsListDto.ElevenSymbolAmount)).ToString();
+                newPointList.TwelveSymbolAmount = (BigInteger.Parse(newPointList.TwelveSymbolAmount) +
+                                                 BigInteger.Parse(pointsListDto.TwelveSymbolAmount)).ToString();
                 // switch (pointsListDto.Role)
                 // {
                 //     case OperatorRole.Inviter:
