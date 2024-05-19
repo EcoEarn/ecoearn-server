@@ -95,10 +95,10 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
 
                 //record the rewards of the previous day
 
-                var rewards = Math.Floor(decimal.Parse(value.ToString()) /
-                                  decimal.Parse(pointsPoolStakeSumDto.StakeAmount) * pointsPoolStakeSumDto.DailyReward *
-                                  100000000) /
-                              100000000;
+                var stakeAmount = decimal.Parse(pointsPoolStakeSumDto.StakeAmount);
+                var rewards = stakeAmount == 0 ? 0 :Math.Floor(decimal.Parse(value.ToString()) /
+                                                    stakeAmount * pointsPoolStakeSumDto.DailyReward *
+                                                    100000000) / 100000000;
                 var rewardsId = GuidHelper.GenerateId(pointsSnapshot.Address, poolIndex, yesterday);
                 var rewardsDto = new PointsStakeRewardsDto
                 {
