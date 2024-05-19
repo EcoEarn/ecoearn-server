@@ -7,5 +7,5 @@ public class PointsPoolStakeSumDto
     public string PoolId { get; set; }
     public string PoolName { get; set; }
     public string DappId { get; set; }
-    public long DailyReward { get; set; }
+    public decimal DailyReward { get; set; }
 }
