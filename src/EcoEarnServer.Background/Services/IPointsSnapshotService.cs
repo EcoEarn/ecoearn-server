@@ -74,9 +74,9 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
             var pointsSumList = await GetPointsSumListAsync();
 
             _logger.LogInformation("need to snapshot count .{count}", pointsSumList.Count);
-            await PointsBatchSnapshotAsync(pointsSumList);
+            //await PointsBatchSnapshotAsync(pointsSumList);
 
-            await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSnapshotKey(), true);
+            //await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSnapshotKey(), true);
         }
         catch (Exception e)
         {
@@ -110,6 +110,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
         var pointsSumList = await _pointsSnapshotProvider.GetPointsSumListAsync();
         //group by address and calculate points sum
 
+        _logger.LogInformation("get points sum list count. {count}", pointsSumList.Count());
         //var addressRelationShipDic = await GetRelationShipAsync(pointsSumList);
         var addressPointsGroups = pointsSumList.GroupBy(x => x.Address)
             .Select(g => new
