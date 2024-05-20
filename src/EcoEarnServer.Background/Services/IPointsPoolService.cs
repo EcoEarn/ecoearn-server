@@ -81,17 +81,18 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                     Address = pointsSnapshot.Address,
                     StakeAmount = value.ToString()
                 };
-                var recordGrain = _clusterClient.GetGrain<IPointsPoolAddressStakeGrain>(id);
-                var result = await recordGrain.CreateOrUpdateAsync(input);
-
-                if (!result.Success)
-                {
-                    _logger.LogError(
-                        "update address stake amount fail, message:{message}, id:{id}",
-                        result.Message, id);
-                }
-
-                stakeListEto.Add(_objectMapper.Map<PointsPoolAddressStakeDto, PointsPoolAddressStakeEto>(result.Data));
+                // var recordGrain = _clusterClient.GetGrain<IPointsPoolAddressStakeGrain>(id);
+                // var result = await recordGrain.CreateOrUpdateAsync(input);
+                //
+                // if (!result.Success)
+                // {
+                //     _logger.LogError(
+                //         "update address stake amount fail, message:{message}, id:{id}",
+                //         result.Message, id);
+                // }
+                //
+                // stakeListEto.Add(_objectMapper.Map<PointsPoolAddressStakeDto, PointsPoolAddressStakeEto>(result.Data));
+                stakeListEto.Add(_objectMapper.Map<PointsPoolAddressStakeDto, PointsPoolAddressStakeEto>(input));
 
                 //record the rewards of the previous day
 
@@ -110,17 +111,18 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                     Address = pointsSnapshot.Address,
                     SettleDate = yesterday
                 };
-                var pointsStakeRewardsGrain = _clusterClient.GetGrain<IPointsStakeRewardsGrain>(rewardsId);
-                var rewardsResult = await pointsStakeRewardsGrain.CreateOrUpdateAsync(rewardsDto);
-
-                if (!rewardsResult.Success)
-                {
-                    _logger.LogError(
-                        "update address stake amount fail, message:{message}, rewardsId: {rewardsId}",
-                        result.Message, rewardsId);
-                }
-
-                rewardsList.Add(_objectMapper.Map<PointsStakeRewardsDto, PointsStakeRewardsEto>(rewardsResult.Data));
+                // var pointsStakeRewardsGrain = _clusterClient.GetGrain<IPointsStakeRewardsGrain>(rewardsId);
+                // var rewardsResult = await pointsStakeRewardsGrain.CreateOrUpdateAsync(rewardsDto);
+                //
+                // if (!rewardsResult.Success)
+                // {
+                //     _logger.LogError(
+                //         "update address stake amount fail, message:{message}, rewardsId: {rewardsId}",
+                //         result.Message, rewardsId);
+                // }
+                //
+                // rewardsList.Add(_objectMapper.Map<PointsStakeRewardsDto, PointsStakeRewardsEto>(rewardsResult.Data));
+                rewardsList.Add(_objectMapper.Map<PointsStakeRewardsDto, PointsStakeRewardsEto>(rewardsDto));
 
                 //update the rewards sum for each address in each points pool
                 var rewardsSumDto = new PointsStakeRewardsSumDto()
@@ -132,18 +134,21 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                     Rewards = rewards.ToString(CultureInfo.InvariantCulture),
                     Address = pointsSnapshot.Address,
                 };
-                var rewardsSumGrain = _clusterClient.GetGrain<IPointsStakeRewardsSumGrain>(id);
-                var rewardsSumResult = await rewardsSumGrain.CreateOrUpdateAsync(rewardsSumDto);
-
-                if (!rewardsSumResult.Success)
-                {
-                    _logger.LogError(
-                        "update address stake amount sum fail, message:{message}, rewardsId: {rewardsId}",
-                        result.Message, rewardsId);
-                }
-
+                // var rewardsSumGrain = _clusterClient.GetGrain<IPointsStakeRewardsSumGrain>(id);
+                // var rewardsSumResult = await rewardsSumGrain.CreateOrUpdateAsync(rewardsSumDto);
+                //
+                // if (!rewardsSumResult.Success)
+                // {
+                //     _logger.LogError(
+                //         "update address stake amount sum fail, message:{message}, rewardsId: {rewardsId}",
+                //         result.Message, rewardsId);
+                // }
+                //
+                // rewardsSumList.Add(
+                //     _objectMapper.Map<PointsStakeRewardsSumDto, PointsStakeRewardsSumEto>(rewardsSumResult.Data));
+                
                 rewardsSumList.Add(
-                    _objectMapper.Map<PointsStakeRewardsSumDto, PointsStakeRewardsSumEto>(rewardsSumResult.Data));
+                    _objectMapper.Map<PointsStakeRewardsSumDto, PointsStakeRewardsSumEto>(rewardsSumDto));
             }
 
             var pointsPoolAddressStakeListEto = new PointsPoolAddressStakeListEto { EventDataList = stakeListEto };
