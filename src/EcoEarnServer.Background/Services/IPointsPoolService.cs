@@ -44,7 +44,6 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
     public async Task UpdatePointsPoolAddressStakeAsync(PointsSnapshotIndex pointsSnapshot,
         Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays)
     {
-        _logger.LogInformation("UpdatePointsPoolAddressStakeAsync start. id:{id}", pointsSnapshot.Id);
         try
         {
             var yesterday = DateTime.UtcNow.AddDays(settleRewardsBeforeDays).ToString("yyyyMMdd");
@@ -64,13 +63,11 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                 var value = property != null ? property.GetValue(pointsSnapshot) : null;
                 if (value == null)
                 {
-                    _logger.LogWarning("get address stake amount fail, id: {id}", id);
                     continue;
                 }
 
                 if (value.ToString() == "0")
                 {
-                    _logger.LogWarning("address stake amount is zero, id: {id}", id);
                     continue;
                 }
 
@@ -173,8 +170,6 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         {
             _logger.LogError(e, "UpdatePointsPoolAddressStakeAsync fail. {pointsSnapshot}", pointsSnapshot.Address);
         }
-
-        _logger.LogInformation("UpdatePointsPoolAddressStakeAsync end. id:{id}", pointsSnapshot.Id);
     }
 
     public async Task UpdatePointsPoolStakeSumAsync(Dictionary<string, PointsPoolStakeSumDto> stakeSumDic)
