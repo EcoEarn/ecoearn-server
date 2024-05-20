@@ -29,15 +29,15 @@ public class PointsPoolAddressStakeHandler : IDistributedEventHandler<PointsPool
 
     public async Task HandleEventAsync(PointsPoolAddressStakeListEto eventData)
     {
-        // try
-        // {
-        //     var indexList = _objectMapper.Map<List<PointsPoolAddressStakeEto>, List<PointsPoolAddressStakeIndex>>(eventData.EventDataList);
-        //     await _repository.BulkAddOrUpdateAsync(indexList);
-        //     _logger.LogDebug("HandleEventAsync PointsPoolAddressStakeEto success.");
-        // }
-        // catch (Exception ex)
-        // {
-        //     _logger.LogError(ex, "HandleEventAsync PointsPoolAddressStakeEto fail. {Message}", JsonConvert.SerializeObject(eventData));
-        // }
+        try
+        {
+            var indexList = _objectMapper.Map<List<PointsPoolAddressStakeEto>, List<PointsPoolAddressStakeIndex>>(eventData.EventDataList);
+            await _repository.BulkAddOrUpdateAsync(indexList);
+            _logger.LogDebug("HandleEventAsync PointsPoolAddressStakeEto success.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "HandleEventAsync PointsPoolAddressStakeEto fail. {Message}", JsonConvert.SerializeObject(eventData));
+        }
     }
 }

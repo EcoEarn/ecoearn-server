@@ -27,16 +27,16 @@ public class PointsSnapshotHandler : IDistributedEventHandler<PointsSnapshotEto>
 
     public async Task HandleEventAsync(PointsSnapshotEto eventData)
     {
-        // try
-        // {
-        //     var index = _objectMapper.Map<PointsSnapshotEto, PointsSnapshotIndex>(eventData);
-        //     await _repository.AddOrUpdateAsync(index);
-        //     _logger.LogDebug("HandleEventAsync PointsSnapshotEto success. {id}", index.Id);
-        // }
-        // catch (Exception ex)
-        // {
-        //     _logger.LogError(ex, "HandleEventAsync PointsSnapshotEto fail. {Message}",
-        //         JsonConvert.SerializeObject(eventData));
-        // }
+        try
+        {
+            var index = _objectMapper.Map<PointsSnapshotEto, PointsSnapshotIndex>(eventData);
+            await _repository.AddOrUpdateAsync(index);
+            _logger.LogDebug("HandleEventAsync PointsSnapshotEto success. {id}", index.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "HandleEventAsync PointsSnapshotEto fail. {Message}",
+                JsonConvert.SerializeObject(eventData));
+        }
     }
 }

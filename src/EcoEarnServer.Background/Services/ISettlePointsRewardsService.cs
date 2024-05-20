@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using EcoEarnServer.Background.Options;
@@ -33,11 +34,12 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
     private readonly IAbpDistributedLock _distributedLock;
     private readonly ILogger<SettlePointsRewardsService> _logger;
     private readonly IStateProvider _stateProvider;
+    private readonly PointsSnapshotOptions _pointsSnapshotOptions;
 
     public SettlePointsRewardsService(ISettlePointsRewardsProvider settlePointsRewardsProvider,
         IOptionsSnapshot<PointsPoolOptions> poolOptions, IPointsPoolService pointsPoolService,
         IObjectMapper objectMapper, IAbpDistributedLock distributedLock, ILogger<SettlePointsRewardsService> logger,
-        IStateProvider stateProvider)
+        IStateProvider stateProvider, IOptionsSnapshot<PointsSnapshotOptions> pointsSnapshotOptions)
     {
         _settlePointsRewardsProvider = settlePointsRewardsProvider;
         _pointsPoolService = pointsPoolService;
@@ -45,6 +47,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         _distributedLock = distributedLock;
         _logger = logger;
         _stateProvider = stateProvider;
+        _pointsSnapshotOptions = pointsSnapshotOptions.Value;
         _poolOptions = poolOptions.Value;
     }
 
@@ -63,7 +66,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             _logger.LogInformation("today points snapshot has not ready.");
             return;
         }
-        
+
         if (await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateSettleKey(settleRewardsBeforeDays)))
         {
             _logger.LogInformation("today has already settle points rewards.");
@@ -74,18 +77,34 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         {
             var list = await GetYesterdaySnapshotAsync(settleRewardsBeforeDays);
             var stakeSumDic = GetYesterdayStakeSumDic(list);
-            list.ForEach(snapshot =>
-                BackgroundJob.Enqueue(() =>
-                    _pointsPoolService.UpdatePointsPoolAddressStakeAsync(snapshot, stakeSumDic, settleRewardsBeforeDays)));
+            await PointsBatchUpdateAsync(list, stakeSumDic, settleRewardsBeforeDays);
             //update the staked sum for each points pool
             await _pointsPoolService.UpdatePointsPoolStakeSumAsync(stakeSumDic);
-            
+
             await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSettleKey(settleRewardsBeforeDays), true);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "CreatePointsSnapshot fail.");
             await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSettleKey(settleRewardsBeforeDays), false);
+        }
+    }
+
+
+    private async Task PointsBatchUpdateAsync(List<PointsSnapshotIndex> snapshotList,
+        Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays)
+    {
+        var recurCount = snapshotList.Count / _pointsSnapshotOptions.BatchSnapshotCount + 1;
+        for (var i = 0; i < recurCount; i++)
+        {
+            var skipCount = _pointsSnapshotOptions.BatchSnapshotCount * i;
+            var list = snapshotList.Skip(skipCount).Take(_pointsSnapshotOptions.BatchSnapshotCount).ToList();
+
+            if (list.IsNullOrEmpty()) return;
+            list.ForEach(snapshot =>
+                BackgroundJob.Enqueue(() =>
+                    _pointsPoolService.UpdatePointsPoolAddressStakeAsync(snapshot, stakeSumDic,
+                        settleRewardsBeforeDays)));
         }
     }
 
@@ -173,19 +192,19 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         {
             nine.StakeAmount = nineSum.ToString();
         }
-        
+
         if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.TenSymbolAmount)],
-                out var ten ))
+                out var ten))
         {
             ten.StakeAmount = tenSum.ToString();
         }
-        
+
         if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.ElevenSymbolAmount)],
                 out var eleven))
         {
             eleven.StakeAmount = elevenSum.ToString();
         }
-        
+
         if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.TwelveSymbolAmount)],
                 out var twelve))
         {

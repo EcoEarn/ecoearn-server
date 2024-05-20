@@ -28,15 +28,15 @@ public class PointsStakeRewardsSumHandler : IDistributedEventHandler<PointsStake
 
     public async Task HandleEventAsync(PointsStakeRewardsSumListEto eventData)
     {
-        // try
-        // {
-        //     var indexList = _objectMapper.Map<List<PointsStakeRewardsSumEto>, List<PointsStakeRewardsSumIndex>>(eventData.EventDataList);
-        //     await _repository.BulkAddOrUpdateAsync(indexList);
-        //     _logger.LogDebug("HandleEventAsync PointsStakeRewardsSumHandler success.");
-        // }
-        // catch (Exception ex)
-        // {
-        //     _logger.LogError(ex, "HandleEventAsync PointsStakeRewardsSumHandler fail. {Message}", JsonConvert.SerializeObject(eventData));
-        // }
+        try
+        {
+            var indexList = _objectMapper.Map<List<PointsStakeRewardsSumEto>, List<PointsStakeRewardsSumIndex>>(eventData.EventDataList);
+            await _repository.BulkAddOrUpdateAsync(indexList);
+            _logger.LogDebug("HandleEventAsync PointsStakeRewardsSumHandler success.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "HandleEventAsync PointsStakeRewardsSumHandler fail. {Message}", JsonConvert.SerializeObject(eventData));
+        }
     }
 }
