@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Numerics;
 using System.Threading.Tasks;
 using EcoEarnServer.Common;
 using EcoEarnServer.Constants;
@@ -70,7 +69,7 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                     _logger.LogWarning("get address stake amount fail, id: {id}", id);
                     continue;
                 }
-                
+
                 if (value.ToString() == "0")
                 {
                     _logger.LogWarning("address stake amount is zero, id: {id}", id);
@@ -89,22 +88,24 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                 };
                 var recordGrain = _clusterClient.GetGrain<IPointsPoolAddressStakeGrain>(id);
                 var result = await recordGrain.CreateOrUpdateAsync(input);
-                
+
                 if (!result.Success)
                 {
                     _logger.LogError(
                         "update address stake amount fail, message:{message}, id:{id}",
                         result.Message, id);
                 }
-                
+
                 stakeListEto.Add(_objectMapper.Map<PointsPoolAddressStakeDto, PointsPoolAddressStakeEto>(result.Data));
 
                 //record the rewards of the previous day
 
                 var stakeAmount = decimal.Parse(pointsPoolStakeSumDto.StakeAmount);
-                var rewards = stakeAmount == 0 ? 0 :Math.Floor(decimal.Parse(value.ToString()) /
-                                                    stakeAmount * pointsPoolStakeSumDto.DailyReward *
-                                                    100000000) / 100000000;
+                var rewards = stakeAmount == 0
+                    ? 0
+                    : Math.Floor(decimal.Parse(value.ToString()) /
+                                 stakeAmount * pointsPoolStakeSumDto.DailyReward *
+                                 100000000) / 100000000;
                 var rewardsId = GuidHelper.GenerateId(pointsSnapshot.Address, poolIndex, yesterday);
                 var rewardsDto = new PointsStakeRewardsDto
                 {
@@ -118,14 +119,14 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                 };
                 var pointsStakeRewardsGrain = _clusterClient.GetGrain<IPointsStakeRewardsGrain>(rewardsId);
                 var rewardsResult = await pointsStakeRewardsGrain.CreateOrUpdateAsync(rewardsDto);
-                
+
                 if (!rewardsResult.Success)
                 {
                     _logger.LogError(
                         "update address stake amount fail, message:{message}, rewardsId: {rewardsId}",
                         result.Message, rewardsId);
                 }
-                
+
                 rewardsList.Add(_objectMapper.Map<PointsStakeRewardsDto, PointsStakeRewardsEto>(rewardsResult.Data));
 
                 //update the rewards sum for each address in each points pool
@@ -140,26 +141,35 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                 };
                 var rewardsSumGrain = _clusterClient.GetGrain<IPointsStakeRewardsSumGrain>(id);
                 var rewardsSumResult = await rewardsSumGrain.CreateOrUpdateAsync(rewardsSumDto);
-                
+
                 if (!rewardsSumResult.Success)
                 {
                     _logger.LogError(
                         "update address stake amount sum fail, message:{message}, rewardsId: {rewardsId}",
                         result.Message, rewardsId);
                 }
-                
+
                 rewardsSumList.Add(
                     _objectMapper.Map<PointsStakeRewardsSumDto, PointsStakeRewardsSumEto>(rewardsSumResult.Data));
             }
 
-            var pointsPoolAddressStakeListEto = new PointsPoolAddressStakeListEto { EventDataList = stakeListEto };
-            await _distributedEventBus.PublishAsync(pointsPoolAddressStakeListEto);
+            if (stakeListEto.Count > 0)
+            {
+                var pointsPoolAddressStakeListEto = new PointsPoolAddressStakeListEto { EventDataList = stakeListEto };
+                await _distributedEventBus.PublishAsync(pointsPoolAddressStakeListEto);
+            }
 
-            var rewardsListEto = new PointsStakeRewardsListEto { EventDataList = rewardsList };
-            await _distributedEventBus.PublishAsync(rewardsListEto);
+            if (rewardsList.Count > 0)
+            {
+                var rewardsListEto = new PointsStakeRewardsListEto { EventDataList = rewardsList };
+                await _distributedEventBus.PublishAsync(rewardsListEto);
+            }
 
-            var rewardsSumListEto = new PointsStakeRewardsSumListEto { EventDataList = rewardsSumList };
-            await _distributedEventBus.PublishAsync(rewardsSumListEto);
+            if (rewardsSumList.Count > 0)
+            {
+                var rewardsSumListEto = new PointsStakeRewardsSumListEto { EventDataList = rewardsSumList };
+                await _distributedEventBus.PublishAsync(rewardsSumListEto);
+            }
         }
         catch (Exception e)
         {
