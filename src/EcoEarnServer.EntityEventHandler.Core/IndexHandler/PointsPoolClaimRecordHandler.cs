@@ -28,16 +28,16 @@ public class PointsPoolClaimRecordHandler : IDistributedEventHandler<PointsPoolC
 
     public async Task HandleEventAsync(PointsPoolClaimRecordEto eventData)
     {
-        try
-        {
-            var indexList = _objectMapper.Map<PointsPoolClaimRecordEto, PointsPoolClaimRecordIndex>(eventData);
-            await _repository.AddOrUpdateAsync(indexList);
-            _logger.LogDebug("HandleEventAsync PointsPoolClaimRecordHandler success.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "HandleEventAsync PointsPoolClaimRecordHandler fail. {Message}",
-                JsonConvert.SerializeObject(eventData));
-        }
+        // try
+        // {
+        //     var indexList = _objectMapper.Map<PointsPoolClaimRecordEto, PointsPoolClaimRecordIndex>(eventData);
+        //     await _repository.AddOrUpdateAsync(indexList);
+        //     _logger.LogDebug("HandleEventAsync PointsPoolClaimRecordHandler success.");
+        // }
+        // catch (Exception ex)
+        // {
+        //     _logger.LogError(ex, "HandleEventAsync PointsPoolClaimRecordHandler fail. {Message}",
+        //         JsonConvert.SerializeObject(eventData));
+        // }
     }
 }
