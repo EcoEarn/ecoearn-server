@@ -102,9 +102,8 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
 
             if (list.IsNullOrEmpty()) return;
             list.ForEach(snapshot =>
-                BackgroundJob.Enqueue(() =>
-                    _pointsPoolService.UpdatePointsPoolAddressStakeAsync(snapshot, stakeSumDic,
-                        settleRewardsBeforeDays)));
+                _pointsPoolService.UpdatePointsPoolAddressStakeAsync(snapshot, stakeSumDic, settleRewardsBeforeDays));
+            await Task.Delay(_pointsSnapshotOptions.TaskDelayMilliseconds);
         }
     }
 

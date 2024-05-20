@@ -8,6 +8,7 @@ public class PointsSnapshotOptions
     public int UpdatePoolStakeSumPeriod { get; set; } = 20;
 
     public int BatchSnapshotCount { get; set; } = 100;
+    public int TaskDelayMilliseconds { get; set; } = 1000;
     public int BatchQueryCount { get; set; } = 5000;
 
     public string PointsServerBaseUrl { get; set; }
