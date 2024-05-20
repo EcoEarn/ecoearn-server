@@ -47,12 +47,13 @@ public class PointsSnapshotProvider : IPointsSnapshotProvider, ISingletonDepende
         var apiInfo = new ApiInfo(HttpMethod.Post, "api/app/points/list");
         var input = new GetPointsSumListInput()
         {
-            EndTime = DateTime.UtcNow.Date,
+            //EndTime = DateTime.UtcNow.Date,
             SkipCount = 0,
             MaxResultCount = _pointsSnapshotOptions.BatchQueryCount
         };
         List<PointsListDto> list;
 
+        var times = 0;
         do
         {
             try
@@ -69,6 +70,8 @@ public class PointsSnapshotProvider : IPointsSnapshotProvider, ISingletonDepende
                 }
 
                 input.SkipCount += count;
+                _logger.LogInformation("get points list from points server times. {times}", times++);
+
             }
             catch (Exception e)
             {
