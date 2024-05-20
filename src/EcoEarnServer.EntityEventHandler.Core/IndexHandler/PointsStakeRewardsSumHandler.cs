@@ -28,6 +28,10 @@ public class PointsStakeRewardsSumHandler : IDistributedEventHandler<PointsStake
 
     public async Task HandleEventAsync(PointsStakeRewardsSumListEto eventData)
     {
+        if (eventData.EventDataList.Count == 0)
+        {
+            return;
+        }
         try
         {
             var indexList = _objectMapper.Map<List<PointsStakeRewardsSumEto>, List<PointsStakeRewardsSumIndex>>(eventData.EventDataList);

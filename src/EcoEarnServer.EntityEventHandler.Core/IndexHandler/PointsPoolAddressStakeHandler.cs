@@ -29,6 +29,10 @@ public class PointsPoolAddressStakeHandler : IDistributedEventHandler<PointsPool
 
     public async Task HandleEventAsync(PointsPoolAddressStakeListEto eventData)
     {
+        if (eventData.EventDataList.Count == 0)
+        {
+            return;
+        }
         try
         {
             var indexList = _objectMapper.Map<List<PointsPoolAddressStakeEto>, List<PointsPoolAddressStakeIndex>>(eventData.EventDataList);
