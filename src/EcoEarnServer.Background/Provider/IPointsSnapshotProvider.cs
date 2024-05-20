@@ -53,7 +53,6 @@ public class PointsSnapshotProvider : IPointsSnapshotProvider, ISingletonDepende
         };
         List<PointsListDto> list;
 
-        var times = 0;
         do
         {
             try
@@ -70,8 +69,6 @@ public class PointsSnapshotProvider : IPointsSnapshotProvider, ISingletonDepende
                 }
 
                 input.SkipCount += count;
-                _logger.LogInformation("get points list from points server times. {times}", times++);
-
             }
             catch (Exception e)
             {

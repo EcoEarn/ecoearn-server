@@ -74,9 +74,9 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
             var pointsSumList = await GetPointsSumListAsync();
 
             _logger.LogInformation("need to snapshot count .{count}", pointsSumList.Count);
-            //await PointsBatchSnapshotAsync(pointsSumList);
+            await PointsBatchSnapshotAsync(pointsSumList);
 
-            //await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSnapshotKey(), true);
+            await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSnapshotKey(), true);
         }
         catch (Exception e)
         {
