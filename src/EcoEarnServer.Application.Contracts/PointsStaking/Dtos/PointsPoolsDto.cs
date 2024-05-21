@@ -8,6 +8,7 @@ public class PointsPoolsDto
     public decimal PoolDailyRewards { get; set; }
     public string TotalStake { get; set; }
     public string Earned { get; set; }
+    public string RealEarned { get; set; }
     public string Staked { get; set; }
     public int Decimal { get; set; } = 8;
     public string RewardsTokenName { get; set; }

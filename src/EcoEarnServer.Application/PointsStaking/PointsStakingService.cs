@@ -137,7 +137,8 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
                 var twelveSymbolSum = g.Select(x => BigInteger.Parse(x.TwelveSymbolAmount))
                     .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
                 var tvl = firstSymbolSum + thirdSymbolSum + fourSymbolSum + fiveSymbolSum + sixSymbolSum +
-                          sevenSymbolSum + eightSymbolSum + nineSymbolSum + tenSymbolSum + elevenSymbolSum + twelveSymbolSum;
+                          sevenSymbolSum + eightSymbolSum + nineSymbolSum + tenSymbolSum + elevenSymbolSum +
+                          twelveSymbolSum;
                 return new ProjectItemAggDto
                 {
                     StakingAddress = g.Count(),
@@ -167,6 +168,11 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
                 addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(input.Address, dto.PoolId), out var earned)
                     ? earned
                     : "0";
+            dto.RealEarned = (double.Parse(dto.Earned) * 0.9).ToString(CultureInfo.InvariantCulture);
+            dto.DailyRewards = dto.TotalStake == "0"
+                ? "0"
+                : (Math.Floor(10000 / decimal.Parse(dto.TotalStake) * dto.PoolDailyRewards * 100000000) / 100000000)
+                .ToString(CultureInfo.InvariantCulture);
         });
         return input.Type == PoolQueryType.Staked
             ? pointsPoolsDtos.Where(x => x.Staked != "0").ToList()
