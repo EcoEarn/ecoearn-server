@@ -25,7 +25,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 {
     private const string TokenPoolStakedSumRedisKeyPrefix = "EcoEarnServer:TokenPoolStakedSum:";
     private const string TokenPoolStakedRewardsRedisKeyPrefix = "EcoEarnServer:TokenPoolStakedRewards:";
-    private const long YearlyBlocks = 172800 * 360;
+    private const long YearlyBlocks = 86400 * 360;
 
     private readonly ITokenStakingProvider _tokenStakingProvider;
     private readonly IObjectMapper _objectMapper;
