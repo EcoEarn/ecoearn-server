@@ -12,4 +12,6 @@ public class PointsPoolsDto
     public string Staked { get; set; }
     public int Decimal { get; set; } = 8;
     public string RewardsTokenName { get; set; }
+    public long ReleasePeriod { get; set; }
+    public string StakeTokenName { get; set; }
 }
