@@ -9,6 +9,7 @@ using EcoEarnServer.Grains.Grain.PointsStakeRewards;
 using EcoEarnServer.PointsPool;
 using EcoEarnServer.PointsSnapshot;
 using EcoEarnServer.PointsStakeRewards;
+using Hangfire;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Volo.Abp.DependencyInjection;
@@ -41,6 +42,7 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         _objectMapper = objectMapper;
     }
 
+    [AutomaticRetry(Attempts = 20, DelaysInSeconds = new[] { 40 })]
     public async Task UpdatePointsPoolAddressStakeAsync(PointsSnapshotIndex pointsSnapshot,
         Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays)
     {
@@ -170,6 +172,7 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         {
             _logger.LogError(e, "UpdatePointsPoolAddressStakeAsync fail. {pointsSnapshot}", pointsSnapshot.Address);
         }
+        _logger.LogInformation("UpdatePointsPoolAddressStakeAsync end. id:{id}", pointsSnapshot.Id);
     }
 
     public async Task UpdatePointsPoolStakeSumAsync(Dictionary<string, PointsPoolStakeSumDto> stakeSumDic)
