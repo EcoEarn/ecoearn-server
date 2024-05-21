@@ -11,4 +11,5 @@ public class EarlyStakeInfoDto
     public double StakeApr { get; set; }
     public long Period { get; set; }
     public long YearlyRewards { get; set; }
+    public long FixedBoostFactor { get; set; }
 }

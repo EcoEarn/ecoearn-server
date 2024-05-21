@@ -171,7 +171,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 ? 0
                 : (double)yearlyRewards / tokenPoolStakedSum * 100 * (1 + (double)stakedInfoIndexerDtos.Period / 360),
             Period = stakedInfoIndexerDtos.Period,
-            YearlyRewards = yearlyRewards
+            YearlyRewards = yearlyRewards,
+            FixedBoostFactor = tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor
         };
         return stakeInfoDto;
     }
