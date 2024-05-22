@@ -25,7 +25,7 @@ public class TokenStakingController : EcoEarnServerController
     {
         return await _tokenStakingService.GetTokenPoolsAsync(input);
     }
-    
+
     [HttpPost("staked/sum")]
     public async Task<long> GetTokenPoolStakedSumAsync(GetTokenPoolStakedSumInput input)
     {

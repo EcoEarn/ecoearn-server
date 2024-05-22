@@ -33,4 +33,5 @@ public class TokenPoolsDto
     public long StakedTime { get; set; }
     public long Period { get; set; }
     public int Decimal { get; set; } = 8;
+    public long BoostedAmount { get; set; }
 }

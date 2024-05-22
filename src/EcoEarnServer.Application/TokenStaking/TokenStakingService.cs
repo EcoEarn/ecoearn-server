@@ -13,7 +13,6 @@ using EcoEarnServer.TokenStaking.Provider;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Volo.Abp;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
@@ -76,7 +75,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 tokenPoolsDto.TotalStakeInUsd = (rate * tokenPoolStakedSum).ToString(CultureInfo.CurrentCulture);
                 tokenPoolsDto.TotalStake = tokenPoolStakedSum.ToString(CultureInfo.InvariantCulture);
                 tokenPoolsDto.AprMin = (double)tokenPoolsDto.YearlyRewards / tokenPoolStakedSum;
-                tokenPoolsDto.AprMax = tokenPoolsDto.AprMin * 2;
+                tokenPoolsDto.AprMax = tokenPoolsDto.AprMin * (1 + 360 / tokenPoolsIndexerDto.TokenPoolConfig.FixedBoostFactor);
             }
 
             tokenPoolsDto.Icons =
@@ -101,6 +100,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 }
 
                 tokenPoolsDto.StakeId = stakedInfo.StakeId;
+                tokenPoolsDto.BoostedAmount = stakedInfo.BoostedAmount;
                 tokenPoolsDto.Staked = stakedInfo.LockState == LockState.Unlock
                     ? "0"
                     : (stakedInfo.StakedAmount + stakedInfo.EarlyStakedAmount).ToString();
@@ -111,7 +111,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 tokenPoolsDto.StakedAmount = stakedInfo.StakedAmount.ToString();
                 tokenPoolsDto.EarlyStakedAmount = stakedInfo.EarlyStakedAmount.ToString();
                 tokenPoolsDto.UnlockTime = stakedInfo.StakedTime + stakedInfo.Period * 1000;
-                tokenPoolsDto.StakeApr = tokenPoolsDto.AprMin * (1 + (double)stakedInfo.Period / 360);
+                tokenPoolsDto.StakeApr = tokenPoolsDto.AprMin *
+                                         (1 + (double)stakedInfo.Period / 86400 / tokenPoolsDto.FixedBoostFactor);
                 tokenPoolsDto.StakedTime = stakedInfo.StakedTime;
                 tokenPoolsDto.Period = stakedInfo.Period;
             }
@@ -124,32 +125,10 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 
     public async Task<long> GetTokenPoolStakedSumAsync(GetTokenPoolStakedSumInput input)
     {
-        try
-        {
-            await ConnectAsync();
-            var redisValue = await RedisDatabase.StringGetAsync(TokenPoolStakedSumRedisKeyPrefix + input.PoolId);
-            if (redisValue.HasValue)
-            {
-                _logger.LogInformation("get token pool stated sum: {sum}", redisValue);
-                return _serializer.Deserialize<long>(redisValue);
-            }
-
-            var transaction = _contractProvider
-                .CreateTransaction(input.ChainId, ContractConstants.SenderName, ContractConstants.ContractName,
-                    ContractConstants.StakedSumMethodName, Hash.LoadFromHex(input.PoolId))
-                .Result
-                .transaction;
-            var transactionResult =
-                await _contractProvider.CallTransactionAsync<PoolDataDto>(input.ChainId, transaction);
-            await RedisDatabase.StringSetAsync(TokenPoolStakedSumRedisKeyPrefix + input.PoolId,
-                transactionResult.TotalStakedAmount, TimeSpan.FromSeconds(5));
-            return long.Parse(transactionResult.TotalStakedAmount);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "get token pool staked sum fail. poolId: {poolId}", input.PoolId);
-            throw new UserFriendlyException("get token pool staked sum fail.");
-        }
+        var tokenPoolStakedInfoList =
+            await _tokenStakingProvider.GetTokenPoolStakedInfoListAsync(new List<string> { input.PoolId });
+        var tokenPoolStakedInfoDto = tokenPoolStakedInfoList.First(x => x.PoolId == input.PoolId);
+        return long.Parse(tokenPoolStakedInfoDto.TotalStakedAmount);
     }
 
     public async Task<EarlyStakeInfoDto> GetStakedInfoAsync(string tokenName, string address, string chainId)
@@ -167,12 +146,15 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             StakeSymbol = stakedInfoIndexerDtos.StakingToken,
             StakedTime = stakedInfoIndexerDtos.StakedTime,
             UnlockTime = stakedInfoIndexerDtos.StakedTime + stakedInfoIndexerDtos.Period * 1000,
+            
             StakeApr = tokenPoolStakedSum == 0
                 ? 0
-                : (double)yearlyRewards / tokenPoolStakedSum * 100 * (1 + (double)stakedInfoIndexerDtos.Period / 360),
+                : (double)yearlyRewards / tokenPoolStakedSum * (1 + (double)stakedInfoIndexerDtos.Period / 86400 /
+                    tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor),
             Period = stakedInfoIndexerDtos.Period,
             YearlyRewards = yearlyRewards,
-            FixedBoostFactor = tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor
+            FixedBoostFactor = tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor,
+            BoostedAmount = stakedInfoIndexerDtos.BoostedAmount
         };
         return stakeInfoDto;
     }

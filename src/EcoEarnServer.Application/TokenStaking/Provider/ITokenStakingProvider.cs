@@ -18,6 +18,7 @@ public interface ITokenStakingProvider
 
     Task<Dictionary<string, TokenStakedIndexerDto>> GetAddressStakedInPoolDicAsync(List<string> pools, string address);
     Task<TokenPoolsIndexerDto> GetTokenPoolByTokenAsync(string tokenName);
+    Task<List<TokenPoolStakedInfoDto>> GetTokenPoolStakedInfoListAsync(List<string> poolIds);
 }
 
 public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
@@ -234,6 +235,44 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
         {
             _logger.LogError(e, "GetTokenPoolByTokenAsync Indexer error");
             return new TokenPoolsIndexerDto();
+        }
+    }
+
+    public async Task<List<TokenPoolStakedInfoDto>> GetTokenPoolStakedInfoListAsync(List<string> poolIds)
+    {
+        if (poolIds.IsNullOrEmpty())
+        {
+            return new List<TokenPoolStakedInfoDto>();
+        }
+
+        try
+        {
+            var indexerResult = await _graphQlHelper.QueryAsync<TokenPoolStakedInfoDtoListQuery>(new GraphQLRequest
+            {
+                Query =
+                    @"query($poolIds:[String!]!){
+                    getTokenPoolStakeInfoList(input: {poolIds:$poolIds}){
+                        totalCount,
+                        data{
+                            accTokenPerShare
+                            totalStakedAmount
+                            poolId
+                            lastRewardTime
+                    }
+                }
+            }",
+                Variables = new
+                {
+                    poolIds = poolIds
+                }
+            });
+
+            return indexerResult.GetTokenPoolStakeInfoList.Data;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetTokenPoolStakedInfoListAsync Indexer error");
+            return new List<TokenPoolStakedInfoDto>();
         }
     }
 }

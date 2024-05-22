@@ -1,6 +1,6 @@
 using AElf.Types;
 
-namespace EcoEarnServer.TokenStaking.Provider;
+namespace EcoEarnServer.TokenStaking.Dtos;
 
 public class PoolDataDto
 {
