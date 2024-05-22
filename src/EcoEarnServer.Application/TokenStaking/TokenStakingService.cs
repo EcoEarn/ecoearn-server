@@ -110,7 +110,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                         .CurrentCulture);
                 tokenPoolsDto.StakedAmount = stakedInfo.StakedAmount.ToString();
                 tokenPoolsDto.EarlyStakedAmount = stakedInfo.EarlyStakedAmount.ToString();
-                tokenPoolsDto.UnlockTime = stakedInfo.StakedTime + stakedInfo.Period;
+                tokenPoolsDto.UnlockTime = stakedInfo.StakedTime + stakedInfo.Period * 1000;
                 tokenPoolsDto.StakeApr = tokenPoolsDto.AprMin * (1 + (double)stakedInfo.Period / 360);
                 tokenPoolsDto.StakedTime = stakedInfo.StakedTime;
                 tokenPoolsDto.Period = stakedInfo.Period;
@@ -166,7 +166,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             Staked = stakedInfoIndexerDtos.StakedAmount.ToString(),
             StakeSymbol = stakedInfoIndexerDtos.StakingToken,
             StakedTime = stakedInfoIndexerDtos.StakedTime,
-            UnlockTime = stakedInfoIndexerDtos.StakedTime + stakedInfoIndexerDtos.Period,
+            UnlockTime = stakedInfoIndexerDtos.StakedTime + stakedInfoIndexerDtos.Period * 1000,
             StakeApr = tokenPoolStakedSum == 0
                 ? 0
                 : (double)yearlyRewards / tokenPoolStakedSum * 100 * (1 + (double)stakedInfoIndexerDtos.Period / 360),
