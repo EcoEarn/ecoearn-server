@@ -51,7 +51,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                             startBlockNumber
                             endBlockNumber
                             rewardPerBlock
-                            updateAddress
+                            unlockWindowDuration
                             stakingToken
                             fixedBoostFactor
                             minimumAmount
@@ -111,6 +111,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
     					lastOperationTime,
     					createTime,
     					updateTime,
+    					stakingPeriod,
     					poolType,
                     }
                 }
@@ -167,6 +168,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
     					lastOperationTime,
     					createTime,
     					updateTime,
+    					stakingPeriod,
     					poolType,
     					lockState,
                     }
@@ -207,7 +209,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                             startBlockNumber
                             endBlockNumber
                             rewardPerBlock
-                            updateAddress
+                            UnlockWindowDuration
                             stakingToken
                             fixedBoostFactor
                             minimumAmount

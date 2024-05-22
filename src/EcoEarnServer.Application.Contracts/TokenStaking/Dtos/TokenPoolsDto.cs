@@ -7,6 +7,7 @@ public class TokenPoolsDto
     //token pool info
     public string PoolName { get; set; }
     public string PoolId { get; set; }
+    public long UnlockWindowDuration { get; set; }
     public string ProjectOwner { get; set; }
     public string StakeSymbol { get; set; }
     public string EarnedSymbol { get; set; }
@@ -34,4 +35,5 @@ public class TokenPoolsDto
     public long Period { get; set; }
     public int Decimal { get; set; } = 8;
     public long BoostedAmount { get; set; }
+    public long StakingPeriod { get; set; }
 }

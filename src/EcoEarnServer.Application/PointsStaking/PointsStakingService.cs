@@ -19,9 +19,11 @@ using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.TokenStaking;
+using EcoEarnServer.TokenStaking.Dtos;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -49,13 +51,15 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
     private readonly ChainOption _chainOption;
     private readonly ISecretProvider _secretProvider;
     private readonly IAbpDistributedLock _distributedLock;
+    private readonly PoolTextWordOptions _poolTextWordOptions;
 
     public PointsStakingService(IOptionsSnapshot<ProjectItemOptions> projectItemOptions, IObjectMapper objectMapper,
         IPointsStakingProvider pointsStakingProvider, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
         ContractProvider contractProvider, IOptionsSnapshot<ProjectKeyPairInfoOptions> projectKeyPairInfoOptions,
         IClusterClient clusterClient, IDistributedEventBus distributedEventBus, ILogger<PointsStakingService> logger,
         ITokenStakingService tokenStakingService, IOptionsSnapshot<ChainOption> chainOption,
-        ISecretProvider secretProvider, IAbpDistributedLock distributedLock)
+        ISecretProvider secretProvider, IAbpDistributedLock distributedLock,
+        IOptionsSnapshot<PoolTextWordOptions> poolTextWordOptions)
     {
         _objectMapper = objectMapper;
         _pointsStakingProvider = pointsStakingProvider;
@@ -66,6 +70,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         _tokenStakingService = tokenStakingService;
         _secretProvider = secretProvider;
         _distributedLock = distributedLock;
+        _poolTextWordOptions = poolTextWordOptions.Value;
         _chainOption = chainOption.Value;
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
         _earnContractOptions = earnContractOptions.Value;
@@ -148,7 +153,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         return projectItemAggDataDic;
     }
 
-    public async Task<List<PointsPoolsDto>> GetPointsPoolsAsync(GetPointsPoolsInput input)
+    public async Task<PointsPoolsResult> GetPointsPoolsAsync(GetPointsPoolsInput input)
     {
         var pointsPoolsIndexerList = await _pointsStakingProvider.GetPointsPoolsAsync(input.Name);
         var poolIds = pointsPoolsIndexerList.Select(pool => pool.PoolId).ToList();
@@ -174,9 +179,13 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
                 : (Math.Floor(10000 / decimal.Parse(dto.TotalStake) * dto.PoolDailyRewards * 100000000) / 100000000)
                 .ToString(CultureInfo.InvariantCulture);
         });
-        return input.Type == PoolQueryType.Staked
-            ? pointsPoolsDtos.Where(x => x.Staked != "0").ToList()
-            : pointsPoolsDtos;
+        return new PointsPoolsResult()
+        {
+            Pools = input.Type == PoolQueryType.Staked
+                ? pointsPoolsDtos.Where(x => x.Staked != "0").ToList()
+                : pointsPoolsDtos,
+            TextNodes = JsonConvert.DeserializeObject<List<TextNodeDto>>(_poolTextWordOptions.PointsTextWord)
+        };
     }
 
     public async Task<ClaimAmountSignatureDto> ClaimAmountSignatureAsync(ClaimAmountSignatureInput input)

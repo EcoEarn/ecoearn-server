@@ -64,6 +64,7 @@ public class UpdatePoolStakeSumProvider : IUpdatePoolStakeSumProvider, ISingleto
     					rewardAmount,
     					lockedRewardAmount,
     					lastOperationTime,
+    					stakingPeriod,
     					createTime,
     					updateTime,
     					poolType,

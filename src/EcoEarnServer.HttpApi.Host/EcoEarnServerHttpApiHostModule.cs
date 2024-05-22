@@ -61,6 +61,7 @@ namespace EcoEarnServer
             Configure<ProjectItemOptions>(configuration.GetSection("ProjectItems"));
             Configure<ProjectKeyPairInfoOptions>(configuration.GetSection("ProjectKeyPairInfo"));
             Configure<TokenPoolIconsOptions>(configuration.GetSection("TokenPoolIcons"));
+            Configure<PoolTextWordOptions>(configuration.GetSection("PoolTextWord"));
             Configure<LpPoolRateOptions>(configuration.GetSection("LpPoolRate"));
             Configure<EcoEarnContractOptions>(configuration.GetSection("EcoEarnContract"));
             Configure<SecurityServerOptions>(configuration.GetSection("SecurityServer"));

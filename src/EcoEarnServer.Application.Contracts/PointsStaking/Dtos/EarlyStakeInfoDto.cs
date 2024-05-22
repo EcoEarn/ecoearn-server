@@ -13,4 +13,6 @@ public class EarlyStakeInfoDto
     public long YearlyRewards { get; set; }
     public long FixedBoostFactor { get; set; }
     public long BoostedAmount { get; set; }
+    public long StakingPeriod { get; set; }
+    public long UnlockWindowDuration { get; set; }
 }
