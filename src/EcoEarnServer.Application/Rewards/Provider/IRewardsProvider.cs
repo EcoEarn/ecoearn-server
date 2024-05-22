@@ -48,6 +48,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
                         data{
                         claimId,
                         poolId,
+                        stakeId,
                         claimedAmount,
                         claimedSymbol,
                         claimedBlockNumber,
@@ -89,7 +90,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             {
                 Query =
                     @"query($address:String!, $stakeIds:[String!]!,$skipCount:Int!,$maxResultCount:Int!){
-                    getUnLockedStakeIdsAsync(input: {address:$address,stakeIds:$stakeIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){}
+                    getUnLockedStakeIdsAsync(input: {address:$address,stakeIds:$stakeIds,skipCount:$skipCount,maxResultCount:$maxResultCount})
             }",
                 Variables = new
                 {
