@@ -20,6 +20,7 @@ public class TokenPoolsDto
     public double Rate { get; set; }
     public long FixedBoostFactor { get; set; }
     public long ReleasePeriod { get; set; }
+    public long MinimumClaimAmount { get; set; }
 
     //stake info
     public string StakeId { get; set; }

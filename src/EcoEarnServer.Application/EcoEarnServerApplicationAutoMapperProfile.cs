@@ -39,6 +39,7 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.ProjectOwner, m => m.MapFrom(f => PoolInfoConst.ProjectOwnerDic[f.DappId]))
             .ForPath(t => t.FixedBoostFactor, m => m.MapFrom(f => f.TokenPoolConfig.FixedBoostFactor))
             .ForPath(t => t.UnlockWindowDuration, m => m.MapFrom(f => f.TokenPoolConfig.UnlockWindowDuration))
+            .ForPath(t => t.MinimumClaimAmount, m => m.MapFrom(f => f.TokenPoolConfig.MinimumClaimAmount))
             .ForPath(t => t.ReleasePeriod, m => m.MapFrom(f => f.TokenPoolConfig.ReleasePeriod))
             .ReverseMap();
 
