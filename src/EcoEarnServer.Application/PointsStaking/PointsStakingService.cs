@@ -18,6 +18,7 @@ using EcoEarnServer.PointsSnapshot;
 using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.PointsStaking.Provider;
+using EcoEarnServer.Rewards.Provider;
 using EcoEarnServer.TokenStaking;
 using EcoEarnServer.TokenStaking.Dtos;
 using Google.Protobuf;
@@ -232,6 +233,21 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             throw new UserFriendlyException("invalid pool");
         }
 
+        //get claiming record
+        var claimingList = await _pointsStakingProvider.GetClaimingListAsync(address, poolId);
+        //check seeds is claimed
+        var seeds = claimingList.Select(x => x.Seed).ToList();
+        var realClaimInfoList = await _pointsStakingProvider.GetRealClaimInfoListAsync(seeds, address, poolId);
+        var realClaimSeeds = realClaimInfoList.Select(x => x.Seed).ToList();
+        foreach (var claimingRecord in claimingList.Where(claimingRecord => realClaimSeeds.Contains(claimingRecord.Seed)))
+        {
+            //change record status
+            await UpdateClaimStatusAsync(address, poolId, claimingRecord.Seed, "");
+            //sub amount
+            await SettleRewardsAsync(address, poolId, -((double)claimingRecord.Amount / 100000000));
+            amount -= claimingRecord.Amount;
+        }
+
         var expiredPeriod =
             _projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(CommonConstant.Project, out var projectInfo)
                 ? projectInfo.ExpiredSeconds
@@ -349,8 +365,36 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
         var poolId = claimInput.PoolId.ToHex();
         var address = claimInput.Account.ToBase58();
+        await SettleRewardsAsync(address, poolId, -((double)claimInput.Amount / 100000000));
+
+        await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
+
+        var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
+        return transactionOutput.TransactionId;
+    }
+
+    private async Task UpdateClaimStatusAsync(string address, string poolId, string oldId, string date)
+    {
+        var id = !string.IsNullOrEmpty(oldId) ? oldId : GuidHelper.GenerateId(address, poolId, date);
+        
+        var pointsPoolClaimRecordGrain = _clusterClient.GetGrain<IPointsPoolClaimRecordGrain>(id);
+
+        var saveResult = await pointsPoolClaimRecordGrain.ClaimedAsync();
+
+        if (!saveResult.Success)
+        {
+            _logger.LogError(
+                "update claim statue fail, message:{message}, id: {id}", saveResult.Message, id);
+            throw new UserFriendlyException(saveResult.Message);
+        }
+
+        await _distributedEventBus.PublishAsync(
+            _objectMapper.Map<PointsPoolClaimRecordDto, PointsPoolClaimRecordEto>(saveResult.Data));
+    }
+
+    private async Task SettleRewardsAsync(string address, string poolId, double claimAmount)
+    {
         var id = GuidHelper.GenerateId(address, poolId);
-        var claimAmount = -((double)claimInput.Amount / 100000000);
         var rewardsSumDto = new PointsStakeRewardsSumDto()
         {
             Id = id,
@@ -371,9 +415,6 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         var eto = _objectMapper.Map<PointsStakeRewardsSumDto, PointsStakeRewardsSumEto>(result.Data);
         var listEto = new PointsStakeRewardsSumListEto { EventDataList = new List<PointsStakeRewardsSumEto> { eto } };
         await _distributedEventBus.PublishAsync(listEto);
-
-        var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
-        return transactionOutput.TransactionId;
     }
 
     private string RecoverPublicKeyFromSignature(ClaimInput input)

@@ -164,7 +164,7 @@ public class EcoEarnServerBackgroundModule : AbpModule
     {
         context.AddBackgroundWorkerAsync<PointsSnapshotWorker>();
         context.AddBackgroundWorkerAsync<SettlePointsRewardsWorker>();
-        context.AddBackgroundWorkerAsync<UpdatePoolStakeSumWorker>();
+        //context.AddBackgroundWorkerAsync<UpdatePoolStakeSumWorker>();
         InitRecurringJob(context.ServiceProvider);
         StartOrleans(context.ServiceProvider);
     }

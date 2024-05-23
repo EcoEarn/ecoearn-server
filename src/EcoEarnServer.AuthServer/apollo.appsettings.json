@@ -1,9 +1,9 @@
 {
   "ClientId": "EcoEarnServer_Auth_001",
   "apollo": {
-    "UseApollo" : true,
+    "UseApollo" : false,
     "AppId": "EcoEarn-Testnet",
-    "MetaServer": "http://172.31.38.194:8080,http://172.31.34.253:8080,http://172.31.47.21:8080",
+    "MetaServer": "http://127.0.0.1:8080",
     "Namespaces": [
       "auth_appsettings.json"
     ]

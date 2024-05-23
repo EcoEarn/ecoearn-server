@@ -1,5 +1,6 @@
 using EcoEarnServer.Common;
 using EcoEarnServer.Grains.State;
+using EcoEarnServer.PointsPool;
 using Orleans;
 using Volo.Abp.ObjectMapping;
 
@@ -9,6 +10,7 @@ public interface IPointsPoolClaimRecordGrain : IGrainWithStringKey
 {
     Task<GrainResultDto<PointsPoolClaimRecordDto>> CreateAsync(PointsPoolClaimRecordDto input);
     Task<PointsPoolClaimRecordDto> GetAsync();
+    Task<GrainResultDto<PointsPoolClaimRecordDto>> ClaimedAsync();
 }
 
 public class PointsPoolClaimRecordGrain : Grain<PointsPoolClaimRecordState>, IPointsPoolClaimRecordGrain
@@ -50,5 +52,16 @@ public class PointsPoolClaimRecordGrain : Grain<PointsPoolClaimRecordState>, IPo
     public async Task<PointsPoolClaimRecordDto> GetAsync()
     {
         return State.Id == null ? null : _objectMapper.Map<PointsPoolClaimRecordState, PointsPoolClaimRecordDto>(State);
+    }
+
+    public async Task<GrainResultDto<PointsPoolClaimRecordDto>> ClaimedAsync()
+    {
+        State.ClaimStatus = ClaimStatus.Claimed;
+        await WriteStateAsync();
+        return new GrainResultDto<PointsPoolClaimRecordDto>
+        {
+            Success = true,
+            Data = _objectMapper.Map<PointsPoolClaimRecordDto, PointsPoolClaimRecordState>(State)
+        };
     }
 }

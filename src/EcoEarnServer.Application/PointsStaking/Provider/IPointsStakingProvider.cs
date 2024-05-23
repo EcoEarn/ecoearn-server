@@ -8,6 +8,7 @@ using EcoEarnServer.Common.GraphQL;
 using EcoEarnServer.PointsPool;
 using EcoEarnServer.PointsSnapshot;
 using EcoEarnServer.PointsStakeRewards;
+using EcoEarnServer.Rewards.Provider;
 using GraphQL;
 using Microsoft.Extensions.Logging;
 using Nest;
@@ -24,6 +25,8 @@ public interface IPointsStakingProvider
     Task<Dictionary<string, string>> GetPointsPoolStakeSumDicAsync(List<string> poolIds);
     Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address);
     Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address);
+    Task<List<RewardsListIndexerDto>> GetRealClaimInfoListAsync(List<string> seeds, string address, string poolId);
+    Task<List<PointsPoolClaimRecordIndex>> GetClaimingListAsync(string address, string poolId);
 }
 
 public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependency
@@ -32,6 +35,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
     private readonly INESTRepository<PointsPoolStakeSumIndex, string> _poolStakeSumRepository;
     private readonly INESTRepository<PointsPoolAddressStakeIndex, string> _addressStakeSumRepository;
     private readonly INESTRepository<PointsStakeRewardsSumIndex, string> _addressStakeRewardsRepository;
+    private readonly INESTRepository<PointsPoolClaimRecordIndex, string> _claimRecordRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly IGraphQlHelper _graphQlHelper;
     private readonly ILogger<PointsStakingProvider> _logger;
@@ -41,7 +45,8 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         IObjectMapper objectMapper, IGraphQlHelper graphQlHelper, ILogger<PointsStakingProvider> logger,
         INESTRepository<PointsPoolStakeSumIndex, string> poolStakeSumRepository,
         INESTRepository<PointsPoolAddressStakeIndex, string> addressStakeSumRepository,
-        INESTRepository<PointsStakeRewardsSumIndex, string> addressStakeRewardsRepository)
+        INESTRepository<PointsStakeRewardsSumIndex, string> addressStakeRewardsRepository,
+        INESTRepository<PointsPoolClaimRecordIndex, string> claimRecordRepository)
     {
         _pointsSnapshotRepository = pointsSnapshotRepository;
         _objectMapper = objectMapper;
@@ -50,6 +55,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         _poolStakeSumRepository = poolStakeSumRepository;
         _addressStakeSumRepository = addressStakeSumRepository;
         _addressStakeRewardsRepository = addressStakeRewardsRepository;
+        _claimRecordRepository = claimRecordRepository;
     }
 
     public async Task<List<PointsSnapshotIndex>> GetProjectItemAggDataAsync(string snapshotDate, int skipCount,
@@ -152,5 +158,74 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
             skip: 0, limit: 5000);
         _logger.LogInformation("GetAddressStakeRewardsDicAsync: {total}", total);
         return list.ToDictionary(x => GuidHelper.GenerateId(x.Address, x.PoolId), x => x.Rewards);
+    }
+
+    public async Task<List<RewardsListIndexerDto>> GetRealClaimInfoListAsync(List<string> seeds, string address,
+        string poolId)
+    {
+        if (string.IsNullOrEmpty(address) || seeds.IsNullOrEmpty())
+        {
+            return new List<RewardsListIndexerDto>();
+        }
+
+        try
+        {
+            var indexerResult = await _graphQlHelper.QueryAsync<RealRewardsListQuery>(new GraphQLRequest
+            {
+                Query =
+                    @"query($seeds:[String!]!, $address:String!, $poolId:String!, $skipCount:Int!,$maxResultCount:Int!){
+                    getRealClaimInfoList(input: {seeds:$seeds,address:$address,poolId:$poolId,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        totalCount,
+                        data{
+                        claimId,
+                        poolId,
+                        seed,
+                        stakeId,
+                        claimedAmount,
+                        claimedSymbol,
+                        claimedBlockNumber,
+    					claimedTime,
+    					unlockTime,
+    					withdrawTime,
+    					earlyStakeTime,
+    					account,
+    					poolType
+                    }
+                }
+            }",
+                Variables = new
+                {
+                    seeds = seeds, address = address, poolId = poolId, skipCount = 0, maxResultCount = 5000,
+                }
+            });
+
+            return indexerResult.GetRealClaimInfoList.Data;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "getClaimInfoList Indexer error");
+            return new List<RewardsListIndexerDto>();
+        }
+    }
+
+    public async Task<List<PointsPoolClaimRecordIndex>> GetClaimingListAsync(string address, string poolId)
+    {
+        if (string.IsNullOrEmpty(address))
+        {
+            return new List<PointsPoolClaimRecordIndex>();
+        }
+
+        var mustQuery = new List<Func<QueryContainerDescriptor<PointsPoolClaimRecordIndex>, QueryContainer>>();
+
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.PoolId).Value(poolId)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.ClaimStatus).Value(ClaimStatus.Claiming)));
+
+        QueryContainer Filter(QueryContainerDescriptor<PointsPoolClaimRecordIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        var (total, list) = await _claimRecordRepository.GetListAsync(Filter, skip: 0, limit: 5000);
+
+        return list;
     }
 }
