@@ -209,7 +209,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                             startBlockNumber
                             endBlockNumber
                             rewardPerBlock
-                            UnlockWindowDuration
+                            unlockWindowDuration
                             stakingToken
                             fixedBoostFactor
                             minimumAmount
