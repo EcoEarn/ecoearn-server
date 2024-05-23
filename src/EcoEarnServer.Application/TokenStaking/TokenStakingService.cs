@@ -137,8 +137,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
     {
         var tokenPoolStakedInfoList =
             await _tokenStakingProvider.GetTokenPoolStakedInfoListAsync(new List<string> { input.PoolId });
-        var tokenPoolStakedInfoDto = tokenPoolStakedInfoList.First(x => x.PoolId == input.PoolId);
-        return long.Parse(tokenPoolStakedInfoDto.TotalStakedAmount);
+        var tokenPoolStakedInfoDto = tokenPoolStakedInfoList.FirstOrDefault(x => x.PoolId == input.PoolId);
+        return tokenPoolStakedInfoDto == null ? 0 : long.Parse(tokenPoolStakedInfoDto.TotalStakedAmount);
     }
 
     public async Task<EarlyStakeInfoDto> GetStakedInfoAsync(string tokenName, string address, string chainId)

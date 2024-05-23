@@ -445,4 +445,10 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
     {
         return await _tokenStakingService.GetStakedInfoAsync(input.TokenName, input.Address, input.ChainId);
     }
+
+    public async Task<Dictionary<string, string>> GetAddressRewardsAsync(GetAddressRewardsInput input)
+    {
+        var pointsStakeRewardsList = await _pointsStakingProvider.GetAddressRewardsAsync(input.Address);
+        return pointsStakeRewardsList.ToDictionary(x => x.PoolName, x => x.Rewards);
+    }
 }
