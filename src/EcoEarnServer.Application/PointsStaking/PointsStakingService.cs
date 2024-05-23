@@ -154,7 +154,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         return projectItemAggDataDic;
     }
 
-    public async Task<PointsPoolsResult> GetPointsPoolsAsync(GetPointsPoolsInput input)
+    public async Task<List<PointsPoolsDto>> GetPointsPoolsAsync(GetPointsPoolsInput input)
     {
         var pointsPoolsIndexerList = await _pointsStakingProvider.GetPointsPoolsAsync(input.Name);
         var poolIds = pointsPoolsIndexerList.Select(pool => pool.PoolId).ToList();
@@ -180,13 +180,9 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
                 : (Math.Floor(10000 / decimal.Parse(dto.TotalStake) * dto.PoolDailyRewards * 100000000) / 100000000)
                 .ToString(CultureInfo.InvariantCulture);
         });
-        return new PointsPoolsResult()
-        {
-            Pools = input.Type == PoolQueryType.Staked
-                ? pointsPoolsDtos.Where(x => x.Staked != "0").ToList()
-                : pointsPoolsDtos,
-            TextNodes = JsonConvert.DeserializeObject<List<TextNodeDto>>(_poolTextWordOptions.PointsTextWord)
-        };
+        return input.Type == PoolQueryType.Staked
+            ? pointsPoolsDtos.Where(x => x.Staked != "0").ToList()
+            : pointsPoolsDtos;
     }
 
     public async Task<ClaimAmountSignatureDto> ClaimAmountSignatureAsync(ClaimAmountSignatureInput input)
