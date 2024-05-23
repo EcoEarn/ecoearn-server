@@ -107,6 +107,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 tokenPoolsDto.StakeId = stakedInfo.StakeId;
                 tokenPoolsDto.StakingPeriod = stakedInfo.StakingPeriod;
                 tokenPoolsDto.BoostedAmount = stakedInfo.BoostedAmount;
+                tokenPoolsDto.LastOperationTime = stakedInfo.LastOperationTime;
                 tokenPoolsDto.Staked = stakedInfo.LockState == LockState.Unlock
                     ? "0"
                     : (stakedInfo.StakedAmount + stakedInfo.EarlyStakedAmount).ToString();
