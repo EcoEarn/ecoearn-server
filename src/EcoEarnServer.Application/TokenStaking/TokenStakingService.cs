@@ -168,6 +168,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             FixedBoostFactor = tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor,
             BoostedAmount = stakedInfoIndexerDtos.BoostedAmount,
             UnlockWindowDuration = tokenPoolIndexerDto.TokenPoolConfig.UnlockWindowDuration,
+            LastOperationTime = stakedInfoIndexerDtos.LastOperationTime,
         };
         return stakeInfoDto;
     }
