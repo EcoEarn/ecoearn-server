@@ -18,13 +18,10 @@ using EcoEarnServer.PointsSnapshot;
 using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.PointsStaking.Provider;
-using EcoEarnServer.Rewards.Provider;
 using EcoEarnServer.TokenStaking;
-using EcoEarnServer.TokenStaking.Dtos;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -118,7 +115,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         } while (!list.IsNullOrEmpty());
 
         _logger.LogInformation("GetProjectItemAggDataDic count.{count}", list.Count);
-        
+
         var projectItemAggDataDic = res.GroupBy(x => x.DappId)
             .ToDictionary(g => g.Key, g =>
             {
@@ -155,8 +152,10 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             });
         foreach (var projectItemAggDto in projectItemAggDataDic)
         {
-            _logger.LogInformation("dic info key: {key}, value:{valaue}", projectItemAggDto.Key, projectItemAggDto.Value.StakingAddress);
+            _logger.LogInformation("dic info key: {key}, value:{valaue}", projectItemAggDto.Key,
+                projectItemAggDto.Value.StakingAddress);
         }
+
         return projectItemAggDataDic;
     }
 
@@ -183,7 +182,8 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             dto.RealEarned = (double.Parse(dto.Earned) * 0.9).ToString(CultureInfo.InvariantCulture);
             dto.DailyRewards = dto.TotalStake == "0"
                 ? "0"
-                : (Math.Floor(10000 / decimal.Parse(dto.TotalStake) * dto.PoolDailyRewards * 100000000) / 100000000 * 30)
+                : (Math.Floor(10000 * 30 / decimal.Parse(dto.TotalStake) * dto.PoolDailyRewards * 100000000) /
+                   100000000)
                 .ToString(CultureInfo.InvariantCulture);
         });
         return input.Type == PoolQueryType.Staked
@@ -241,7 +241,8 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         var seeds = claimingList.Select(x => x.Seed).ToList();
         var realClaimInfoList = await _pointsStakingProvider.GetRealClaimInfoListAsync(seeds, address, poolId);
         var realClaimSeeds = realClaimInfoList.Select(x => x.Seed).ToList();
-        foreach (var claimingRecord in claimingList.Where(claimingRecord => realClaimSeeds.Contains(claimingRecord.Seed)))
+        foreach (var claimingRecord in claimingList.Where(
+                     claimingRecord => realClaimSeeds.Contains(claimingRecord.Seed)))
         {
             //change record status
             await UpdateClaimStatusAsync(address, poolId, claimingRecord.Seed, "");
@@ -378,7 +379,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
     private async Task UpdateClaimStatusAsync(string address, string poolId, string oldId, string date)
     {
         var id = !string.IsNullOrEmpty(oldId) ? oldId : GuidHelper.GenerateId(address, poolId, date);
-        
+
         var pointsPoolClaimRecordGrain = _clusterClient.GetGrain<IPointsPoolClaimRecordGrain>(id);
 
         var saveResult = await pointsPoolClaimRecordGrain.ClaimedAsync();
@@ -448,9 +449,12 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         return await _tokenStakingService.GetStakedInfoAsync(input.TokenName, input.Address, input.ChainId);
     }
 
-    public async Task<Dictionary<string, string>> GetAddressRewardsAsync(GetAddressRewardsInput input)
+    public async Task<AddressRewardsDto> GetAddressRewardsAsync(GetAddressRewardsInput input)
     {
         var pointsStakeRewardsList = await _pointsStakingProvider.GetAddressRewardsAsync(input.Address);
-        return pointsStakeRewardsList.ToDictionary(x => x.PoolName, x => x.Rewards);
+        return new AddressRewardsDto
+        {
+            Reward = pointsStakeRewardsList.ToDictionary(x => x.PoolName, x => x.Rewards)
+        };
     }
 }

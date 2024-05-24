@@ -11,5 +11,5 @@ public interface IPointsStakingService
     Task<ClaimAmountSignatureDto> ClaimAmountSignatureAsync(ClaimAmountSignatureInput input);
     Task<string> ClaimAsync(PointsClaimInput input);
     Task<EarlyStakeInfoDto> GetEarlyStakeInfoAsync(GetEarlyStakeInfoInput input);
-    Task<Dictionary<string, string>> GetAddressRewardsAsync(GetAddressRewardsInput input);
+    Task<AddressRewardsDto> GetAddressRewardsAsync(GetAddressRewardsInput input);
 }
