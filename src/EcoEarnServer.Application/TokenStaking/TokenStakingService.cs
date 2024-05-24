@@ -154,7 +154,10 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             StakeId = stakedInfoIndexerDtos.StakeId,
             PoolId = tokenPoolIndexerDto.PoolId,
             StakingPeriod = stakedInfoIndexerDtos.StakingPeriod,
-            Staked = stakedInfoIndexerDtos.StakedAmount.ToString(),
+            Staked = stakedInfoIndexerDtos.LockState == LockState.Unlock
+                ? "0"
+                : (stakedInfoIndexerDtos.StakedAmount + stakedInfoIndexerDtos.EarlyStakedAmount).ToString(),
+            StakedAmount = stakedInfoIndexerDtos.StakedAmount.ToString(),
             StakeSymbol = stakedInfoIndexerDtos.StakingToken,
             StakedTime = stakedInfoIndexerDtos.StakedTime,
             UnlockTime = stakedInfoIndexerDtos.StakedTime + stakedInfoIndexerDtos.Period * 1000,
@@ -170,6 +173,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             UnlockWindowDuration = tokenPoolIndexerDto.TokenPoolConfig.UnlockWindowDuration,
             LastOperationTime = stakedInfoIndexerDtos.LastOperationTime,
             EarlyStakedAmount = stakedInfoIndexerDtos.EarlyStakedAmount.ToString(),
+            MinimumClaimAmount = tokenPoolIndexerDto.TokenPoolConfig.MinimumClaimAmount,
         };
         return stakeInfoDto;
     }
