@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using EcoEarnServer.Rewards.Dtos;
 
 namespace EcoEarnServer.TokenStaking.Provider;
 
@@ -10,6 +11,7 @@ public class TokenPoolsIndexerDto
     public string Amount { get; set; }
     public TokenPoolConfigIndexerDto TokenPoolConfig { get; set; }
     public long CreateTime { get; set; }
+    public PoolTypeEnums PoolType { get; set; }
 }
 
 public class TokenPoolConfigIndexerDto
