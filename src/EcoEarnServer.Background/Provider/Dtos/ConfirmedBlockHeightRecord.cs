@@ -2,7 +2,7 @@ namespace EcoEarnServer.Background.Provider.Dtos;
 
 public class ConfirmedBlockHeightRecord
 {
-    public SyncState GetConfirmedBlockHeight { get; set; }
+    public SyncState SyncState { get; set; }
 }
 
 public class SyncState

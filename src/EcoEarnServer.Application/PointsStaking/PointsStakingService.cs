@@ -147,7 +147,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
                           twelveSymbolSum;
                 return new ProjectItemAggDto
                 {
-                    StakingAddress = g.Count(),
+                    StakingAddress = g.Select(x => x.Address).Distinct().Count(),
                     Tvl = tvl.ToString()
                 };
             });

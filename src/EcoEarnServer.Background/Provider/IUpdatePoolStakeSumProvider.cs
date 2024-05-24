@@ -94,7 +94,7 @@ public class UpdatePoolStakeSumProvider : IUpdatePoolStakeSumProvider, ISingleto
         {
             Query = @"
 			    query($chainId:String!,$filterType:BlockFilterType!) {
-                    getConfirmedBlockHeight(input: {chainId:$chainId,filterType:$filterType}){
+                    syncState(input: {chainId:$chainId,filterType:$filterType}){
                         confirmedBlockHeight
                 }
             }",
@@ -104,7 +104,7 @@ public class UpdatePoolStakeSumProvider : IUpdatePoolStakeSumProvider, ISingleto
             }
         });
 
-        return indexerResult.GetConfirmedBlockHeight.ConfirmedBlockHeight;
+        return indexerResult.SyncState.ConfirmedBlockHeight;
     }
 
     public async Task ExecuteUpdateStakeAsync(string stakeId)
