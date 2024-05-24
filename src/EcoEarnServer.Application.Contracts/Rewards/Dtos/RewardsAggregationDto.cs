@@ -4,9 +4,9 @@ namespace EcoEarnServer.Rewards.Dtos;
 
 public class RewardsAggregationDto
 {
-    public PointsPoolAggDto PointsPoolAgg { get; set; }
-    public TokenPoolAggDto TokenPoolAgg { get; set; }
-    public TokenPoolAggDto LpPoolAgg { get; set; }
+    public PointsPoolAggDto PointsPoolAgg { get; set; } = new();
+    public TokenPoolAggDto TokenPoolAgg { get; set; } = new();
+    public TokenPoolAggDto LpPoolAgg { get; set; } = new();
 }
 
 public class PointsPoolAggDto
