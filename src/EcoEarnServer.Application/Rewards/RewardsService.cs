@@ -142,6 +142,31 @@ public class RewardsService : IRewardsService, ISingletonDependency
             }
         }
 
+        if (string.IsNullOrEmpty(rewardsAggregationDto.PointsPoolAgg.RewardsTokenName))
+        {
+            var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("");
+            var pointsPoolRewardsToken = pointsPoolsIndexerDtos.First()?.PointsPoolConfig.RewardToken;
+            rewardsAggregationDto.PointsPoolAgg.RewardsTokenName = pointsPoolRewardsToken;
+        }
+        if (string.IsNullOrEmpty(rewardsAggregationDto.TokenPoolAgg.RewardsTokenName))
+        {
+            var tokenPools = await _tokenStakingProvider.GetTokenPoolsAsync(new GetTokenPoolsInput()
+            {
+                PoolType = PoolTypeEnums.Token
+            });
+            var tokenPoolRewardsToken = tokenPools.First()?.TokenPoolConfig.RewardToken;
+            rewardsAggregationDto.TokenPoolAgg.RewardsTokenName = tokenPoolRewardsToken;
+        }
+        if (string.IsNullOrEmpty(rewardsAggregationDto.LpPoolAgg.RewardsTokenName))
+        {
+            var lpPools = await _tokenStakingProvider.GetTokenPoolsAsync(new GetTokenPoolsInput()
+            {
+                PoolType = PoolTypeEnums.Lp
+            });
+            var lpPoolRewardsToken = lpPools.First()?.TokenPoolConfig.RewardToken;
+            rewardsAggregationDto.LpPoolAgg.RewardsTokenName = lpPoolRewardsToken;
+        }
+        
         return rewardsAggregationDto;
     }
 
