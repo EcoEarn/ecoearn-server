@@ -117,6 +117,8 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             skipCount += count;
         } while (!list.IsNullOrEmpty());
 
+        _logger.LogInformation("GetProjectItemAggDataDic count.{count}", list.Count);
+        
         var projectItemAggDataDic = res.GroupBy(x => x.DappId)
             .ToDictionary(g => g.Key, g =>
             {
@@ -151,6 +153,10 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
                     Tvl = tvl.ToString()
                 };
             });
+        foreach (var projectItemAggDto in projectItemAggDataDic)
+        {
+            _logger.LogInformation("dic info key: {key}, value:{valaue}", projectItemAggDto.Key, projectItemAggDto.Value.StakingAddress);
+        }
         return projectItemAggDataDic;
     }
 
