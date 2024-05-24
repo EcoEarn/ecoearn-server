@@ -16,4 +16,5 @@ public class EarlyStakeInfoDto
     public long StakingPeriod { get; set; }
     public long UnlockWindowDuration { get; set; }
     public long LastOperationTime { get; set; }
+    public string EarlyStakedAmount { get; set; } = "0";
 }

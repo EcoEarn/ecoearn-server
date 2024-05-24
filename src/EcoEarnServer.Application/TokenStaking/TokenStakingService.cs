@@ -169,6 +169,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             BoostedAmount = stakedInfoIndexerDtos.BoostedAmount,
             UnlockWindowDuration = tokenPoolIndexerDto.TokenPoolConfig.UnlockWindowDuration,
             LastOperationTime = stakedInfoIndexerDtos.LastOperationTime,
+            EarlyStakedAmount = stakedInfoIndexerDtos.EarlyStakedAmount.ToString(),
         };
         return stakeInfoDto;
     }
