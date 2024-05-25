@@ -158,7 +158,9 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 ? "0"
                 : (stakedInfoIndexerDtos.StakedAmount + stakedInfoIndexerDtos.EarlyStakedAmount).ToString(),
             StakedAmount = stakedInfoIndexerDtos.StakedAmount.ToString(),
-            StakeSymbol = stakedInfoIndexerDtos.StakingToken,
+            StakeSymbol = string.IsNullOrEmpty(stakedInfoIndexerDtos.StakingToken)
+                ? tokenName
+                : stakedInfoIndexerDtos.StakingToken,
             StakedTime = stakedInfoIndexerDtos.StakedTime,
             UnlockTime = stakedInfoIndexerDtos.StakedTime + stakedInfoIndexerDtos.Period * 1000,
 

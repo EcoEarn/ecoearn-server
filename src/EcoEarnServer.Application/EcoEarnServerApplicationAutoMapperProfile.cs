@@ -46,7 +46,7 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ReverseMap();
 
         CreateMap<RewardsListIndexerDto, RewardsListDto>()
-            .ForPath(t => t.ProjectOwner, m => m.MapFrom(f => ""))
+            .ForPath(t => t.ProjectOwner, m => m.MapFrom(f => f.PoolType == PoolTypeEnums.Lp ? "AwakenSwap" : "AI-powered 404 NFT dApp"))
             .ForPath(t => t.RewardsToken, m => m.MapFrom(f => f.ClaimedSymbol))
             .ForPath(t => t.Rewards, m => m.MapFrom(f => f.ClaimedAmount))
             .ForPath(t => t.ClaimedId, m => m.MapFrom(f => f.ClaimId))
