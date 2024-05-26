@@ -38,7 +38,7 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.EarnedSymbol, m => m.MapFrom(f => f.TokenPoolConfig.RewardToken))
             .ForPath(t => t.StakeSymbol, m => m.MapFrom(f => f.TokenPoolConfig.StakingToken))
             .ForPath(t => t.ProjectOwner,
-                m => m.MapFrom(f => f.PoolType == PoolTypeEnums.Lp ? "AwakenSwap" : PoolInfoConst.ProjectOwnerDic[f.DappId]))
+                m => m.MapFrom(f => f.PoolType == PoolTypeEnums.Lp ? "AwakenSwap" : f.PoolType == PoolTypeEnums.Token ? "Schrödinger" : "AI-powered 404 NFT dApp"))
             .ForPath(t => t.FixedBoostFactor, m => m.MapFrom(f => f.TokenPoolConfig.FixedBoostFactor))
             .ForPath(t => t.UnlockWindowDuration, m => m.MapFrom(f => f.TokenPoolConfig.UnlockWindowDuration))
             .ForPath(t => t.MinimumClaimAmount, m => m.MapFrom(f => f.TokenPoolConfig.MinimumClaimAmount))
@@ -46,7 +46,7 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ReverseMap();
 
         CreateMap<RewardsListIndexerDto, RewardsListDto>()
-            .ForPath(t => t.ProjectOwner, m => m.MapFrom(f => f.PoolType == PoolTypeEnums.Lp ? "AwakenSwap" : "AI-powered 404 NFT dApp"))
+            .ForPath(t => t.ProjectOwner, m => m.MapFrom(f => f.PoolType == PoolTypeEnums.Lp ? "AwakenSwap" : f.PoolType == PoolTypeEnums.Token ? "Schrödinger" : "AI-powered 404 NFT dApp"))
             .ForPath(t => t.RewardsToken, m => m.MapFrom(f => f.ClaimedSymbol))
             .ForPath(t => t.Rewards, m => m.MapFrom(f => f.ClaimedAmount))
             .ForPath(t => t.ClaimedId, m => m.MapFrom(f => f.ClaimId))
