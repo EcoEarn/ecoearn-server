@@ -57,8 +57,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(rewardsListDto.PoolId, out var icons)
                     ? icons
                     : rewardsListDto.PoolType == PoolTypeEnums.Points
-                        ? new List<string> { "" }
-                        : new List<string> { "", "" };
+                        ? new List<string> { }
+                        : new List<string> { "" };
 
             if (!poolsIdDic.TryGetValue(rewardsListDto.PoolId, out var poolData))
             {
