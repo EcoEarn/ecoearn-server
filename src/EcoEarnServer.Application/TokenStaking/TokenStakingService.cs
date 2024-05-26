@@ -99,9 +99,9 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 var rewardData = await GetStakedRewardsAsync(stakedInfo.StakeId, input.ChainId);
                 if (rewardData.Amount != 0)
                 {
-                    //var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{rewardData.Symbol.ToUpper()}_USDT");
+                    var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{rewardData.Symbol.ToUpper()}_USDT");
                     tokenPoolsDto.Earned = rewardData.Amount.ToString();
-                    //tokenPoolsDto.EarnedInUsd = rewardData.Amount * usdtRate ;
+                    tokenPoolsDto.EarnedInUsd = (rewardData.Amount * usdtRate).ToString(CultureInfo.InvariantCulture) ;
                 }
 
                 tokenPoolsDto.StakeId = stakedInfo.StakeId;
