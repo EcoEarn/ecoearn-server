@@ -182,8 +182,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             dto.RealEarned = (double.Parse(dto.Earned) * 0.9).ToString(CultureInfo.InvariantCulture);
             dto.DailyRewards = dto.TotalStake == "0"
                 ? "0"
-                : (Math.Floor(10000 * 30 / decimal.Parse(dto.TotalStake) * dto.PoolDailyRewards * 100000000) /
-                   100000000)
+                : Math.Floor(10000 * 30 / decimal.Parse(dto.TotalStake) * dto.PoolDailyRewards * 100000000)
                 .ToString(CultureInfo.InvariantCulture);
         });
         return input.Type == PoolQueryType.Staked
