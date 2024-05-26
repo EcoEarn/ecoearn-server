@@ -22,6 +22,7 @@ using EcoEarnServer.TokenStaking;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nest;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -185,9 +186,11 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
                 : Math.Floor(10000 * 30 / decimal.Parse(dto.TotalStake) * dto.PoolDailyRewards * 100000000)
                 .ToString(CultureInfo.InvariantCulture);
         });
+        var sortedPointsPools = pointsPoolsDtos.OrderByDescending(dto => decimal.Parse(dto.DailyRewards)).ToList();
+
         return input.Type == PoolQueryType.Staked
-            ? pointsPoolsDtos.Where(x => x.Staked != "0").ToList()
-            : pointsPoolsDtos;
+            ? sortedPointsPools.Where(x => x.Staked != "0").ToList()
+            : sortedPointsPools;
     }
 
     public async Task<ClaimAmountSignatureDto> ClaimAmountSignatureAsync(ClaimAmountSignatureInput input)
