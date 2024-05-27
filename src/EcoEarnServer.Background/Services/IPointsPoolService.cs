@@ -42,7 +42,7 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         _objectMapper = objectMapper;
     }
 
-    [AutomaticRetry(Attempts = 20, DelaysInSeconds = new[] { 40 })]
+    //[AutomaticRetry(Attempts = 20, DelaysInSeconds = new[] { 40 })]
     public async Task UpdatePointsPoolAddressStakeAsync(PointsSnapshotIndex pointsSnapshot,
         Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays)
     {
