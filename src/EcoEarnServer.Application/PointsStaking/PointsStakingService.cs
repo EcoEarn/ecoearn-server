@@ -263,7 +263,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             .AddSeconds(-expiredPeriod)
             .ToUtcMilliSeconds();
         var seed = Guid.NewGuid().ToString();
-        var signature = GenerateSignature(ByteArrayHelper.HexStringToByteArray(privateKey),
+        var signature = await GenerateSignatureByPubKeyAsync(projectInfo.PublicKey,
             Hash.LoadFromHex(poolId), amount, Address.FromBase58(address),
             HashHelper.ComputeFrom(seed), expiredTime / 1000);
 
@@ -317,17 +317,18 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
     }
 
     private async Task<string> GenerateSignatureByPubKeyAsync(string pubKey, Hash poolId, long amount, Address account,
-        Hash seed)
+        Hash seed, long expirationTime)
     {
         var data = new ClaimInput
         {
             PoolId = poolId,
             Account = account,
             Amount = amount,
-            Seed = seed
+            Seed = seed,
+            ExpirationTime = expirationTime
         };
         var dataHash = HashHelper.ComputeFrom(data);
-        return await _secretProvider.GetSignatureFromHashAsync("", dataHash);
+        return await _secretProvider.GetSignatureFromHashAsync(pubKey, dataHash);
     }
 
     public async Task<string> ClaimAsync(PointsClaimInput input)
