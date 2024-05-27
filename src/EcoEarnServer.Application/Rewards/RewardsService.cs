@@ -144,7 +144,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         if (string.IsNullOrEmpty(rewardsAggregationDto.PointsPoolAgg.RewardsTokenName))
         {
             var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("");
-            var pointsPoolRewardsToken = pointsPoolsIndexerDtos.First()?.PointsPoolConfig.RewardToken;
+            var pointsPoolRewardsToken = pointsPoolsIndexerDtos.FirstOrDefault()?.PointsPoolConfig.RewardToken;
             rewardsAggregationDto.PointsPoolAgg.RewardsTokenName = pointsPoolRewardsToken;
         }
         if (string.IsNullOrEmpty(rewardsAggregationDto.TokenPoolAgg.RewardsTokenName))
@@ -153,7 +153,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             {
                 PoolType = PoolTypeEnums.Token
             });
-            var tokenPoolRewardsToken = tokenPools.First()?.TokenPoolConfig.RewardToken;
+            var tokenPoolRewardsToken = tokenPools.FirstOrDefault()?.TokenPoolConfig.RewardToken;
             rewardsAggregationDto.TokenPoolAgg.RewardsTokenName = tokenPoolRewardsToken;
         }
         if (string.IsNullOrEmpty(rewardsAggregationDto.LpPoolAgg.RewardsTokenName))
@@ -162,7 +162,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             {
                 PoolType = PoolTypeEnums.Lp
             });
-            var lpPoolRewardsToken = lpPools.First()?.TokenPoolConfig.RewardToken;
+            var lpPoolRewardsToken = lpPools.FirstOrDefault()?.TokenPoolConfig.RewardToken;
             rewardsAggregationDto.LpPoolAgg.RewardsTokenName = lpPoolRewardsToken;
         }
         
