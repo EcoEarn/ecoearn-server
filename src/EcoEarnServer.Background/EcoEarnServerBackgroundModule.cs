@@ -66,8 +66,6 @@ public class EcoEarnServerBackgroundModule : AbpModule
         context.Services.AddSingleton<IStateProvider, StateProvider>();
         context.Services.AddSingleton<ISettlePointsRewardsService, SettlePointsRewardsService>();
         context.Services.AddSingleton<ISettlePointsRewardsProvider, SettlePointsRewardsProvider>();
-        context.Services.AddSingleton<IUpdatePoolStakeSumService, UpdatePoolStakeSumService>();
-        context.Services.AddSingleton<IUpdatePoolStakeSumProvider, UpdatePoolStakeSumProvider>();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
         ConfigureRedis(context, configuration, hostingEnvironment);
         ConfigureCache(configuration);
