@@ -5,4 +5,11 @@ namespace EcoEarnServer.Options;
 public class LpPoolRateOptions
 {
     public Dictionary<string, double> LpPoolRateDic { get; set; }
+    public LpPriceServer LpPriceServer { get; set; }
+}
+
+public class LpPriceServer
+{
+    public string ChainId { get; set; }
+    public string LpPriceServerBaseUrl { get; set; }
 }

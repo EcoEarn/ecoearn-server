@@ -8,6 +8,7 @@ using EcoEarnServer.Common;
 using EcoEarnServer.Common.AElfSdk;
 using EcoEarnServer.Options;
 using EcoEarnServer.PointsStaking.Dtos;
+using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
@@ -66,7 +67,14 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         foreach (var tokenPoolsIndexerDto in tokenPoolsIndexerDtos)
         {
             var currencyPair = $"{tokenPoolsIndexerDto.TokenPoolConfig.StakingToken.ToUpper()}_USDT";
-            var rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
+            var feeRate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(
+                tokenPoolsIndexerDto.TokenPoolConfig.StakeTokenContract,
+                out var poolRate)
+                ? poolRate
+                : 0;
+            var rate = tokenPoolsIndexerDto.PoolType == PoolTypeEnums.Token
+                ? await _priceProvider.GetGateIoPriceAsync(currencyPair)
+                : await _priceProvider.GetLpPriceAsync(tokenPoolsIndexerDto.TokenPoolConfig.StakingToken, feeRate);
 
             var tokenPoolsDto = _objectMapper.Map<TokenPoolsIndexerDto, TokenPoolsDto>(tokenPoolsIndexerDto);
             var tokenPoolStakedSumLong = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
@@ -87,11 +95,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(tokenPoolsDto.PoolId, out var icons)
                     ? icons
                     : new List<string>();
-            tokenPoolsDto.Rate =
-                _lpPoolRateOptions.LpPoolRateDic.TryGetValue(tokenPoolsIndexerDto.TokenPoolConfig.StakeTokenContract,
-                    out var poolRate)
-                    ? poolRate
-                    : 0;
+            tokenPoolsDto.Rate = feeRate;
 
 
             if (addressStakedInPoolDic.TryGetValue(tokenPoolsDto.PoolId, out var stakedInfo))
@@ -101,7 +105,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 {
                     var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{rewardData.Symbol.ToUpper()}_USDT");
                     tokenPoolsDto.Earned = rewardData.Amount.ToString();
-                    tokenPoolsDto.EarnedInUsd = (rewardData.Amount * usdtRate).ToString(CultureInfo.InvariantCulture) ;
+                    tokenPoolsDto.EarnedInUsd = (rewardData.Amount * usdtRate).ToString(CultureInfo.InvariantCulture);
                 }
 
                 tokenPoolsDto.StakeId = stakedInfo.StakeId;
