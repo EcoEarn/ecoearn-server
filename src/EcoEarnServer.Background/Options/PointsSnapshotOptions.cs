@@ -15,4 +15,5 @@ public class PointsSnapshotOptions
     public string DappId { get; set; }
     public int SettleRewardsBeforeDays { get; set; } = -1;
     public int UpdatePoolStakeSumWorkerDelayPeriod { get; set; } = 10000;
+    public bool SettleRewards { get; set; }
 }

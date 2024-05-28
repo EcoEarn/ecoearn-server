@@ -77,10 +77,12 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         {
             var list = await GetYesterdaySnapshotAsync(settleRewardsBeforeDays);
             var stakeSumDic = GetYesterdayStakeSumDic(list);
-            await PointsBatchUpdateAsync(list, stakeSumDic, settleRewardsBeforeDays);
             //update the staked sum for each points pool
+            if (_pointsSnapshotOptions.SettleRewards)
+            {
+                await PointsBatchUpdateAsync(list, stakeSumDic, settleRewardsBeforeDays);
+            }
             await _pointsPoolService.UpdatePointsPoolStakeSumAsync(stakeSumDic);
-
             await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSettleKey(settleRewardsBeforeDays), true);
         }
         catch (Exception e)
