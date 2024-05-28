@@ -1,6 +1,7 @@
 using EcoEarnServer.Grains;
 using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.TokenStaking;
+using EcoEarnServer.TokenStaking.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
@@ -31,6 +32,7 @@ public class EcoEarnServerApplicationModule : AbpModule
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<EcoEarnServerApplicationModule>(); });
         context.Services.AddSingleton<ITokenStakingService, TokenStakingService>();
         context.Services.AddSingleton<ISecretProvider, SecretProvider>();
+        context.Services.AddSingleton<IPriceProvider, PriceProvider>();
         context.Services.AddHttpClient();
     }
 }
