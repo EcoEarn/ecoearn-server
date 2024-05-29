@@ -113,8 +113,8 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             var list = snapshotList.Skip(skipCount).Take(_pointsSnapshotOptions.BatchSnapshotCount).ToList();
 
             if (list.IsNullOrEmpty()) return;
-            list.ForEach(snapshot => BackgroundJob.Enqueue(() =>
-                _pointsPoolService.UpdatePointsPoolAddressStakeAsync(snapshot, stakeSumDic, settleRewardsBeforeDays)));
+            BackgroundJob.Enqueue(() =>
+                _pointsPoolService.BatchUpdatePointsPoolAddressStakeAsync(list, stakeSumDic, settleRewardsBeforeDays));
             await Task.Delay(_pointsSnapshotOptions.TaskDelayMilliseconds);
         }
     }

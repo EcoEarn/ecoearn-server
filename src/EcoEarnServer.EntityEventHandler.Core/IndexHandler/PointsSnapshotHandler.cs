@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using EcoEarnServer.PointsSnapshot;
@@ -10,7 +11,7 @@ using Volo.Abp.ObjectMapping;
 
 namespace EcoEarnServer.EntityEventHandler.Core.IndexHandler;
 
-public class PointsSnapshotHandler : IDistributedEventHandler<PointsSnapshotEto>, ITransientDependency
+public class PointsSnapshotHandler : IDistributedEventHandler<PointsSnapshotListEto>, ITransientDependency
 {
     private readonly INESTRepository<PointsSnapshotIndex, string> _repository;
     private readonly IObjectMapper _objectMapper;
@@ -25,13 +26,14 @@ public class PointsSnapshotHandler : IDistributedEventHandler<PointsSnapshotEto>
         _logger = logger;
     }
 
-    public async Task HandleEventAsync(PointsSnapshotEto eventData)
+    public async Task HandleEventAsync(PointsSnapshotListEto eventData)
     {
         try
         {
-            var index = _objectMapper.Map<PointsSnapshotEto, PointsSnapshotIndex>(eventData);
-            await _repository.AddOrUpdateAsync(index);
-            _logger.LogDebug("HandleEventAsync PointsSnapshotEto success. {id}", index.Id);
+            var indexList =
+                _objectMapper.Map<List<PointsSnapshotEto>, List<PointsSnapshotIndex>>(eventData.EventDataList);
+            await _repository.BulkAddOrUpdateAsync(indexList);
+            _logger.LogDebug("HandleEventAsync PointsSnapshotEto success.");
         }
         catch (Exception ex)
         {

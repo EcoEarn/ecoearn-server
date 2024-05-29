@@ -1,13 +1,14 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using EcoEarnServer.Background.Dtos;
 using EcoEarnServer.Background.Provider;
-using EcoEarnServer.Grains.Grain.PointsSnapshot;
+using EcoEarnServer.Common;
 using EcoEarnServer.PointsSnapshot;
 using Hangfire;
 using Microsoft.Extensions.Logging;
 using Orleans;
-using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
@@ -16,7 +17,7 @@ namespace EcoEarnServer.Background.Services;
 
 public interface ISnapshotGeneratorService
 {
-    Task GenerateSnapshotAsync(PointsListDto dto, string snapshotDate);
+    Task BatchGenerateSnapshotAsync(List<PointsListDto> list, string snapshotDate);
 }
 
 public class SnapshotGeneratorService : ISnapshotGeneratorService, ITransientDependency
@@ -38,35 +39,28 @@ public class SnapshotGeneratorService : ISnapshotGeneratorService, ITransientDep
     }
 
     [AutomaticRetry(Attempts = 20, DelaysInSeconds = new[] { 40 })]
-    public async Task GenerateSnapshotAsync(PointsListDto dto, string snapshotDate)
+    public async Task BatchGenerateSnapshotAsync(List<PointsListDto> list, string snapshotDate)
     {
-        var recordId = $"{dto.Address}-{snapshotDate}";
         try
         {
-            _logger.LogInformation("begin create, recordId:{recordId}", recordId);
-
-            var input = _objectMapper.Map<PointsListDto, PointsSnapshotDto>(dto);
-            input.SnapshotDate = snapshotDate;
-            var recordGrain = _clusterClient.GetGrain<IPointsSnapshotGrain>(recordId);
-            var result = await recordGrain.CreateAsync(input);
-
-            if (!result.Success)
+            var etoList = list.Select(dto =>
             {
-                _logger.LogError(
-                    "generate snapshot record grain fail, message:{message}, recordId:{recordId}",
-                    result.Message, recordId);
-                throw new UserFriendlyException("generate snapshot record grain fail");
-            }
+                var pointsSnapshotEto = _objectMapper.Map<PointsListDto, PointsSnapshotEto>(dto);
+                pointsSnapshotEto.Id = GuidHelper.GenerateId(dto.Address, snapshotDate);
+                pointsSnapshotEto.CreateTime = DateTime.UtcNow.ToUtcMilliSeconds();
+                return pointsSnapshotEto;
+            }).ToList();
 
-            var recordEto = _objectMapper.Map<PointsSnapshotDto, PointsSnapshotEto>(result.Data);
-            await _distributedEventBus.PublishAsync(recordEto);
-            _logger.LogInformation("end generate snapshot, recordId:{recordId}", recordId);
+            await _distributedEventBus.PublishAsync(new PointsSnapshotListEto
+            {
+                EventDataList = etoList
+            });
+            _logger.LogInformation("batch generate points snapshot count : {count} ", etoList.Count);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "generate snapshot record grain fail, recordId:{recordId}", recordId);
+            _logger.LogError(e, "generate snapshot fail.");
             await _larkAlertProvider.SendLarkFailAlertAsync(e.Message);
-            throw;
         }
     }
 }

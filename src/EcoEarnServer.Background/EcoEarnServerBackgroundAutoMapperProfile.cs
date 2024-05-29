@@ -21,5 +21,6 @@ public class EcoEarnServerBackgroundAutoMapperProfile : Profile
         CreateMap<PointsStakeRewardsDto, PointsStakeRewardsEto>().ReverseMap();
         CreateMap<PointsStakeRewardsSumDto, PointsStakeRewardsSumEto>().ReverseMap();
         CreateMap<PointsPoolStakeSumDto, PointsPoolStakeSumEto>().ReverseMap();
+        CreateMap<PointsListDto, PointsSnapshotEto>().ReverseMap();
     }
 }

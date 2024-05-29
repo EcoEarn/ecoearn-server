@@ -21,7 +21,7 @@ namespace EcoEarnServer.Background.Services;
 
 public interface IPointsPoolService
 {
-    Task UpdatePointsPoolAddressStakeAsync(PointsSnapshotIndex pointsSnapshot,
+    Task BatchUpdatePointsPoolAddressStakeAsync(List<PointsSnapshotIndex> pointsSnapshots,
         Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays);
 
     Task UpdatePointsPoolStakeSumAsync(Dictionary<string, PointsPoolStakeSumDto> stakeSumDic);
@@ -45,8 +45,18 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         _larkAlertProvider = larkAlertProvider;
     }
 
+
     [AutomaticRetry(Attempts = 20, DelaysInSeconds = new[] { 40 })]
-    public async Task UpdatePointsPoolAddressStakeAsync(PointsSnapshotIndex pointsSnapshot,
+    public async Task BatchUpdatePointsPoolAddressStakeAsync(List<PointsSnapshotIndex> pointsSnapshots,
+        Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays)
+    {
+        foreach (var pointsSnapshotIndex in pointsSnapshots)
+        {
+            await UpdatePointsPoolAddressStakeAsync(pointsSnapshotIndex, stakeSumDic, settleRewardsBeforeDays);
+        }
+    }
+
+    private async Task UpdatePointsPoolAddressStakeAsync(PointsSnapshotIndex pointsSnapshot,
         Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays)
     {
         try
@@ -77,19 +87,19 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                 }
 
                 //update the staked amount for each address in each points pool
-                var input = new PointsPoolAddressStakeDto
+                var poolAddressStakeDto = new PointsPoolAddressStakeDto
                 {
                     Id = id,
                     PoolId = pointsPoolStakeSumDto.PoolId,
                     PoolName = pointsPoolStakeSumDto.PoolName,
                     DappId = pointsPoolStakeSumDto.DappId,
                     Address = pointsSnapshot.Address,
-                    StakeAmount = value.ToString()
+                    StakeAmount = value.ToString(),
+                    CreateTime = DateTime.UtcNow.ToUtcMilliSeconds()
                 };
-                var recordGrain = _clusterClient.GetGrain<IPointsPoolAddressStakeGrain>(id);
-                var result = await recordGrain.CreateOrUpdateAsync(input);
 
-                stakeListEto.Add(_objectMapper.Map<PointsPoolAddressStakeDto, PointsPoolAddressStakeEto>(result.Data));
+                stakeListEto.Add(
+                    _objectMapper.Map<PointsPoolAddressStakeDto, PointsPoolAddressStakeEto>(poolAddressStakeDto));
 
                 //record the rewards of the previous day
 
@@ -107,15 +117,13 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                     DappId = pointsPoolStakeSumDto.DappId,
                     Rewards = rewards.ToString(CultureInfo.InvariantCulture),
                     Address = pointsSnapshot.Address,
-                    SettleDate = yesterday
+                    SettleDate = yesterday,
+                    CreateTime = DateTime.UtcNow.ToUtcMilliSeconds()
                 };
-                var pointsStakeRewardsGrain = _clusterClient.GetGrain<IPointsStakeRewardsGrain>(rewardsId);
-                var rewardsResult = await pointsStakeRewardsGrain.CreateOrUpdateAsync(rewardsDto);
-
-                rewardsList.Add(_objectMapper.Map<PointsStakeRewardsDto, PointsStakeRewardsEto>(rewardsResult.Data));
+                rewardsList.Add(_objectMapper.Map<PointsStakeRewardsDto, PointsStakeRewardsEto>(rewardsDto));
 
                 //update the rewards sum for each address in each points pool
-                var rewardsSumDto = new PointsStakeRewardsSumDto()
+                var rewardsSumDto = new PointsStakeRewardsSumDto
                 {
                     Id = id,
                     PoolId = pointsPoolStakeSumDto.PoolId,

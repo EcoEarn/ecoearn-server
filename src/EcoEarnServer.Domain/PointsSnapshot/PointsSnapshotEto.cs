@@ -1,8 +1,14 @@
+using System.Collections.Generic;
 using Volo.Abp.EventBus;
 
 namespace EcoEarnServer.PointsSnapshot;
 
-[EventName("PointsSnapshotEto")]
+[EventName("PointsSnapshotListEto")]
+public class PointsSnapshotListEto
+{
+    public List<PointsSnapshotEto> EventDataList { get; set; }
+}
+
 public class PointsSnapshotEto
 {
     public string Id { get; set; }

@@ -105,8 +105,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
             var list = pointsSumList.Skip(skipCount).Take(_pointsSnapshotOptions.BatchSnapshotCount).ToList();
 
             if (list.IsNullOrEmpty()) return;
-            list.ForEach(pointsRecord =>
-                BackgroundJob.Enqueue(() => _snapshotGeneratorService.GenerateSnapshotAsync(pointsRecord, today)));
+            BackgroundJob.Enqueue(() => _snapshotGeneratorService.BatchGenerateSnapshotAsync(list, today));
             await Task.Delay(_pointsSnapshotOptions.TaskDelayMilliseconds);
         }
     }
