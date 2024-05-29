@@ -32,7 +32,7 @@ public class StateProvider : AbpRedisCache, IStateProvider, ISingletonDependency
     {
         await ConnectAsync();
         var redisValue = await RedisDatabase.StringGetAsync(key);
-        _logger.LogInformation("get snapshot state: {state}", redisValue);
+        _logger.LogInformation("get snapshot key: {key}, state: {state}", key, redisValue);
         return redisValue.HasValue && _serializer.Deserialize<bool>(redisValue);
     }
 

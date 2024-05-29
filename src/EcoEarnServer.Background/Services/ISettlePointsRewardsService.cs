@@ -5,12 +5,14 @@ using System.Numerics;
 using System.Threading.Tasks;
 using EcoEarnServer.Background.Options;
 using EcoEarnServer.Background.Provider;
+using EcoEarnServer.Background.Provider.Dtos;
 using EcoEarnServer.Constants;
 using EcoEarnServer.Grains.Grain.PointsPool;
 using EcoEarnServer.PointsSnapshot;
 using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using NUglify.Helpers;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
@@ -35,11 +37,13 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
     private readonly ILogger<SettlePointsRewardsService> _logger;
     private readonly IStateProvider _stateProvider;
     private readonly PointsSnapshotOptions _pointsSnapshotOptions;
+    private readonly ILarkAlertProvider _larkAlertProvider;
 
     public SettlePointsRewardsService(ISettlePointsRewardsProvider settlePointsRewardsProvider,
         IOptionsSnapshot<PointsPoolOptions> poolOptions, IPointsPoolService pointsPoolService,
         IObjectMapper objectMapper, IAbpDistributedLock distributedLock, ILogger<SettlePointsRewardsService> logger,
-        IStateProvider stateProvider, IOptionsSnapshot<PointsSnapshotOptions> pointsSnapshotOptions)
+        IStateProvider stateProvider, IOptionsSnapshot<PointsSnapshotOptions> pointsSnapshotOptions,
+        ILarkAlertProvider larkAlertProvider)
     {
         _settlePointsRewardsProvider = settlePointsRewardsProvider;
         _pointsPoolService = pointsPoolService;
@@ -47,6 +51,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         _distributedLock = distributedLock;
         _logger = logger;
         _stateProvider = stateProvider;
+        _larkAlertProvider = larkAlertProvider;
         _pointsSnapshotOptions = pointsSnapshotOptions.Value;
         _poolOptions = poolOptions.Value;
     }
@@ -82,13 +87,18 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             {
                 await PointsBatchUpdateAsync(list, stakeSumDic, settleRewardsBeforeDays);
             }
+
             await _pointsPoolService.UpdatePointsPoolStakeSumAsync(stakeSumDic);
             await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSettleKey(settleRewardsBeforeDays), true);
+
+            var larkAlertDto = BuildLarkAlertParam(list.Count, DateTime.UtcNow.ToString("yyyy-MM-dd"), true);
+            await _larkAlertProvider.SendLarkAlertAsync(larkAlertDto);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "CreatePointsSnapshot fail.");
+            _logger.LogError(e, "SettlePointsRewards fail.");
             await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSettleKey(settleRewardsBeforeDays), false);
+            await _larkAlertProvider.SendLarkFailAlertAsync(e.Message);
         }
     }
 
@@ -103,9 +113,8 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             var list = snapshotList.Skip(skipCount).Take(_pointsSnapshotOptions.BatchSnapshotCount).ToList();
 
             if (list.IsNullOrEmpty()) return;
-            list.ForEach(snapshot =>
-                _pointsPoolService.UpdatePointsPoolAddressStakeAsync(snapshot, stakeSumDic,
-                    settleRewardsBeforeDays));
+            list.ForEach(snapshot => BackgroundJob.Enqueue(() =>
+                _pointsPoolService.UpdatePointsPoolAddressStakeAsync(snapshot, stakeSumDic, settleRewardsBeforeDays)));
             await Task.Delay(_pointsSnapshotOptions.TaskDelayMilliseconds);
         }
     }
@@ -236,6 +245,24 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             skipCount += count;
         } while (!list.IsNullOrEmpty());
 
+        var larkAlertDto = BuildLarkAlertParam(res.Count, DateTime.UtcNow.ToString("yyyy-MM-dd"));
+        await _larkAlertProvider.SendLarkAlertAsync(larkAlertDto);
         return res;
+    }
+
+    private LarkAlertDto BuildLarkAlertParam(int count, string date, bool isSnapshotEnd = false)
+    {
+        var msg = isSnapshotEnd
+            ? $"Points Rewards Settle End({date}).\n"
+            : $"Points Rewards Settle Start({date}).\nPoints Snapshot Count: {count}. \n";
+        var content = new Dictionary<string, string>()
+        {
+            ["text"] = msg,
+        };
+        return new LarkAlertDto
+        {
+            MsgType = LarkAlertMsgType.Text,
+            Content = JsonConvert.SerializeObject(content)
+        };
     }
 }

@@ -1,11 +1,13 @@
 using System;
 using System.Threading.Tasks;
 using EcoEarnServer.Background.Dtos;
+using EcoEarnServer.Background.Provider;
 using EcoEarnServer.Grains.Grain.PointsSnapshot;
 using EcoEarnServer.PointsSnapshot;
 using Hangfire;
 using Microsoft.Extensions.Logging;
 using Orleans;
+using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
@@ -23,14 +25,16 @@ public class SnapshotGeneratorService : ISnapshotGeneratorService, ITransientDep
     private readonly ILogger<SnapshotGeneratorService> _logger;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IObjectMapper _objectMapper;
+    private readonly ILarkAlertProvider _larkAlertProvider;
 
     public SnapshotGeneratorService(IClusterClient clusterClient, ILogger<SnapshotGeneratorService> logger,
-        IObjectMapper objectMapper, IDistributedEventBus distributedEventBus)
+        IObjectMapper objectMapper, IDistributedEventBus distributedEventBus, ILarkAlertProvider larkAlertProvider)
     {
         _clusterClient = clusterClient;
         _logger = logger;
         _objectMapper = objectMapper;
         _distributedEventBus = distributedEventBus;
+        _larkAlertProvider = larkAlertProvider;
     }
 
     [AutomaticRetry(Attempts = 20, DelaysInSeconds = new[] { 40 })]
@@ -51,7 +55,7 @@ public class SnapshotGeneratorService : ISnapshotGeneratorService, ITransientDep
                 _logger.LogError(
                     "generate snapshot record grain fail, message:{message}, recordId:{recordId}",
                     result.Message, recordId);
-                return;
+                throw new UserFriendlyException("generate snapshot record grain fail");
             }
 
             var recordEto = _objectMapper.Map<PointsSnapshotDto, PointsSnapshotEto>(result.Data);
@@ -61,6 +65,7 @@ public class SnapshotGeneratorService : ISnapshotGeneratorService, ITransientDep
         catch (Exception e)
         {
             _logger.LogError(e, "generate snapshot record grain fail, recordId:{recordId}", recordId);
+            await _larkAlertProvider.SendLarkFailAlertAsync(e.Message);
             throw;
         }
     }

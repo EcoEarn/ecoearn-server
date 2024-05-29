@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace EcoEarnServer.Background.Options;
 
 public class PointsSnapshotOptions
@@ -16,4 +18,13 @@ public class PointsSnapshotOptions
     public int SettleRewardsBeforeDays { get; set; } = -1;
     public int UpdatePoolStakeSumWorkerDelayPeriod { get; set; } = 10000;
     public bool SettleRewards { get; set; }
+
+    public Dictionary<string, ElevenSymbolSubAddressDto> ElevenSymbolSubAddressDic { get; set; } 
+    public List<string> NineSymbolContractAddressList { get; set; } 
+}
+
+public class ElevenSymbolSubAddressDto
+{
+    public string Address { get; set; } 
+    public string Amount { get; set; } 
 }

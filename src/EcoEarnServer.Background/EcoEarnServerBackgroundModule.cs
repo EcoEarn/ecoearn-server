@@ -61,11 +61,13 @@ public class EcoEarnServerBackgroundModule : AbpModule
         Configure<PointsSnapshotOptions>(configuration.GetSection("PointsSnapshot"));
         Configure<PointsPoolOptions>(configuration.GetSection("PointsPool"));
         Configure<ChainOption>(configuration.GetSection("ChainOption"));
+        Configure<LarkAlertOptions>(configuration.GetSection("LarkAlert"));
         context.Services.AddSingleton<IPointsSnapshotService, PointsSnapshotService>();
         context.Services.AddSingleton<IPointsSnapshotProvider, PointsSnapshotProvider>();
         context.Services.AddSingleton<IStateProvider, StateProvider>();
         context.Services.AddSingleton<ISettlePointsRewardsService, SettlePointsRewardsService>();
         context.Services.AddSingleton<ISettlePointsRewardsProvider, SettlePointsRewardsProvider>();
+        context.Services.AddSingleton<ILarkAlertProvider, LarkAlertProvider>();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
         ConfigureRedis(context, configuration, hostingEnvironment);
         ConfigureCache(configuration);

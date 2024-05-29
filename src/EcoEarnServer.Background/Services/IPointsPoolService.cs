@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
+using EcoEarnServer.Background.Provider;
 using EcoEarnServer.Common;
 using EcoEarnServer.Constants;
 using EcoEarnServer.Grains.Grain.PointsPool;
@@ -32,17 +33,19 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly ILogger<PointsPoolService> _logger;
     private readonly IObjectMapper _objectMapper;
+    private readonly ILarkAlertProvider _larkAlertProvider;
 
     public PointsPoolService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
-        ILogger<PointsPoolService> logger, IObjectMapper objectMapper)
+        ILogger<PointsPoolService> logger, IObjectMapper objectMapper, ILarkAlertProvider larkAlertProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _logger = logger;
         _objectMapper = objectMapper;
+        _larkAlertProvider = larkAlertProvider;
     }
 
-    //[AutomaticRetry(Attempts = 20, DelaysInSeconds = new[] { 40 })]
+    [AutomaticRetry(Attempts = 20, DelaysInSeconds = new[] { 40 })]
     public async Task UpdatePointsPoolAddressStakeAsync(PointsSnapshotIndex pointsSnapshot,
         Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays)
     {
@@ -86,13 +89,6 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                 var recordGrain = _clusterClient.GetGrain<IPointsPoolAddressStakeGrain>(id);
                 var result = await recordGrain.CreateOrUpdateAsync(input);
 
-                if (!result.Success)
-                {
-                    _logger.LogError(
-                        "update address stake amount fail, message:{message}, id:{id}",
-                        result.Message, id);
-                }
-
                 stakeListEto.Add(_objectMapper.Map<PointsPoolAddressStakeDto, PointsPoolAddressStakeEto>(result.Data));
 
                 //record the rewards of the previous day
@@ -100,7 +96,8 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                 var stakeAmount = decimal.Parse(pointsPoolStakeSumDto.StakeAmount);
                 var rewards = stakeAmount == 0
                     ? 0
-                    : Math.Floor(decimal.Parse(value.ToString()) / stakeAmount * pointsPoolStakeSumDto.DailyReward * 100000000) / 100000000;
+                    : Math.Floor(decimal.Parse(value.ToString()) / stakeAmount * pointsPoolStakeSumDto.DailyReward *
+                                 100000000) / 100000000;
                 var rewardsId = GuidHelper.GenerateId(pointsSnapshot.Address, poolIndex, yesterday);
                 var rewardsDto = new PointsStakeRewardsDto
                 {
@@ -114,13 +111,6 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                 };
                 var pointsStakeRewardsGrain = _clusterClient.GetGrain<IPointsStakeRewardsGrain>(rewardsId);
                 var rewardsResult = await pointsStakeRewardsGrain.CreateOrUpdateAsync(rewardsDto);
-
-                if (!rewardsResult.Success)
-                {
-                    _logger.LogError(
-                        "update address stake amount fail, message:{message}, rewardsId: {rewardsId}",
-                        result.Message, rewardsId);
-                }
 
                 rewardsList.Add(_objectMapper.Map<PointsStakeRewardsDto, PointsStakeRewardsEto>(rewardsResult.Data));
 
@@ -136,13 +126,6 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
                 };
                 var rewardsSumGrain = _clusterClient.GetGrain<IPointsStakeRewardsSumGrain>(id);
                 var rewardsSumResult = await rewardsSumGrain.CreateOrUpdateAsync(rewardsSumDto);
-
-                if (!rewardsSumResult.Success)
-                {
-                    _logger.LogError(
-                        "update address stake amount sum fail, message:{message}, rewardsId: {rewardsId}",
-                        result.Message, rewardsId);
-                }
 
                 rewardsSumList.Add(
                     _objectMapper.Map<PointsStakeRewardsSumDto, PointsStakeRewardsSumEto>(rewardsSumResult.Data));
@@ -168,8 +151,10 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "UpdatePointsPoolAddressStakeAsync fail. {pointsSnapshot}", pointsSnapshot.Address);
+            _logger.LogError(e, "settle points rewards fail");
+            await _larkAlertProvider.SendLarkFailAlertAsync(e.Message);
         }
+
         _logger.LogInformation("UpdatePointsPoolAddressStakeAsync end. id:{id}", pointsSnapshot.Id);
     }
 
