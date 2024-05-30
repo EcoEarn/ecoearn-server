@@ -56,6 +56,132 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         }
     }
 
+    private async Task<List<PointsPoolAddressStakeEto>> UpdatePointsPoolAddressStakeSumAsync(
+        PointsSnapshotIndex pointsSnapshot, Dictionary<string, PointsPoolStakeSumDto> stakeSumDic)
+    {
+        var stakeListEto = new List<PointsPoolAddressStakeEto>();
+        foreach (var (poolIndex, pointsPoolStakeSumDto) in stakeSumDic)
+        {
+            var value = CheckPoints(pointsPoolStakeSumDto.PoolId, poolIndex, pointsSnapshot);
+
+            if (value == "0")
+            {
+                continue;
+            }
+
+            //update the staked amount for each address in each points pool
+            var id = GuidHelper.GenerateId(pointsSnapshot.Address, pointsPoolStakeSumDto.PoolId);
+            var poolAddressStakeDto = new PointsPoolAddressStakeDto
+            {
+                Id = id,
+                PoolId = pointsPoolStakeSumDto.PoolId,
+                PoolName = pointsPoolStakeSumDto.PoolName,
+                DappId = pointsPoolStakeSumDto.DappId,
+                Address = pointsSnapshot.Address,
+                StakeAmount = value.ToString(),
+                CreateTime = DateTime.UtcNow.ToUtcMilliSeconds()
+            };
+
+            stakeListEto.Add(
+                _objectMapper.Map<PointsPoolAddressStakeDto, PointsPoolAddressStakeEto>(poolAddressStakeDto));
+        }
+
+        return stakeListEto;
+    }
+
+    private async Task<List<PointsStakeRewardsEto>> RecordPreviousDayRewardsAsync(PointsSnapshotIndex pointsSnapshot,
+        Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays)
+    {
+        var yesterday = DateTime.UtcNow.AddDays(settleRewardsBeforeDays).ToString("yyyyMMdd");
+        var rewardsList = new List<PointsStakeRewardsEto>();
+        foreach (var (poolIndex, pointsPoolStakeSumDto) in stakeSumDic)
+        {
+            var value = CheckPoints(pointsPoolStakeSumDto.PoolId, poolIndex, pointsSnapshot);
+
+            if (value == "0")
+            {
+                continue;
+            }
+
+            //record the rewards of the previous day
+            var stakeAmount = decimal.Parse(pointsPoolStakeSumDto.StakeAmount);
+            var rewards = stakeAmount == 0
+                ? 0
+                : Math.Floor(decimal.Parse(value.ToString()) / stakeAmount * pointsPoolStakeSumDto.DailyReward *
+                             100000000) / 100000000;
+            var rewardsId = GuidHelper.GenerateId(pointsSnapshot.Address, poolIndex, yesterday);
+            var rewardsDto = new PointsStakeRewardsDto
+            {
+                Id = rewardsId,
+                PoolId = pointsPoolStakeSumDto.PoolId,
+                PoolName = pointsPoolStakeSumDto.PoolName,
+                DappId = pointsPoolStakeSumDto.DappId,
+                Rewards = rewards.ToString(CultureInfo.InvariantCulture),
+                Address = pointsSnapshot.Address,
+                SettleDate = yesterday,
+                CreateTime = DateTime.UtcNow.ToUtcMilliSeconds()
+            };
+            rewardsList.Add(_objectMapper.Map<PointsStakeRewardsDto, PointsStakeRewardsEto>(rewardsDto));
+        }
+
+        return rewardsList;
+    }
+
+    private async Task<List<PointsStakeRewardsSumEto>> UpdateAddressRewardsSumAsync(PointsSnapshotIndex pointsSnapshot,
+        Dictionary<string, PointsPoolStakeSumDto> stakeSumDic)
+    {
+        var rewardsSumList = new List<PointsStakeRewardsSumEto>();
+        foreach (var (poolIndex, pointsPoolStakeSumDto) in stakeSumDic)
+        {
+            var value = CheckPoints(pointsPoolStakeSumDto.PoolId, poolIndex, pointsSnapshot);
+
+            if (value == "0")
+            {
+                continue;
+            }
+
+
+            //record the rewards of the previous day
+            var id = GuidHelper.GenerateId(pointsSnapshot.Address, pointsPoolStakeSumDto.PoolId);
+            var stakeAmount = decimal.Parse(pointsPoolStakeSumDto.StakeAmount);
+            var rewards = stakeAmount == 0
+                ? 0
+                : Math.Floor(decimal.Parse(value) / stakeAmount * pointsPoolStakeSumDto.DailyReward *
+                             100000000) / 100000000;
+
+            //update the rewards sum for each address in each points pool
+            var rewardsSumDto = new PointsStakeRewardsSumDto
+            {
+                Id = id,
+                PoolId = pointsPoolStakeSumDto.PoolId,
+                PoolName = pointsPoolStakeSumDto.PoolName,
+                DappId = pointsPoolStakeSumDto.DappId,
+                Rewards = rewards.ToString(CultureInfo.InvariantCulture),
+                Address = pointsSnapshot.Address,
+            };
+            var rewardsSumGrain = _clusterClient.GetGrain<IPointsStakeRewardsSumGrain>(id);
+            var rewardsSumResult = await rewardsSumGrain.CreateOrUpdateAsync(rewardsSumDto);
+
+            rewardsSumList.Add(
+                _objectMapper.Map<PointsStakeRewardsSumDto, PointsStakeRewardsSumEto>(rewardsSumResult.Data));
+        }
+
+        return rewardsSumList;
+    }
+
+    private string CheckPoints(string index, string poolId, PointsSnapshotIndex pointsSnapshot)
+    {
+        if (string.IsNullOrEmpty(poolId))
+        {
+            return "0";
+        }
+
+        var symbolFieldName = PoolInfoConst.PoolIndexSymbolDic[index];
+        var property = typeof(PointsSnapshotIndex).GetProperty(symbolFieldName);
+        var value = property != null ? property.GetValue(pointsSnapshot) : null;
+        return value == null ? "0" : value.ToString();
+    }
+
     private async Task UpdatePointsPoolAddressStakeAsync(PointsSnapshotIndex pointsSnapshot,
         Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays)
     {
