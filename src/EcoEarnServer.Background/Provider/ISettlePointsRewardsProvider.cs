@@ -51,7 +51,7 @@ public class SettlePointsRewardsProvider : ISettlePointsRewardsProvider, ISingle
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<PointsStakeRewardsIndex>, QueryContainer>>();
 
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.EndDate).Value(endSettleDate)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.EndSettleDate).Value(endSettleDate)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.PeriodState).Value(PeriodState.InPeriod)));
 
 

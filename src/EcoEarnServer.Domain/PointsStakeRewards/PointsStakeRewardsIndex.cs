@@ -13,8 +13,8 @@ public class PointsStakeRewardsIndex : AbstractEntity<string>, IIndexBuild
     [Keyword] public string Rewards { get; set; }
     public long ReleasePeriod { get; set; }
     [Keyword] public string SettleDate { get; set; }
-    [Keyword] public string EndDate { get; set; }
-    public long UpdateTime { get; set; }
+    [Keyword] public string StartSettleDate { get; set; }
+    [Keyword] public string EndSettleDate { get; set; }
     public long CreateTime { get; set; }
     public PeriodState PeriodState { get; set; }
 }

@@ -93,6 +93,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             }
 
             await _pointsPoolService.UpdatePointsPoolStakeSumAsync(stakeSumDic);
+            //update ended Period data
             await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSettleKey(settleRewardsBeforeDays), true);
 
             var larkAlertDto = BuildLarkAlertParam(list.Count, DateTime.UtcNow.ToString("yyyy-MM-dd"), true);
