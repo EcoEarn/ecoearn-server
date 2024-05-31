@@ -6,9 +6,11 @@ using System.Threading.Tasks;
 using EcoEarnServer.Background.Options;
 using EcoEarnServer.Background.Provider;
 using EcoEarnServer.Background.Provider.Dtos;
+using EcoEarnServer.Common;
 using EcoEarnServer.Constants;
 using EcoEarnServer.Grains.Grain.PointsPool;
 using EcoEarnServer.PointsSnapshot;
+using EcoEarnServer.PointsStakeRewards;
 using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -82,10 +84,12 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         {
             var list = await GetYesterdaySnapshotAsync(settleRewardsBeforeDays);
             var stakeSumDic = GetYesterdayStakeSumDic(list);
+            //get expired rewards data
+            var endedPeriodRewardsDic = await GetEndedCycleRewardsDicAsync();
             //update the staked sum for each points pool
             if (_pointsSnapshotOptions.SettleRewards)
             {
-                await PointsBatchUpdateAsync(list, stakeSumDic, settleRewardsBeforeDays);
+                await PointsBatchUpdateAsync(list, stakeSumDic, settleRewardsBeforeDays, endedPeriodRewardsDic);
             }
 
             await _pointsPoolService.UpdatePointsPoolStakeSumAsync(stakeSumDic);
@@ -102,9 +106,35 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         }
     }
 
+    private async Task<Dictionary<string, List<PointsStakeRewardsIndex>>> GetEndedCycleRewardsDicAsync()
+    {
+        var res = new List<PointsStakeRewardsIndex>();
+        var skipCount = 0;
+        var maxResultCount = 5000;
+        List<PointsStakeRewardsIndex> list;
+        var today = DateTime.UtcNow.ToString("yyyyMMdd");
+        do
+        {
+            list = await _settlePointsRewardsProvider.GetEndedRewardsListAsync(today, skipCount, maxResultCount);
+            var count = list.Count;
+            res.AddRange(list);
+            if (list.IsNullOrEmpty() || count < maxResultCount)
+            {
+                break;
+            }
+
+            skipCount += count;
+        } while (!list.IsNullOrEmpty());
+
+        return res
+            .GroupBy(x => GuidHelper.GenerateId(x.Address, x.PoolId))
+            .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
 
     private async Task PointsBatchUpdateAsync(List<PointsSnapshotIndex> snapshotList,
-        Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays)
+        Dictionary<string, PointsPoolStakeSumDto> stakeSumDic, int settleRewardsBeforeDays,
+        Dictionary<string, List<PointsStakeRewardsIndex>> endedPeriodRewardsDic)
     {
         var recurCount = snapshotList.Count / _pointsSnapshotOptions.BatchSnapshotCount + 1;
         for (var i = 0; i < recurCount; i++)
@@ -114,7 +144,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
 
             if (list.IsNullOrEmpty()) return;
             BackgroundJob.Enqueue(() =>
-                _pointsPoolService.BatchUpdatePointsPoolAddressStakeAsync(list, stakeSumDic, settleRewardsBeforeDays));
+                _pointsPoolService.BatchUpdatePointsPoolAddressStakeAsync(list, stakeSumDic, settleRewardsBeforeDays, endedPeriodRewardsDic));
             await Task.Delay(_pointsSnapshotOptions.TaskDelayMilliseconds);
         }
     }

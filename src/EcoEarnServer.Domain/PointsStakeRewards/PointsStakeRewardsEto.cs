@@ -18,6 +18,9 @@ public class PointsStakeRewardsEto
     public string DappId { get; set; }
     public string Rewards { get; set; }
     public string SettleDate { get; set; }
-    public long UpdateTime { get; set; }
     public long CreateTime { get; set; }
+    public PeriodState PeriodState { get; set; }
+    public string StartSettleDate { get; set; }
+    public string EndSettleDate { get; set; }
+    public long ReleasePeriod { get; set; }
 }

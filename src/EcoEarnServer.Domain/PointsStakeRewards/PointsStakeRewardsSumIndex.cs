@@ -11,6 +11,10 @@ public class PointsStakeRewardsSumIndex : AbstractEntity<string>, IIndexBuild
     [Keyword] public string PoolName { get; set; }
     [Keyword] public string DappId { get; set; }
     [Keyword] public string Rewards { get; set; }
+    [Keyword] public string FrozenAmount { get; set; }
+    [Keyword] public string TotalRewards { get; set; }
+    [Keyword] public string ClaimedAmount { get; set; }
+    [Keyword] public string LastSettleAmount { get; set; }
     public long UpdateTime { get; set; }
     public long CreateTime { get; set; }
 }

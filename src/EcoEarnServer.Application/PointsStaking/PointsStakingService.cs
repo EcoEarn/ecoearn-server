@@ -22,7 +22,6 @@ using EcoEarnServer.TokenStaking;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nest;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -171,20 +170,20 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         var addressStakeRewardsDic = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(input.Address);
         pointsPoolsDtos.ForEach(dto =>
         {
+            var flag = addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(input.Address, dto.PoolId), out var earned);
             dto.TotalStake = pointsPoolStakeSumDic.TryGetValue(dto.PoolId, out var totalStake) ? totalStake : "0";
             dto.Staked =
                 addressStakeAmountDic.TryGetValue(GuidHelper.GenerateId(input.Address, dto.PoolId), out var staked)
                     ? staked
                     : "0";
-            dto.Earned =
-                addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(input.Address, dto.PoolId), out var earned)
-                    ? earned
-                    : "0";
+            dto.Earned = flag ? earned.Rewards : "0";
+            dto.TotalRewards = flag ? (double.Parse(earned.TotalRewards) * 0.9).ToString(CultureInfo.InvariantCulture) : "0";
+            dto.FrozenAmount = flag ? (double.Parse(earned.FrozenAmount) * 0.9).ToString(CultureInfo.InvariantCulture) : "0";
             dto.RealEarned = (double.Parse(dto.Earned) * 0.9).ToString(CultureInfo.InvariantCulture);
             dto.DailyRewards = dto.TotalStake == "0"
                 ? "0"
                 : Math.Floor(10000 * 30 / decimal.Parse(dto.TotalStake) * dto.PoolDailyRewards * 100000000)
-                .ToString(CultureInfo.InvariantCulture);
+                    .ToString(CultureInfo.InvariantCulture);
         });
         var sortedPointsPools = pointsPoolsDtos.OrderByDescending(dto => decimal.Parse(dto.DailyRewards)).ToList();
 
@@ -226,17 +225,11 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         //prevention of over claim
         var addressStakeRewardsDic = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(address);
         if (!addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(address, poolId), out var earned) ||
-            Math.Floor(decimal.Parse(earned) * 100000000) - amount < 0 || amount < 0)
+            Math.Floor(decimal.Parse(earned.Rewards) * 100000000) - amount < 0 || amount < 0)
         {
             throw new UserFriendlyException("invalid amount");
         }
-
-        //generate signature
-        if (!_chainOption.AccountPrivateKey.TryGetValue(ContractConstants.SenderName, out var privateKey))
-        {
-            throw new UserFriendlyException("invalid pool");
-        }
-
+        
         //get claiming record
         var claimingList = await _pointsStakingProvider.GetClaimingListAsync(address, poolId);
         //check seeds is claimed
@@ -401,14 +394,8 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
     private async Task SettleRewardsAsync(string address, string poolId, double claimAmount)
     {
         var id = GuidHelper.GenerateId(address, poolId);
-        var rewardsSumDto = new PointsStakeRewardsSumDto()
-        {
-            Id = id,
-            PoolId = poolId,
-            Rewards = claimAmount.ToString(CultureInfo.InvariantCulture)
-        };
         var rewardsSumGrain = _clusterClient.GetGrain<IPointsStakeRewardsSumGrain>(id);
-        var result = await rewardsSumGrain.CreateOrUpdateAsync(rewardsSumDto);
+        var result = await rewardsSumGrain.ClaimRewardsAsync(claimAmount.ToString(CultureInfo.InvariantCulture));
 
         if (!result.Success)
         {

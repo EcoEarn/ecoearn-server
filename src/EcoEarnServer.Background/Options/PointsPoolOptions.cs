@@ -14,4 +14,5 @@ public class PointsPoolInfo
     public string PoolName { get; set; }
     public string DappId { get; set; }
     public decimal DailyReward { get; set; } = 10000;
+    public long ReleasePeriod { get; set; }
 }

@@ -8,4 +8,5 @@ public class PointsPoolStakeSumDto
     public string PoolName { get; set; }
     public string DappId { get; set; }
     public decimal DailyReward { get; set; }
+    public long ReleasePeriod { get; set; }
 }

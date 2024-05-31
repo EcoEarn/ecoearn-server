@@ -19,4 +19,8 @@ public class PointsStakeRewardsSumEto
     public string Rewards { get; set; }
     public long UpdateTime { get; set; }
     public long CreateTime { get; set; }
+    public string ClaimedAmount { get; set; }
+    public string FrozenAmount { get; set; }
+    public string TotalRewards { get; set; }
+    public string LastSettleAmount { get; set; }
 }

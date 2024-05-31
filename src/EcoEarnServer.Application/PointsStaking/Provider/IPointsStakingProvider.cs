@@ -24,7 +24,7 @@ public interface IPointsStakingProvider
 
     Task<Dictionary<string, string>> GetPointsPoolStakeSumDicAsync(List<string> poolIds);
     Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address);
-    Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address);
+    Task<Dictionary<string, PointsStakeRewardsSumIndex>> GetAddressStakeRewardsDicAsync(string address);
     Task<List<RewardsListIndexerDto>> GetRealClaimInfoListAsync(List<string> seeds, string address, string poolId);
     Task<List<PointsPoolClaimRecordIndex>> GetClaimingListAsync(string address, string poolId);
     Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string inputAddress);
@@ -141,11 +141,11 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         return list.ToDictionary(x => GuidHelper.GenerateId(x.Address, x.PoolId), x => x.StakeAmount);
     }
 
-    public async Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address)
+    public async Task<Dictionary<string, PointsStakeRewardsSumIndex>> GetAddressStakeRewardsDicAsync(string address)
     {
         if (string.IsNullOrEmpty(address))
         {
-            return new Dictionary<string, string>();
+            return new Dictionary<string, PointsStakeRewardsSumIndex>();
         }
 
         var mustQuery = new List<Func<QueryContainerDescriptor<PointsStakeRewardsSumIndex>, QueryContainer>>();
@@ -158,7 +158,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         var (total, list) = await _addressStakeRewardsRepository.GetListAsync(Filter,
             skip: 0, limit: 5000);
         _logger.LogInformation("GetAddressStakeRewardsDicAsync: {total}", total);
-        return list.ToDictionary(x => GuidHelper.GenerateId(x.Address, x.PoolId), x => x.Rewards);
+        return list.ToDictionary(x => GuidHelper.GenerateId(x.Address, x.PoolId), x => x);
     }
 
     public async Task<List<RewardsListIndexerDto>> GetRealClaimInfoListAsync(List<string> seeds, string address,

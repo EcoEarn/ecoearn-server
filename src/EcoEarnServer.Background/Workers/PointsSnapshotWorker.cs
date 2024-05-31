@@ -24,7 +24,7 @@ public class PointsSnapshotWorker : AsyncPeriodicBackgroundWorkerBase
         _pointsSnapshotService = pointsSnapshotService;
         _logger = logger;
         _options = options.Value;
-        timer.Period = options.Value.CheckSnapshotPeriod * 60 * 1000;
+        timer.Period = 1000;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
