@@ -21,5 +21,4 @@ public class RewardOperationRecordEto
 public class ClaimInfoDto
 {
     public string ClaimId { get; set; }
-    public long Amount { get; set; }
 }
