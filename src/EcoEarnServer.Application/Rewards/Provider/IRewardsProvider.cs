@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using EcoEarnServer.Common.GraphQL;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
 using GraphQL;
 using Microsoft.Extensions.Logging;
+using Nest;
 using Volo.Abp.DependencyInjection;
 
 namespace EcoEarnServer.Rewards.Provider;
@@ -16,17 +18,22 @@ public interface IRewardsProvider
         int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false);
 
     Task<List<string>> GetUnLockedStakeIdsAsync(List<string> stakeIds, string address);
+    Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address);
+    Task<List<RewardOperationRecordIndex>> GetExecutingListAsync(string address, ExecuteType executeType);
 }
 
 public class RewardsProvider : IRewardsProvider, ISingletonDependency
 {
     private readonly IGraphQlHelper _graphQlHelper;
     private readonly ILogger<RewardsProvider> _logger;
+    private readonly INESTRepository<RewardOperationRecordIndex, string> _repository;
 
-    public RewardsProvider(IGraphQlHelper graphQlHelper, ILogger<RewardsProvider> logger)
+    public RewardsProvider(IGraphQlHelper graphQlHelper, ILogger<RewardsProvider> logger,
+        INESTRepository<RewardOperationRecordIndex, string> repository)
     {
         _graphQlHelper = graphQlHelper;
         _logger = logger;
+        _repository = repository;
     }
 
     public async Task<RewardsListIndexerResult> GetRewardsListAsync(PoolTypeEnums poolType, string address,
@@ -50,10 +57,11 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
                         poolId,
                         stakeId,
                         claimedAmount,
+                        earlyStakedAmount,
                         claimedSymbol,
                         claimedBlockNumber,
     					claimedTime,
-    					unlockTime,
+    					releaseTime,
     					withdrawTime,
     					earlyStakeTime,
     					account,
@@ -105,5 +113,32 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             _logger.LogError(e, "GetUnLockedStakeIds Indexer error");
             return new List<string>();
         }
+    }
+
+    public async Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<RewardOperationRecordIndex>, QueryContainer>>();
+
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
+
+        QueryContainer Filter(QueryContainerDescriptor<RewardOperationRecordIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (total, list) = await _repository.GetListAsync(Filter,
+            skip: 0, limit: 5000);
+        return list;
+    }
+
+    public async Task<List<RewardOperationRecordIndex>> GetExecutingListAsync(string address, ExecuteType executeType)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<RewardOperationRecordIndex>, QueryContainer>>();
+
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.ExecuteType).Value(executeType)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.ExecuteStatus).Value(ExecuteStatus.Executing)));
+
+        QueryContainer Filter(QueryContainerDescriptor<RewardOperationRecordIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (total, list) = await _repository.GetListAsync(Filter,
+            skip: 0, limit: 5000);
+        return list;
+        
     }
 }

@@ -10,11 +10,12 @@ public class RewardsListIndexerDto
     public string StakeId { get; set; }
     public string PoolId { get; set; }
     public string ClaimedAmount { get; set; }
+    public string EarlyStakedAmount { get; set; }
     public string Seed { get; set; }
     public string ClaimedSymbol { get; set; }
     public long ClaimedBlockNumber { get; set; }
     public long ClaimedTime { get; set; }
-    public long UnlockTime { get; set; }
+    public long ReleaseTime { get; set; }
     public long WithdrawTime { get; set; }
     public long EarlyStakeTime { get; set; }
     public string Account { get; set; }

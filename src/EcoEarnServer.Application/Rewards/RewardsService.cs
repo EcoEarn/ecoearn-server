@@ -2,24 +2,39 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Cryptography;
+using AElf.Types;
+using EcoEarn.Contracts.Rewards;
 using EcoEarnServer.Common;
+using EcoEarnServer.Common.AElfSdk;
+using EcoEarnServer.Grains.Grain.Rewards;
 using EcoEarnServer.Options;
 using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.Rewards.Provider;
 using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orleans;
+using Portkey.Contracts.CA;
+using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.DistributedLocking;
+using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
 namespace EcoEarnServer.Rewards;
 
 public class RewardsService : IRewardsService, ISingletonDependency
 {
+    private const string LockKeyPrefix = "EcoEarnServer:RewardsWithdraw:Lock:";
+
     private readonly IRewardsProvider _rewardsProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<RewardsService> _logger;
@@ -27,16 +42,36 @@ public class RewardsService : IRewardsService, ISingletonDependency
     private readonly IPointsStakingProvider _pointsStakingProvider;
     private readonly ITokenStakingProvider _tokenStakingProvider;
     private readonly LpPoolRateOptions _lpPoolRateOptions;
+    private readonly IAbpDistributedLock _distributedLock;
+    private readonly IClusterClient _clusterClient;
+    private readonly ChainOption _chainOption;
+    private readonly ProjectKeyPairInfoOptions _projectKeyPairInfoOptions;
+    private readonly ISecretProvider _secretProvider;
+    private readonly IDistributedEventBus _distributedEventBus;
+    private readonly EcoEarnContractOptions _earnContractOptions;
+    private readonly ContractProvider _contractProvider;
 
     public RewardsService(IRewardsProvider rewardsProvider, IObjectMapper objectMapper, ILogger<RewardsService> logger,
         IOptionsSnapshot<TokenPoolIconsOptions> tokenPoolIconsOptions, IPointsStakingProvider pointsStakingProvider,
-        ITokenStakingProvider tokenStakingProvider, IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions)
+        ITokenStakingProvider tokenStakingProvider, IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions,
+        IAbpDistributedLock distributedLock, IClusterClient clusterClient, IOptionsSnapshot<ChainOption> chainOption,
+        IOptionsSnapshot<ProjectKeyPairInfoOptions> projectKeyPairInfoOptions, ISecretProvider secretProvider,
+        IDistributedEventBus distributedEventBus, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
+        ContractProvider contractProvider)
     {
         _rewardsProvider = rewardsProvider;
         _objectMapper = objectMapper;
         _logger = logger;
         _pointsStakingProvider = pointsStakingProvider;
         _tokenStakingProvider = tokenStakingProvider;
+        _distributedLock = distributedLock;
+        _clusterClient = clusterClient;
+        _secretProvider = secretProvider;
+        _distributedEventBus = distributedEventBus;
+        _contractProvider = contractProvider;
+        _earnContractOptions = earnContractOptions.Value;
+        _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
+        _chainOption = chainOption.Value;
         _lpPoolRateOptions = lpPoolRateOptions.Value;
         _tokenPoolIconsOptions = tokenPoolIconsOptions.Value;
     }
@@ -80,6 +115,348 @@ public class RewardsService : IRewardsService, ISingletonDependency
         };
     }
 
+    public async Task<RewardsAggregationDto> GetRewardsAggregationAsync(GetRewardsAggregationInput input)
+    {
+        var address = input.Address;
+        var rewardsList = await GetAllRewardsList(address, PoolTypeEnums.All);
+        var poolTypeRewardDic = rewardsList
+            .GroupBy(x => x.PoolType)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        var rewardsAggregationDto = new RewardsAggregationDto();
+        foreach (var keyValuePair in poolTypeRewardDic)
+        {
+            switch (keyValuePair.Key)
+            {
+                case PoolTypeEnums.Points:
+                    rewardsAggregationDto.PointsPoolAgg =
+                        await GetPointsPoolRewardsAggAsync(keyValuePair.Value, address);
+                    break;
+                case PoolTypeEnums.Token:
+                    rewardsAggregationDto.TokenPoolAgg = await GetTokenPoolRewardsAggAsync(keyValuePair.Value, address);
+                    break;
+                case PoolTypeEnums.Lp:
+                    rewardsAggregationDto.LpPoolAgg = await GetLpPoolRewardsAggAsync(keyValuePair.Value, address);
+                    break;
+            }
+        }
+
+        if (string.IsNullOrEmpty(rewardsAggregationDto.PointsPoolAgg.RewardsTokenName))
+        {
+            var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("");
+            var pointsPoolRewardsToken = pointsPoolsIndexerDtos.FirstOrDefault()?.PointsPoolConfig.RewardToken;
+            rewardsAggregationDto.PointsPoolAgg.RewardsTokenName = pointsPoolRewardsToken;
+        }
+
+        if (string.IsNullOrEmpty(rewardsAggregationDto.TokenPoolAgg.RewardsTokenName))
+        {
+            var tokenPools = await _tokenStakingProvider.GetTokenPoolsAsync(new GetTokenPoolsInput()
+            {
+                PoolType = PoolTypeEnums.Token
+            });
+            var tokenPoolRewardsToken = tokenPools.FirstOrDefault()?.TokenPoolConfig.RewardToken;
+            rewardsAggregationDto.TokenPoolAgg.RewardsTokenName = tokenPoolRewardsToken;
+        }
+
+        if (string.IsNullOrEmpty(rewardsAggregationDto.LpPoolAgg.RewardsTokenName))
+        {
+            var lpPools = await _tokenStakingProvider.GetTokenPoolsAsync(new GetTokenPoolsInput()
+            {
+                PoolType = PoolTypeEnums.Lp
+            });
+            var lpPoolRewardsToken = lpPools.FirstOrDefault()?.TokenPoolConfig.RewardToken;
+            rewardsAggregationDto.LpPoolAgg.RewardsTokenName = lpPoolRewardsToken;
+        }
+
+        return rewardsAggregationDto;
+    }
+
+    public async Task<RewardsSignatureDto> RewardsWithdrawSignatureAsync(RewardsSignatureInput input)
+    {
+        return await RewardsSignatureAsync(input, ExecuteType.Withdrawn);
+    }
+
+    public async Task<string> RewardsWithdrawAsync(RewardsTransactionInput input)
+    {
+        var transaction =
+            Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
+
+        var withdrawInput = new WithdrawInput();
+        if (transaction.To.ToBase58() == _earnContractOptions.CAContractAddress &&
+            transaction.MethodName == "ManagerForwardCall")
+        {
+            var managerForwardCallInput = ManagerForwardCallInput.Parser.ParseFrom(transaction.Params);
+            if (managerForwardCallInput.MethodName == "Withdraw" &&
+                managerForwardCallInput.ContractAddress.ToBase58() ==
+                _earnContractOptions.EcoEarnRewardsContractAddress)
+            {
+                withdrawInput = WithdrawInput.Parser.ParseFrom(managerForwardCallInput.Args);
+            }
+        }
+        else if (transaction.To.ToBase58() == _earnContractOptions.EcoEarnRewardsContractAddress &&
+                 transaction.MethodName == "Withdraw")
+        {
+            withdrawInput = WithdrawInput.Parser.ParseFrom(transaction.Params);
+        }
+        else
+        {
+            throw new UserFriendlyException("Invalid transaction");
+        }
+
+        var computedHash = HashHelper.ComputeFrom(new WithdrawInput
+        {
+            ClaimIds = { withdrawInput.ClaimIds },
+            Account = withdrawInput.Account,
+            Amount = withdrawInput.Amount,
+            Seed = withdrawInput.Seed,
+            ExpirationTime = withdrawInput.ExpirationTime,
+            DappId = withdrawInput.DappId
+        }.ToByteArray());
+        if (!CryptoHelper.RecoverPublicKey(withdrawInput.Signature.ToByteArray(), computedHash.ToByteArray(),
+                out var publicKeyByte))
+        {
+            throw new UserFriendlyException("invalid Signature");
+        }
+
+        var publicKey = publicKeyByte.ToHex();
+        if (!_projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(CommonConstant.Project, out var pubKey)
+            || pubKey.PublicKey != publicKey)
+        {
+            throw new UserFriendlyException("invalid Signature");
+        }
+
+        if (withdrawInput.ExpirationTime * 1000 < DateTime.UtcNow.ToUtcMilliSeconds())
+        {
+            throw new UserFriendlyException("Please wait for the reward to be settled");
+        }
+
+        // var poolId = claimInput.PoolId.ToHex();
+        // var address = claimInput.Account.ToBase58();
+        // await SettleRewardsAsync(address, poolId, -((double)claimInput.Amount / 100000000));
+        //
+        // await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
+
+        var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
+        return transactionOutput.TransactionId;
+    }
+
+    public async Task<RewardsSignatureDto> EarlyStakeSignatureAsync(RewardsSignatureInput input)
+    {
+        return await RewardsSignatureAsync(input, ExecuteType.Withdrawn);
+    }
+
+    public async Task<string> EarlyStakeAsync(RewardsTransactionInput input)
+    {
+        var transaction =
+            Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
+
+        var withdrawInput = new WithdrawInput();
+        if (transaction.To.ToBase58() == _earnContractOptions.CAContractAddress &&
+            transaction.MethodName == "ManagerForwardCall")
+        {
+            var managerForwardCallInput = ManagerForwardCallInput.Parser.ParseFrom(transaction.Params);
+            if (managerForwardCallInput.MethodName == "Withdraw" &&
+                managerForwardCallInput.ContractAddress.ToBase58() ==
+                _earnContractOptions.EcoEarnRewardsContractAddress)
+            {
+                withdrawInput = WithdrawInput.Parser.ParseFrom(managerForwardCallInput.Args);
+            }
+        }
+        else if (transaction.To.ToBase58() == _earnContractOptions.EcoEarnRewardsContractAddress &&
+                 transaction.MethodName == "Withdraw")
+        {
+            withdrawInput = WithdrawInput.Parser.ParseFrom(transaction.Params);
+        }
+        else
+        {
+            throw new UserFriendlyException("Invalid transaction");
+        }
+
+        var computedHash = HashHelper.ComputeFrom(new WithdrawInput
+        {
+            ClaimIds = { withdrawInput.ClaimIds },
+            Account = withdrawInput.Account,
+            Amount = withdrawInput.Amount,
+            Seed = withdrawInput.Seed,
+            ExpirationTime = withdrawInput.ExpirationTime,
+            DappId = withdrawInput.DappId
+        }.ToByteArray());
+        if (!CryptoHelper.RecoverPublicKey(withdrawInput.Signature.ToByteArray(), computedHash.ToByteArray(),
+                out var publicKeyByte))
+        {
+            throw new UserFriendlyException("invalid Signature");
+        }
+
+        var publicKey = publicKeyByte.ToHex();
+        if (!_projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(CommonConstant.Project, out var pubKey)
+            || pubKey.PublicKey != publicKey)
+        {
+            throw new UserFriendlyException("invalid Signature");
+        }
+
+        if (withdrawInput.ExpirationTime * 1000 < DateTime.UtcNow.ToUtcMilliSeconds())
+        {
+            throw new UserFriendlyException("Please wait for the reward to be settled");
+        }
+
+        // var poolId = claimInput.PoolId.ToHex();
+        // var address = claimInput.Account.ToBase58();
+        // await SettleRewardsAsync(address, poolId, -((double)claimInput.Amount / 100000000));
+        //
+        // await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
+
+        var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
+        return transactionOutput.TransactionId;
+    }
+
+
+    private async Task<RewardsSignatureDto> RewardsSignatureAsync(RewardsSignatureInput input, ExecuteType executeType)
+    {
+        var poolType = input.PoolType;
+        var address = input.Address;
+        var amount = input.Amount;
+        var withdrawClaimIds = input.ClaimInfos.Select(x => x.ClaimId).ToList();
+        var dappId = input.DappId;
+        var poolId = input.PoolId;
+        var period = input.Period;
+
+        //prevention of duplicate withdraw
+        await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + address);
+
+        if (handle == null)
+        {
+            throw new UserFriendlyException("generating signature.");
+        }
+
+        var claimIdsHex = withdrawClaimIds.SelectMany(id => Encoding.UTF8.GetBytes(id)).ToArray().ToHex();
+        var id = GuidHelper.GenerateId(address, poolType.ToString(), ExecuteType.Withdrawn.ToString(), claimIdsHex);
+        var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
+        var record = await rewardOperationRecordGrain.GetAsync();
+        if (record != null)
+        {
+            _logger.LogWarning(
+                "already generated signature. id: {id}", id);
+            return new RewardsSignatureDto
+            {
+                Seed = HashHelper.ComputeFrom(record.Seed).ToHex(),
+                Signature = ByteStringHelper.FromHexString(record.Signature),
+                ExpirationTime = record.ExpiredTime / 1000
+            };
+        }
+
+        //prevention of over withdraw
+        var isValid = await CheckAmountValidityAsync(address, amount, withdrawClaimIds, poolType, executeType);
+        if (!isValid)
+        {
+            throw new UserFriendlyException("invalid withdraw amount.");
+        }
+
+        //generate signature
+        if (!_chainOption.AccountPrivateKey.TryGetValue(ContractConstants.SenderName, out var privateKey))
+        {
+            throw new UserFriendlyException("invalid pool");
+        }
+
+        // // //get withdrawing record
+        // var withdrawingList = await _rewardsProvider.GetExecutingListAsync(address, ExecuteType.Withdrawn);
+        // //check seeds is withdrawn
+        // var seeds = withdrawingList.Select(x => x.Seed).ToList();
+        // var realClaimInfoList = await _rewardsProvider.GetRealWithdrawnListAsync(seeds, address, poolId);
+        // var realClaimSeeds = realClaimInfoList.Select(x => x.Seed).ToList();
+        // foreach (var claimingRecord in claimingList.Where(
+        //              claimingRecord => realClaimSeeds.Contains(claimingRecord.Seed)))
+        // {
+        //     //change record status
+        //     await UpdateClaimStatusAsync(address, poolId, claimingRecord.Seed, "");
+        //     //sub amount
+        //     await SettleRewardsAsync(address, poolId, -((double)claimingRecord.Amount / 100000000));
+        //     amount -= claimingRecord.Amount;
+        // }
+
+        var expiredPeriod =
+            _projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(CommonConstant.Project, out var projectInfo)
+                ? projectInfo.ExpiredSeconds
+                : 600;
+        var now = DateTime.UtcNow;
+        var expiredTime = new DateTime(now.Year, now.Month, now.Day)
+            .AddDays(1)
+            .AddSeconds(-expiredPeriod)
+            .ToUtcMilliSeconds();
+        var seed = Guid.NewGuid().ToString();
+        IMessage data = executeType switch
+        {
+            ExecuteType.Withdrawn => new WithdrawInput
+            {
+                ClaimIds = { withdrawClaimIds.Select(Hash.LoadFromHex).ToList() },
+                Account = Address.FromBase58(address),
+                Amount = amount,
+                Seed = HashHelper.ComputeFrom(seed),
+                ExpirationTime = expiredTime / 1000,
+                DappId = Hash.LoadFromHex(dappId)
+            },
+            ExecuteType.EarlyStake => new EarlyStakeInput
+            {
+                StakeInput = new StakeInput
+                {
+                    ClaimIds = { withdrawClaimIds.Select(Hash.LoadFromHex).ToList() },
+                    Account = Address.FromBase58(address),
+                    Amount = amount,
+                    Seed = HashHelper.ComputeFrom(seed),
+                    ExpirationTime = expiredTime / 1000,
+                    PoolId = HashHelper.ComputeFrom(poolId),
+                    Period = period,
+                    DappId = Hash.LoadFromHex(dappId)
+                }
+            },
+            ExecuteType.LiquidityAdded => new WithdrawInput
+            {
+                ClaimIds = { withdrawClaimIds.Select(Hash.LoadFromHex).ToList() },
+                Account = Address.FromBase58(address),
+                Amount = amount,
+                Seed = HashHelper.ComputeFrom(seed),
+                ExpirationTime = expiredTime / 1000,
+                DappId = Hash.LoadFromHex(dappId)
+            },
+            _ => null
+        };
+
+        var signature = await GenerateSignatureByPubKeyAsync(projectInfo.PublicKey, data);
+
+        //save signature
+        var recordDto = new RewardOperationRecordDto()
+        {
+            Id = id,
+            Amount = amount,
+            Address = address,
+            Seed = seed,
+            Signature = signature,
+            ClaimInfos = input.ClaimInfos,
+            ExecuteStatus = ExecuteStatus.Executing,
+            ExecuteType = executeType,
+            CreateTime = DateTime.UtcNow.ToUtcMilliSeconds(),
+            ExpiredTime = expiredTime
+        };
+
+        var saveResult = await rewardOperationRecordGrain.CreateAsync(recordDto);
+
+        if (!saveResult.Success)
+        {
+            _logger.LogError(
+                "save withdraw record fail, message:{message}, id: {id}", saveResult.Message, id);
+            throw new UserFriendlyException(saveResult.Message);
+        }
+
+        await _distributedEventBus.PublishAsync(
+            _objectMapper.Map<RewardOperationRecordDto, RewardOperationRecordEto>(saveResult.Data));
+
+        return new RewardsSignatureDto
+        {
+            Seed = HashHelper.ComputeFrom(seed).ToHex(),
+            Signature = ByteStringHelper.FromHexString(signature),
+            ExpirationTime = expiredTime / 1000
+        };
+    }
+
+
     private async Task<Dictionary<string, PoolIdDataDto>> GetPoolIdDicAsync(List<RewardsListDto> result)
     {
         var pointsPoolIds = result
@@ -116,62 +493,66 @@ public class RewardsService : IRewardsService, ISingletonDependency
         return poolIdDic;
     }
 
-    public async Task<RewardsAggregationDto> GetRewardsAggregationAsync(GetRewardsAggregationInput input)
+    private async Task<string> GenerateSignatureByPubKeyAsync(string pubKey, IMessage param)
     {
-        var address = input.Address;
-        var rewardsList = await GetAllRewardsList(address);
-        var poolTypeRewardDic = rewardsList
-            .GroupBy(x => x.PoolType)
-            .ToDictionary(g => g.Key, g => g.ToList());
-        var rewardsAggregationDto = new RewardsAggregationDto();
-        foreach (var keyValuePair in poolTypeRewardDic)
-        {
-            switch (keyValuePair.Key)
-            {
-                case PoolTypeEnums.Points:
-                    rewardsAggregationDto.PointsPoolAgg =
-                        await GetPointsPoolRewardsAggAsync(keyValuePair.Value, address);
-                    break;
-                case PoolTypeEnums.Token:
-                    rewardsAggregationDto.TokenPoolAgg = await GetTokenPoolRewardsAggAsync(keyValuePair.Value, address);
-                    break;
-                case PoolTypeEnums.Lp:
-                    rewardsAggregationDto.LpPoolAgg = await GetLpPoolRewardsAggAsync(keyValuePair.Value, address);
-                    break;
-            }
-        }
-
-        if (string.IsNullOrEmpty(rewardsAggregationDto.PointsPoolAgg.RewardsTokenName))
-        {
-            var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("");
-            var pointsPoolRewardsToken = pointsPoolsIndexerDtos.FirstOrDefault()?.PointsPoolConfig.RewardToken;
-            rewardsAggregationDto.PointsPoolAgg.RewardsTokenName = pointsPoolRewardsToken;
-        }
-        if (string.IsNullOrEmpty(rewardsAggregationDto.TokenPoolAgg.RewardsTokenName))
-        {
-            var tokenPools = await _tokenStakingProvider.GetTokenPoolsAsync(new GetTokenPoolsInput()
-            {
-                PoolType = PoolTypeEnums.Token
-            });
-            var tokenPoolRewardsToken = tokenPools.FirstOrDefault()?.TokenPoolConfig.RewardToken;
-            rewardsAggregationDto.TokenPoolAgg.RewardsTokenName = tokenPoolRewardsToken;
-        }
-        if (string.IsNullOrEmpty(rewardsAggregationDto.LpPoolAgg.RewardsTokenName))
-        {
-            var lpPools = await _tokenStakingProvider.GetTokenPoolsAsync(new GetTokenPoolsInput()
-            {
-                PoolType = PoolTypeEnums.Lp
-            });
-            var lpPoolRewardsToken = lpPools.FirstOrDefault()?.TokenPoolConfig.RewardToken;
-            rewardsAggregationDto.LpPoolAgg.RewardsTokenName = lpPoolRewardsToken;
-        }
-        
-        return rewardsAggregationDto;
+        var dataHash = HashHelper.ComputeFrom(param);
+        return await _secretProvider.GetSignatureFromHashAsync(pubKey, dataHash);
     }
 
-    private async Task<PointsPoolAggDto> GetPointsPoolRewardsAggAsync(List<RewardsListIndexerDto> list, string address)
+    private async Task<bool> CheckAmountValidityAsync(string address, long amount, List<string> withdrawClaimIds,
+        PoolTypeEnums poolType, ExecuteType executeType)
     {
-        var pointsPoolAggDto = new PointsPoolAggDto();
+        var rewardsAllList = await GetAllRewardsList(address, poolType);
+        //filter release time < now
+        var pastReleaseTimeClaimInfoList = rewardsAllList
+            .Where(x => x.ReleaseTime < DateTime.UtcNow.ToUtcMilliSeconds())
+            .ToList();
+        var pastReleaseTimeClaimIds = pastReleaseTimeClaimInfoList
+            .Select(x => x.ClaimId)
+            .Distinct()
+            .ToList();
+
+        var rewardOperationRecordList = await _rewardsProvider.GetRewardOperationRecordListAsync(address);
+        //withdrawn
+        var withdrawnClaimIds = rewardOperationRecordList
+            .Where(x => x.ExecuteType == ExecuteType.Withdrawn)
+            .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
+            .ToList();
+
+        //Early Staked
+        var earlyStakedClaimIds = rewardOperationRecordList
+            .Where(x => x.ExecuteType == ExecuteType.EarlyStake)
+            .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
+            .ToList();
+        //Liquidity Added
+        var liquidityAddedClaimIds = rewardOperationRecordList
+            .Where(x => x.ExecuteType == ExecuteType.LiquidityAdded)
+            .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
+            .ToList();
+
+        // Combine all excluded claim ids
+        var excludedClaimIds = withdrawnClaimIds
+            .Union(earlyStakedClaimIds)
+            .Union(liquidityAddedClaimIds)
+            .ToList();
+
+        // Remove excluded claim ids from pastReleaseTimeClaimIds
+        var resultList = pastReleaseTimeClaimIds
+            .Except(excludedClaimIds)
+            .ToList();
+
+        var withdrawAmount = pastReleaseTimeClaimInfoList
+            .Where(x => resultList.Contains(x.ClaimId))
+            .Select(x => BigInteger.Parse(x.ClaimedAmount))
+            .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
+            .ToString();
+        return resultList.Count == withdrawClaimIds.Count && !resultList.Except(withdrawClaimIds).Any() &&
+               amount.ToString() == withdrawAmount;
+    }
+
+    private async Task<RewardsAggDto> GetPointsPoolRewardsAggAsync(List<RewardsListIndexerDto> list, string address)
+    {
+        var pointsPoolAggDto = new RewardsAggDto();
         if (list.IsNullOrEmpty())
         {
             return pointsPoolAggDto;
@@ -186,24 +567,13 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var stakingList = list
             .Where(x => x.EarlyStakeTime == 0 || unLockedStakeIds.Contains(x.StakeId))
             .ToList();
-
-        var unlockList = stakingList
-            .Where(x => DateTime.UtcNow.ToUtcMilliSeconds() > x.UnlockTime)
-            .ToList();
-
-        pointsPoolAggDto.Total = stakingList.Select(x => BigInteger.Parse(x.ClaimedAmount))
-            .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString();
-        pointsPoolAggDto.RewardsTotal = unlockList.Select(x => BigInteger.Parse(x.ClaimedAmount))
-            .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString();
         pointsPoolAggDto.RewardsTokenName = stakingList.MaxBy(x => x.ClaimedTime)?.ClaimedSymbol;
-        pointsPoolAggDto.StakeClaimIds = stakingList.Select(x => x.ClaimId).ToList();
-        pointsPoolAggDto.WithDrawClaimIds = unlockList.Select(x => x.ClaimId).ToList();
         return pointsPoolAggDto;
     }
 
-    private async Task<TokenPoolAggDto> GetTokenPoolRewardsAggAsync(List<RewardsListIndexerDto> list, string address)
+    private async Task<RewardsAggDto> GetTokenPoolRewardsAggAsync(List<RewardsListIndexerDto> list, string address)
     {
-        var tokenPoolAggDto = new TokenPoolAggDto();
+        var tokenPoolAggDto = new RewardsAggDto();
         if (list.IsNullOrEmpty())
         {
             return tokenPoolAggDto;
@@ -219,21 +589,14 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Where(x => x.EarlyStakeTime == 0 || unLockedStakeIds.Contains(x.StakeId))
             .ToList();
 
-        var unlockList = stakingList
-            .Where(x => DateTime.UtcNow.ToUtcMilliSeconds() > x.UnlockTime)
-            .ToList();
-
-        tokenPoolAggDto.RewardsTotal = unlockList.Select(x => BigInteger.Parse(x.ClaimedAmount))
-            .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString();
         tokenPoolAggDto.RewardsTokenName = stakingList.MaxBy(x => x.ClaimedTime)?.ClaimedSymbol;
 
-        tokenPoolAggDto.WithDrawClaimIds = unlockList.Select(x => x.ClaimId).ToList();
         return tokenPoolAggDto;
     }
 
-    private async Task<TokenPoolAggDto> GetLpPoolRewardsAggAsync(List<RewardsListIndexerDto> list, string address)
+    private async Task<RewardsAggDto> GetLpPoolRewardsAggAsync(List<RewardsListIndexerDto> list, string address)
     {
-        var tokenPoolAggDto = new TokenPoolAggDto();
+        var tokenPoolAggDto = new RewardsAggDto();
         if (list.IsNullOrEmpty())
         {
             return tokenPoolAggDto;
@@ -249,19 +612,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Where(x => x.EarlyStakeTime == 0 || unLockedStakeIds.Contains(x.StakeId))
             .ToList();
 
-        var unlockList = stakingList
-            .Where(x => DateTime.UtcNow.ToUtcMilliSeconds() > x.UnlockTime)
-            .ToList();
-
-        tokenPoolAggDto.RewardsTotal = unlockList.Select(x => BigInteger.Parse(x.ClaimedAmount))
-            .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString();
-        tokenPoolAggDto.WithDrawClaimIds = unlockList.Select(x => x.ClaimId).ToList();
         tokenPoolAggDto.RewardsTokenName = stakingList.MaxBy(x => x.ClaimedTime)?.ClaimedSymbol;
         return tokenPoolAggDto;
     }
 
 
-    private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address)
+    private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType)
     {
         var res = new List<RewardsListIndexerDto>();
         var skipCount = 0;
@@ -269,8 +625,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         List<RewardsListIndexerDto> list;
         do
         {
-            var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(PoolTypeEnums.All, address, skipCount, maxResultCount,
-                filterWithdraw: true);
+            var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(poolType, address,
+                skipCount, maxResultCount);
             list = rewardsListIndexerResult.Data;
             var count = list.Count;
             res.AddRange(list);

@@ -20,6 +20,8 @@ public class PointsPoolConfigDto
     public long RewardPerBlock { get; set; }
     public long ReleasePeriod { get; set; }
     public string UpdateAddress { get; set; }
+    public List<long> ReleasePeriods { get; set; }
+    public long ClaimInterval { get; set; }
 }
 
 public class PointsPoolsQuery

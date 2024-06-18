@@ -86,7 +86,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             {
                 tokenPoolsDto.TotalStakeInUsd = (rate * tokenPoolStakedSum).ToString(CultureInfo.CurrentCulture);
                 tokenPoolsDto.TotalStake = tokenPoolStakedSum.ToString(CultureInfo.InvariantCulture);
-                tokenPoolsDto.AprMin = (double)tokenPoolsDto.YearlyRewards / tokenPoolStakedSum;
+                tokenPoolsDto.AprMin = tokenPoolsDto.YearlyRewards / tokenPoolStakedSum;
                 tokenPoolsDto.AprMax = tokenPoolsDto.AprMin *
                                        (1 + 360 / tokenPoolsIndexerDto.TokenPoolConfig.FixedBoostFactor);
             }
@@ -97,37 +97,44 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                     : new List<string>();
             tokenPoolsDto.Rate = feeRate;
 
-
-            if (addressStakedInPoolDic.TryGetValue(tokenPoolsDto.PoolId, out var stakedInfo))
+            if (addressStakedInPoolDic.TryGetValue(tokenPoolsDto.PoolId, out var stakedInfos))
             {
-                var rewardData = await GetStakedRewardsAsync(stakedInfo.StakeId, input.ChainId);
+                tokenPoolsDto.StakeId = stakedInfos.StakeId;
+                tokenPoolsDto.UnlockTime = stakedInfos.UnlockTime;
+                tokenPoolsDto.StakingPeriod = stakedInfos.StakingPeriod;
+                tokenPoolsDto.LongestReleaseTime = stakedInfos.LongestReleaseTime;
+                tokenPoolsDto.LastOperationTime = stakedInfos.LastOperationTime;
+                var rewardData = await GetStakedRewardsAsync(tokenPoolsDto.StakeId, input.ChainId);
+                var stakeInfoDto = new SubStakeInfoDto();
                 if (rewardData.Amount != 0)
                 {
                     var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{rewardData.Symbol.ToUpper()}_USDT");
                     tokenPoolsDto.Earned = rewardData.Amount.ToString();
-                    tokenPoolsDto.EarnedInUsd = (rewardData.Amount * usdtRate).ToString(CultureInfo.InvariantCulture);
+                    tokenPoolsDto.EarnedInUsd =
+                        (rewardData.Amount * usdtRate).ToString(CultureInfo.InvariantCulture);
                 }
 
-                tokenPoolsDto.StakeId = stakedInfo.StakeId;
-                tokenPoolsDto.StakingPeriod = stakedInfo.StakingPeriod;
-                tokenPoolsDto.BoostedAmount = stakedInfo.BoostedAmount;
-                tokenPoolsDto.LastOperationTime = stakedInfo.LastOperationTime;
-                tokenPoolsDto.Staked = stakedInfo.LockState == LockState.Unlock
+                var stakedAmount = stakedInfos.SubStakeInfos.Sum(x => x.StakedAmount);
+                tokenPoolsDto.Staked = stakedAmount.ToString();
+                tokenPoolsDto.StakedInUsd = stakedInfos.LockState == LockState.Unlock
                     ? "0"
-                    : (stakedInfo.StakedAmount + stakedInfo.EarlyStakedAmount).ToString();
-                tokenPoolsDto.StakedInUsd = stakedInfo.LockState == LockState.Unlock
-                    ? "0"
-                    : (rate * (stakedInfo.StakedAmount + stakedInfo.EarlyStakedAmount)).ToString(CultureInfo
-                        .CurrentCulture);
-                tokenPoolsDto.StakedAmount = stakedInfo.StakedAmount.ToString();
-                tokenPoolsDto.EarlyStakedAmount = stakedInfo.EarlyStakedAmount.ToString();
-                tokenPoolsDto.UnlockTime = stakedInfo.StakedTime + stakedInfo.Period * 1000;
-                tokenPoolsDto.StakeApr = tokenPoolsDto.AprMin *
-                                         (1 + (double)stakedInfo.Period / 86400 / tokenPoolsDto.FixedBoostFactor);
-                tokenPoolsDto.StakedTime = stakedInfo.StakedTime;
-                tokenPoolsDto.Period = stakedInfo.Period;
+                    : (rate * stakedAmount).ToString(CultureInfo.CurrentCulture);
+                var stakeInfoDtos = new List<SubStakeInfoDto>();
+
+                foreach (var subsStakedInfo in stakedInfos.SubStakeInfos)
+                {
+                    var subStakeInfoDto = _objectMapper.Map<SubStakeInfoIndexerDto, SubStakeInfoDto>(subsStakedInfo);
+                    subStakeInfoDto.Apr = tokenPoolsDto.AprMin *
+                                          (1 + (double)subsStakedInfo.Period / 86400 / tokenPoolsDto.FixedBoostFactor);
+                    stakeInfoDtos.Add(stakeInfoDto);
+                }
+
+                tokenPoolsDto.StakeInfos = stakeInfoDtos;
             }
 
+            tokenPoolsDto.StakeApr = tokenPoolsDto.StakeInfos.Count == 0
+                ? 0
+                : tokenPoolsDto.StakeInfos.Sum(x => x.Apr) / tokenPoolsDto.StakeInfos.Count;
             tokenPoolsList.Add(tokenPoolsDto);
         }
 
@@ -157,30 +164,33 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         {
             StakeId = stakedInfoIndexerDtos.StakeId,
             PoolId = tokenPoolIndexerDto.PoolId,
-            StakingPeriod = stakedInfoIndexerDtos.StakingPeriod,
-            Staked = stakedInfoIndexerDtos.LockState == LockState.Unlock
-                ? "0"
-                : (stakedInfoIndexerDtos.StakedAmount + stakedInfoIndexerDtos.EarlyStakedAmount).ToString(),
-            StakedAmount = stakedInfoIndexerDtos.StakedAmount.ToString(),
             StakeSymbol = string.IsNullOrEmpty(stakedInfoIndexerDtos.StakingToken)
                 ? tokenName
                 : stakedInfoIndexerDtos.StakingToken,
-            StakedTime = stakedInfoIndexerDtos.StakedTime,
-            UnlockTime = stakedInfoIndexerDtos.StakedTime + stakedInfoIndexerDtos.Period * 1000,
-
-            StakeApr = tokenPoolStakedSum == 0
-                ? 0
-                : (double)yearlyRewards / tokenPoolStakedSum * (1 + (double)stakedInfoIndexerDtos.Period / 86400 /
-                    tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor),
-            Period = stakedInfoIndexerDtos.Period,
+            UnlockTime = stakedInfoIndexerDtos.UnlockTime,
+            LastOperationTime = stakedInfoIndexerDtos.LastOperationTime,
+            StakingPeriod = stakedInfoIndexerDtos.StakingPeriod,
+            LongestReleaseTime = stakedInfoIndexerDtos.LongestReleaseTime,
+            Staked = stakedInfoIndexerDtos.LockState == LockState.Unlock
+                ? "0"
+                : stakedInfoIndexerDtos.SubStakeInfos.Sum(x => x.StakedAmount).ToString(),
             YearlyRewards = yearlyRewards,
             FixedBoostFactor = tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor,
-            BoostedAmount = stakedInfoIndexerDtos.BoostedAmount,
             UnlockWindowDuration = tokenPoolIndexerDto.TokenPoolConfig.UnlockWindowDuration,
-            LastOperationTime = stakedInfoIndexerDtos.LastOperationTime,
-            EarlyStakedAmount = stakedInfoIndexerDtos.EarlyStakedAmount.ToString(),
             MinimumClaimAmount = tokenPoolIndexerDto.TokenPoolConfig.MinimumClaimAmount,
+            SubStakeInfos = stakedInfoIndexerDtos.SubStakeInfos.Select(dto =>
+            {
+                var subStakeInfoDto = _objectMapper.Map<SubStakeInfoIndexerDto, SubStakeInfoDto>(dto);
+                subStakeInfoDto.Apr = tokenPoolStakedSum == 0
+                    ? 0
+                    : (double)yearlyRewards / tokenPoolStakedSum * (1 + (double)dto.Period / 86400 /
+                        tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor);
+                return subStakeInfoDto;
+            }).ToList(),
         };
+        stakeInfoDto.StakeApr = stakeInfoDto.SubStakeInfos.Count == 0
+            ? 0
+            : stakeInfoDto.SubStakeInfos.Sum(x => x.Apr) / stakeInfoDto.SubStakeInfos.Count;
         return stakeInfoDto;
     }
 

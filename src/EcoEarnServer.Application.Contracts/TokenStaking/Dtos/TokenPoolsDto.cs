@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using EcoEarnServer.Rewards.Dtos;
 
 namespace EcoEarnServer.TokenStaking.Dtos;
 
@@ -13,6 +14,7 @@ public class TokenPoolsDto
     public string EarnedSymbol { get; set; }
     public double AprMin { get; set; }
     public double AprMax { get; set; }
+    public double StakeApr { get; set; }
     public string TotalStake { get; set; } = "0";
     public string TotalStakeInUsd { get; set; } = "0";
     public long YearlyRewards { get; set; }
@@ -21,21 +23,17 @@ public class TokenPoolsDto
     public long FixedBoostFactor { get; set; }
     public long ReleasePeriod { get; set; }
     public long MinimumClaimAmount { get; set; }
-
+    
     //stake info
     public string StakeId { get; set; }
     public string Earned { get; set; } = "0";
     public string EarnedInUsd { get; set; } = "0";
     public string Staked { get; set; } = "0";
     public string StakedInUsd { get; set; } = "0";
-    public string StakedAmount { get; set; } = "0";
-    public string EarlyStakedAmount { get; set; } = "0";
     public long UnlockTime { get; set; }
-    public double StakeApr { get; set; }
-    public long StakedTime { get; set; }
-    public long Period { get; set; }
-    public int Decimal { get; set; } = 8;
-    public long BoostedAmount { get; set; }
     public long StakingPeriod { get; set; }
+    public long LongestReleaseTime { get; set; }
     public long LastOperationTime { get; set; }
+    public int Decimal { get; set; } = 8;
+    public List<SubStakeInfoDto> StakeInfos { get; set; } = new();
 }

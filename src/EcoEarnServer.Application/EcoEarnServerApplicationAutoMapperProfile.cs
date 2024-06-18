@@ -1,12 +1,13 @@
 using AutoMapper;
-using EcoEarnServer.Constants;
 using EcoEarnServer.Grains.Grain.PointsPool;
 using EcoEarnServer.Grains.Grain.PointsStakeRewards;
+using EcoEarnServer.Grains.Grain.Rewards;
 using EcoEarnServer.Options;
 using EcoEarnServer.PointsPool;
 using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.PointsStaking.Provider;
+using EcoEarnServer.Rewards;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.Rewards.Provider;
 using EcoEarnServer.TokenStaking.Dtos;
@@ -52,9 +53,10 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.ClaimedId, m => m.MapFrom(f => f.ClaimId))
             .ForPath(t => t.TokenName, m => m.MapFrom(f => ""))
             .ForPath(t => t.Date, m => m.MapFrom(f => f.ClaimedTime))
-            .ForPath(t => t.LockUpPeriod, m => m.MapFrom(f => f.UnlockTime))
             .ReverseMap();
         CreateMap<PointsStakeRewardsSumDto, PointsStakeRewardsSumEto>().ReverseMap();
         CreateMap<PointsPoolClaimRecordDto, PointsPoolClaimRecordEto>().ReverseMap();
+        CreateMap<RewardOperationRecordDto, RewardOperationRecordEto>().ReverseMap();
+        CreateMap<SubStakeInfoIndexerDto, SubStakeInfoDto>().ReverseMap();
     }
 }

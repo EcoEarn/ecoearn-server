@@ -88,7 +88,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
                         pointsName,
                         amount,
     					createTime,
-    					pointsPoolConfig{rewardToken,startBlockNumber,endBlockNumber,rewardPerBlock,releasePeriod,updateAddress}
+    					pointsPoolConfig{rewardToken,startBlockNumber,endBlockNumber,rewardPerBlock,releasePeriod,updateAddress,releasePeriods,claimInterval}
                     }
                 }
             }",
@@ -183,10 +183,11 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
                         seed,
                         stakeId,
                         claimedAmount,
+                        earlyStakedAmount,
                         claimedSymbol,
                         claimedBlockNumber,
     					claimedTime,
-    					unlockTime,
+    					releaseTime,
     					withdrawTime,
     					earlyStakeTime,
     					account,

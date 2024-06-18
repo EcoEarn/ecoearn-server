@@ -60,6 +60,9 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                             rewardTokenContract
                             stakeTokenContract
                             minimumClaimAmount
+                            releasePeriods
+                            claimInterval
+                            minimumEarlyStakeAmount
                         },
     					createTime,
     					poolType
@@ -95,24 +98,27 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                         data{
                         stakeId,
                         poolId,
+                        account,
                         stakingToken,
-                        stakedAmount,
-                        earlyStakedAmount,
-    					claimedAmount,
-    					stakedBlockNumber,
-    					stakedTime,
-    					period,
-    					account,
-    					boostedAmount,
-    					rewardDebt,
-    					withdrawTime,
-    					rewardAmount,
-    					lockedRewardAmount,
-    					lastOperationTime,
-    					createTime,
+                        unlockTime,
+                        lastOperationTime,
+                        stakingPeriod,
+                        longestReleaseTime,
+                        createTime,
     					updateTime,
-    					stakingPeriod,
     					poolType,
+    					lockState,
+                        subStakeInfos{
+                            subStakeId,
+                            stakedAmount,
+                            stakedBlockNumber,
+                            stakedTime,
+                            period,
+                            boostedAmount,
+                            rewardDebt,
+                            rewardAmount,
+                            seed
+                        }
                     }
                 }
             }",
@@ -146,31 +152,33 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<TokenStakedListQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($address:String!,$tokenName:String!,$poolIds:[String!]!,$lockState:LockState!, $skipCount:Int!,$maxResultCount:Int!){
-                    getStakedInfoList(input: {address:$address,tokenName:$tokenName,poolIds:$poolIds,lockState:$lockState,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($tokenName:String!, $address:String!, $poolIds:[String!]!, $lockState:LockState!, $skipCount:Int!,$maxResultCount:Int!){
+                    getStakedInfoList(input: {tokenName:$tokenName,address:$address,poolIds:$poolIds,lockState:$lockState,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         stakeId,
                         poolId,
+                        account,
                         stakingToken,
-                        stakedAmount,
-                        earlyStakedAmount,
-    					claimedAmount,
-    					stakedBlockNumber,
-    					stakedTime,
-    					period,
-    					account,
-    					boostedAmount,
-    					rewardDebt,
-    					withdrawTime,
-    					rewardAmount,
-    					lockedRewardAmount,
-    					lastOperationTime,
-    					createTime,
+                        unlockTime,
+                        lastOperationTime,
+                        stakingPeriod,
+                        longestReleaseTime,
+                        createTime,
     					updateTime,
-    					stakingPeriod,
     					poolType,
     					lockState,
+                        subStakeInfos{
+                            subStakeId,
+                            stakedAmount,
+                            stakedBlockNumber,
+                            stakedTime,
+                            period,
+                            boostedAmount,
+                            rewardDebt,
+                            rewardAmount,
+                            seed
+                        }
                     }
                 }
             }",
@@ -218,6 +226,9 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                             rewardTokenContract
                             stakeTokenContract
                             minimumClaimAmount
+                            releasePeriods
+                            claimInterval
+                            minimumEarlyStakeAmount
                         },
     					createTime,
     					poolType

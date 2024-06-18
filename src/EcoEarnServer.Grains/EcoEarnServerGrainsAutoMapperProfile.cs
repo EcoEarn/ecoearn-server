@@ -2,6 +2,7 @@ using AutoMapper;
 using EcoEarnServer.Grains.Grain.PointsPool;
 using EcoEarnServer.Grains.Grain.PointsSnapshot;
 using EcoEarnServer.Grains.Grain.PointsStakeRewards;
+using EcoEarnServer.Grains.Grain.Rewards;
 using EcoEarnServer.Grains.Grain.TokenPool;
 using EcoEarnServer.Grains.State;
 using EcoEarnServer.Grains.State.Users;
@@ -23,5 +24,6 @@ public class EcoEarnServerGrainsAutoMapperProfile : Profile
         CreateMap<PointsStakeRewardsSumDto, PointsStakeRewardsSumState>().ReverseMap();
         CreateMap<PointsPoolClaimRecordDto, PointsPoolClaimRecordState>().ReverseMap();
         CreateMap<TokenStakeUpdateWorkerDto, TokenStakeUpdateWorkerState>().ReverseMap();
+        CreateMap<RewardOperationRecordDto, RewardOperationRecordState>().ReverseMap();
     }
 }
