@@ -10,6 +10,7 @@ using EcoEarnServer.Common.AElfSdk;
 using EcoEarnServer.Options;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.Rewards.Dtos;
+using EcoEarnServer.Rewards.Provider;
 using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
 using Google.Protobuf.Collections;
@@ -39,6 +40,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
     private readonly TokenPoolIconsOptions _tokenPoolIconsOptions;
     private readonly LpPoolRateOptions _lpPoolRateOptions;
     private readonly PoolTextWordOptions _poolTextWordOptions;
+    private readonly IRewardsProvider _rewardsProvider;
 
     public TokenStakingService(ITokenStakingProvider tokenStakingProvider, IObjectMapper objectMapper,
         ILogger<TokenStakingService> logger, IOptions<RedisCacheOptions> optionsAccessor,
@@ -46,7 +48,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         IPriceProvider priceProvider,
         IOptionsSnapshot<TokenPoolIconsOptions> tokenPoolIconsOptions,
         IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions,
-        IOptionsSnapshot<PoolTextWordOptions> poolTextWordOptions) : base(optionsAccessor)
+        IOptionsSnapshot<PoolTextWordOptions> poolTextWordOptions,
+        IRewardsProvider rewardsProvider) : base(optionsAccessor)
     {
         _tokenStakingProvider = tokenStakingProvider;
         _objectMapper = objectMapper;
@@ -54,6 +57,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         _serializer = serializer;
         _contractProvider = contractProvider;
         _priceProvider = priceProvider;
+        _rewardsProvider = rewardsProvider;
         _poolTextWordOptions = poolTextWordOptions.Value;
         _lpPoolRateOptions = lpPoolRateOptions.Value;
         _tokenPoolIconsOptions = tokenPoolIconsOptions.Value;
@@ -101,13 +105,17 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 
             if (addressStakedInPoolDic.TryGetValue(tokenPoolsDto.PoolId, out var stakedInfos))
             {
+                var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(input.PoolType, input.Address,0,1);
+                tokenPoolsDto.LatestClaimTime = !rewardsListIndexerResult.Data.IsNullOrEmpty()
+                    ? rewardsListIndexerResult.Data.FirstOrDefault()!.ClaimedTime
+                    : 0;
                 tokenPoolsDto.StakeId = stakedInfos.StakeId;
                 tokenPoolsDto.UnlockTime = stakedInfos.UnlockTime;
                 tokenPoolsDto.StakingPeriod = stakedInfos.StakingPeriod;
                 tokenPoolsDto.LongestReleaseTime = stakedInfos.LongestReleaseTime;
                 tokenPoolsDto.LastOperationTime = stakedInfos.LastOperationTime;
                 var rewardDataDic = await GetStakedRewardsAsync(tokenPoolsDto.StakeId, input.ChainId);
-                
+
                 if (rewardDataDic.TryGetValue(stakedInfos.StakeId, out var rewardData) && rewardData.Amount != 0)
                 {
                     var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{rewardData.Symbol.ToUpper()}_USDT");
@@ -208,6 +216,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 _logger.LogInformation("get staked rewards: {rewards}", redisValue);
                 return _serializer.Deserialize<Dictionary<string, RewardDataDto>>(redisValue);
             }
+
             var repeatedField = new RepeatedField<Hash>();
             repeatedField.Add(Hash.LoadFromHex(stakeId));
             var input = new GetRewardInput()
@@ -220,7 +229,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                     ContractConstants.StakedRewardsMethodName, input)
                 .Result
                 .transaction;
-            var transactionResult = await _contractProvider.CallTransactionAsync<RewardDataListDto>(chainId, transaction);
+            var transactionResult =
+                await _contractProvider.CallTransactionAsync<RewardDataListDto>(chainId, transaction);
             var rewardDataDic = transactionResult.RewardInfos.ToDictionary(x => x.StakeId, x => x);
             await RedisDatabase.StringSetAsync(TokenPoolStakedRewardsRedisKeyPrefix + stakeId,
                 _serializer.Serialize(rewardDataDic), TimeSpan.FromSeconds(5));
