@@ -28,6 +28,7 @@ public class TokenPoolsDto
     public string StakeId { get; set; }
     public string Earned { get; set; } = "0";
     public string EarnedInUsd { get; set; } = "0";
+    public double UsdRate { get; set; }
     public string Staked { get; set; } = "0";
     public string StakedInUsd { get; set; } = "0";
     public long UnlockTime { get; set; }

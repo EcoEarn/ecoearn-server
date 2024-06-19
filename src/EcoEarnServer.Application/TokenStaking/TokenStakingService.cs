@@ -120,6 +120,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 {
                     var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{rewardData.Symbol.ToUpper()}_USDT");
                     tokenPoolsDto.Earned = rewardData.Amount.ToString();
+                    tokenPoolsDto.UsdRate = usdtRate;
                     tokenPoolsDto.EarnedInUsd =
                         (rewardData.Amount * usdtRate).ToString(CultureInfo.InvariantCulture);
                 }
