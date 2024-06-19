@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Types;
+using EcoEarn.Contracts.Tokens;
 using EcoEarnServer.Common;
 using EcoEarnServer.Common.AElfSdk;
 using EcoEarnServer.Options;
@@ -11,6 +12,7 @@ using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
+using Google.Protobuf.Collections;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -104,9 +106,10 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 tokenPoolsDto.StakingPeriod = stakedInfos.StakingPeriod;
                 tokenPoolsDto.LongestReleaseTime = stakedInfos.LongestReleaseTime;
                 tokenPoolsDto.LastOperationTime = stakedInfos.LastOperationTime;
-                var rewardData = await GetStakedRewardsAsync(tokenPoolsDto.StakeId, input.ChainId);
+                var rewardDataDic = await GetStakedRewardsAsync(tokenPoolsDto.StakeId, input.ChainId);
                 var stakeInfoDto = new SubStakeInfoDto();
-                if (rewardData.Amount != 0)
+                
+                if (rewardDataDic.TryGetValue(stakedInfos.StakeId, out var rewardData) && rewardData.Amount != 0)
                 {
                     var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{rewardData.Symbol.ToUpper()}_USDT");
                     tokenPoolsDto.Earned = rewardData.Amount.ToString();
@@ -195,7 +198,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
     }
 
 
-    private async Task<RewardDataDto> GetStakedRewardsAsync(string stakeId, string chainId)
+    private async Task<Dictionary<string, RewardDataDto>> GetStakedRewardsAsync(string stakeId, string chainId)
     {
         try
         {
@@ -204,23 +207,30 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             if (redisValue.HasValue)
             {
                 _logger.LogInformation("get staked rewards: {rewards}", redisValue);
-                return _serializer.Deserialize<RewardDataDto>(redisValue);
+                return _serializer.Deserialize<Dictionary<string, RewardDataDto>>(redisValue);
             }
+            var repeatedField = new RepeatedField<Hash>();
+            repeatedField.Add(Hash.LoadFromHex(stakeId));
+            var input = new GetRewardInput()
+            {
+                StakeIds = { repeatedField }
+            };
 
             var transaction = _contractProvider
                 .CreateTransaction(chainId, ContractConstants.SenderName, ContractConstants.ContractName,
-                    ContractConstants.StakedRewardsMethodName, Hash.LoadFromHex(stakeId))
+                    ContractConstants.StakedRewardsMethodName, input)
                 .Result
                 .transaction;
-            var transactionResult = await _contractProvider.CallTransactionAsync<RewardDataDto>(chainId, transaction);
+            var transactionResult = await _contractProvider.CallTransactionAsync<RewardDataListDto>(chainId, transaction);
+            var rewardDataDic = transactionResult.RewardInfos.ToDictionary(x => x.StakeId, x => x);
             await RedisDatabase.StringSetAsync(TokenPoolStakedRewardsRedisKeyPrefix + stakeId,
-                _serializer.Serialize(transactionResult), TimeSpan.FromSeconds(5));
-            return transactionResult;
+                _serializer.Serialize(rewardDataDic), TimeSpan.FromSeconds(5));
+            return rewardDataDic;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "get staked rewards: fail. stakeId: {stakeId}", stakeId);
-            return new RewardDataDto();
+            return new System.Collections.Generic.Dictionary<string, RewardDataDto>();
         }
     }
 }
