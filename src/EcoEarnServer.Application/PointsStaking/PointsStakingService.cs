@@ -231,12 +231,6 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             throw new UserFriendlyException("invalid amount");
         }
 
-        //generate signature
-        if (!_chainOption.AccountPrivateKey.TryGetValue(ContractConstants.SenderName, out var privateKey))
-        {
-            throw new UserFriendlyException("invalid pool");
-        }
-
         //get claiming record
         var claimingList = await _pointsStakingProvider.GetClaimingListAsync(address, poolId);
         //check seeds is claimed

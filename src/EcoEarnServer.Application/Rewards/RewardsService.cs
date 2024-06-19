@@ -314,7 +314,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var poolType = input.PoolType;
         var address = input.Address;
         var amount = input.Amount;
-        var withdrawClaimIds = input.ClaimInfos.Select(x => x.ClaimId).ToList();
+        var executeClaimIds = input.ClaimInfos.Select(x => x.ClaimId).ToList();
         var dappId = input.DappId;
         var poolId = input.PoolId;
         var period = input.Period;
@@ -327,7 +327,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             throw new UserFriendlyException("generating signature.");
         }
 
-        var claimIdsHex = withdrawClaimIds.SelectMany(id => Encoding.UTF8.GetBytes(id)).ToArray().ToHex();
+        var claimIdsHex = executeClaimIds.SelectMany(id => Encoding.UTF8.GetBytes(id)).ToArray().ToHex();
         var id = GuidHelper.GenerateId(address, poolType.ToString(), ExecuteType.Withdrawn.ToString(), claimIdsHex);
         var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
         var record = await rewardOperationRecordGrain.GetAsync();
@@ -344,16 +344,10 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }
 
         //prevention of over withdraw
-        var isValid = await CheckAmountValidityAsync(address, amount, withdrawClaimIds, poolType, executeType);
+        var isValid = await CheckAmountValidityAsync(address, amount, executeClaimIds, poolType, executeType);
         if (!isValid)
         {
-            throw new UserFriendlyException("invalid withdraw amount.");
-        }
-
-        //generate signature
-        if (!_chainOption.AccountPrivateKey.TryGetValue(ContractConstants.SenderName, out var privateKey))
-        {
-            throw new UserFriendlyException("invalid pool");
+            throw new UserFriendlyException("invalid amount.");
         }
 
         // // //get withdrawing record
@@ -386,7 +380,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             ExecuteType.Withdrawn => new WithdrawInput
             {
-                ClaimIds = { withdrawClaimIds.Select(Hash.LoadFromHex).ToList() },
+                ClaimIds = { executeClaimIds.Select(Hash.LoadFromHex).ToList() },
                 Account = Address.FromBase58(address),
                 Amount = amount,
                 Seed = HashHelper.ComputeFrom(seed),
@@ -397,7 +391,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             {
                 StakeInput = new StakeInput
                 {
-                    ClaimIds = { withdrawClaimIds.Select(Hash.LoadFromHex).ToList() },
+                    ClaimIds = { executeClaimIds.Select(Hash.LoadFromHex).ToList() },
                     Account = Address.FromBase58(address),
                     Amount = amount,
                     Seed = HashHelper.ComputeFrom(seed),
@@ -409,7 +403,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             },
             ExecuteType.LiquidityAdded => new WithdrawInput
             {
-                ClaimIds = { withdrawClaimIds.Select(Hash.LoadFromHex).ToList() },
+                ClaimIds = { executeClaimIds.Select(Hash.LoadFromHex).ToList() },
                 Account = Address.FromBase58(address),
                 Amount = amount,
                 Seed = HashHelper.ComputeFrom(seed),
@@ -503,10 +497,18 @@ public class RewardsService : IRewardsService, ISingletonDependency
         PoolTypeEnums poolType, ExecuteType executeType)
     {
         var rewardsAllList = await GetAllRewardsList(address, poolType);
-        //filter release time < now
-        var pastReleaseTimeClaimInfoList = rewardsAllList
-            .Where(x => x.ReleaseTime < DateTime.UtcNow.ToUtcMilliSeconds())
-            .ToList();
+        List<RewardsListIndexerDto> pastReleaseTimeClaimInfoList;
+        if (executeType == ExecuteType.Withdrawn)
+        {
+            pastReleaseTimeClaimInfoList = rewardsAllList
+                .Where(x => x.ReleaseTime < DateTime.UtcNow.ToUtcMilliSeconds())
+                .ToList();
+        }
+        else
+        {
+            pastReleaseTimeClaimInfoList = rewardsAllList;
+        }
+        
         var pastReleaseTimeClaimIds = pastReleaseTimeClaimInfoList
             .Select(x => x.ClaimId)
             .Distinct()
