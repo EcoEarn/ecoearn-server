@@ -107,7 +107,6 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 tokenPoolsDto.LongestReleaseTime = stakedInfos.LongestReleaseTime;
                 tokenPoolsDto.LastOperationTime = stakedInfos.LastOperationTime;
                 var rewardDataDic = await GetStakedRewardsAsync(tokenPoolsDto.StakeId, input.ChainId);
-                var stakeInfoDto = new SubStakeInfoDto();
                 
                 if (rewardDataDic.TryGetValue(stakedInfos.StakeId, out var rewardData) && rewardData.Amount != 0)
                 {
@@ -129,7 +128,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                     var subStakeInfoDto = _objectMapper.Map<SubStakeInfoIndexerDto, SubStakeInfoDto>(subsStakedInfo);
                     subStakeInfoDto.Apr = tokenPoolsDto.AprMin *
                                           (1 + (double)subsStakedInfo.Period / 86400 / tokenPoolsDto.FixedBoostFactor);
-                    stakeInfoDtos.Add(stakeInfoDto);
+                    stakeInfoDtos.Add(subStakeInfoDto);
                 }
 
                 tokenPoolsDto.StakeInfos = stakeInfoDtos;
