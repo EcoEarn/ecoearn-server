@@ -643,7 +643,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
         var frozenLiquidityAddedSeedList = frozenList.Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
             .Select(x => x.LiquidityAddedSeed).Distinct().ToList();
-        
+
         var withdrawableList = realList.Where(x => x.ReleaseTime < now)
             .ToList();
         var withdrawable = withdrawableList
@@ -696,56 +696,14 @@ public class RewardsService : IRewardsService, ISingletonDependency
         pointsPoolAggDto.EarlyStakedAmountInUsd =
             (double.Parse(earlyStaked) * usdRate).ToString(CultureInfo.InvariantCulture);
 
+        pointsPoolAggDto.ClaimInfos = realList.Select(x => new ClaimInfoDto
+        {
+            ClaimId = x.ClaimId
+        }).ToList();
         pointsPoolAggDto.NextRewardsRelease = frozenList.Any() ? frozenList.First().ReleaseTime : 0;
         pointsPoolAggDto.NextRewardsReleaseAmount = frozenList.Any() ? frozenList.First().ClaimedAmount : "0";
         return pointsPoolAggDto;
     }
-
-    private async Task<RewardsAggDto> GetTokenPoolRewardsAggAsync(List<RewardsListIndexerDto> list, string address)
-    {
-        var tokenPoolAggDto = new RewardsAggDto();
-        if (list.IsNullOrEmpty())
-        {
-            return tokenPoolAggDto;
-        }
-
-        var stakeIds = list
-            .Where(x => !string.IsNullOrEmpty(x.StakeId))
-            .Select(x => x.StakeId)
-            .Distinct().ToList();
-        var unLockedStakeIds = await _rewardsProvider.GetUnLockedStakeIdsAsync(stakeIds, address);
-
-        var stakingList = list
-            .Where(x => x.EarlyStakeTime == 0 || unLockedStakeIds.Contains(x.StakeId))
-            .ToList();
-
-        tokenPoolAggDto.RewardsTokenName = stakingList.MaxBy(x => x.ClaimedTime)?.ClaimedSymbol;
-
-        return tokenPoolAggDto;
-    }
-
-    private async Task<RewardsAggDto> GetLpPoolRewardsAggAsync(List<RewardsListIndexerDto> list, string address)
-    {
-        var tokenPoolAggDto = new RewardsAggDto();
-        if (list.IsNullOrEmpty())
-        {
-            return tokenPoolAggDto;
-        }
-
-        var stakeIds = list
-            .Where(x => !string.IsNullOrEmpty(x.StakeId))
-            .Select(x => x.StakeId)
-            .Distinct().ToList();
-        var unLockedStakeIds = await _rewardsProvider.GetUnLockedStakeIdsAsync(stakeIds, address);
-
-        var stakingList = list
-            .Where(x => x.EarlyStakeTime == 0 || unLockedStakeIds.Contains(x.StakeId))
-            .ToList();
-
-        tokenPoolAggDto.RewardsTokenName = stakingList.MaxBy(x => x.ClaimedTime)?.ClaimedSymbol;
-        return tokenPoolAggDto;
-    }
-
 
     private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType)
     {

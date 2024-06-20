@@ -7,6 +7,8 @@ public class RewardsAggregationDto
     public RewardsAggDto PointsPoolAgg { get; set; } = new();
     public RewardsAggDto TokenPoolAgg { get; set; } = new();
     public RewardsAggDto LpPoolAgg { get; set; } = new();
+
+    public string DappId { get; set; }
 }
 
 
@@ -31,6 +33,8 @@ public class RewardsAggDto
     
     public long NextRewardsRelease { get; set; }
     public string NextRewardsReleaseAmount { get; set; } = "0";
+    
+    public List<ClaimInfoDto> ClaimInfos { get; set; }
 }
 
 public class PointsPoolAggDto
