@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using EcoEarnServer.Common.GraphQL;
+using EcoEarnServer.Farm.Dtos;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
 using GraphQL;
@@ -20,7 +22,7 @@ public interface IRewardsProvider
     Task<List<string>> GetUnLockedStakeIdsAsync(List<string> stakeIds, string address);
     Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address);
     Task<List<RewardOperationRecordIndex>> GetExecutingListAsync(string address, ExecuteType executeType);
-    Task<List<string>> GetLiquidityRemovedLpIdsAsync(List<string> liquidityIds, string address);
+    Task<List<LiquidityInfoIndexerDto>> GetLiquidityRemovedLpIdsAsync(List<string> liquidityIds);
 }
 
 public class RewardsProvider : IRewardsProvider, ISingletonDependency
@@ -140,11 +142,58 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         var (total, list) = await _repository.GetListAsync(Filter,
             skip: 0, limit: 5000);
         return list;
-        
     }
 
-    public async Task<List<string>> GetLiquidityRemovedLpIdsAsync(List<string> liquidityIds, string address)
+    public async Task<List<LiquidityInfoIndexerDto>> GetLiquidityRemovedLpIdsAsync(List<string> liquidityIds)
     {
-        return new List<string>();
+        if (!liquidityIds.Any())
+        {
+            return new List<LiquidityInfoIndexerDto>();
+        }
+
+
+        try
+        {
+            var indexerResult = await _graphQlHelper.QueryAsync<LiquidityInfoListIndexerQuery>(new GraphQLRequest
+            {
+                Query =
+                    @"query($liquidityIds:[String!]!, $lpStatus:LpStatus!, $skipCount:Int!,$maxResultCount:Int!){
+                    getLiquidityInfoList(input: {liquidityIds:$liquidityIds,lpStatus:$lpStatus,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        totalCount,
+                        data{
+                        liquidityId,
+                        stakeId,
+                        seed,
+                        lpAmount,
+                        lpSymbol,
+                        rewardSymbol,
+                        tokenAAmount,
+    					tokenASymbol,
+    					tokenBAmount,
+    					tokenBSymbol,
+    					addedTime,
+    					removedTime,
+    					dappId,
+    					swapAddress,
+    					tokenAddress,
+    					tokenALossAmount,
+    					tokenBLossAmount,
+    					lpStatus,
+                    }
+                }
+            }",
+                Variables = new
+                {
+                    liquidityIds = liquidityIds, lpStatus = LpStatus.Removed, skipCount = 0, maxResultCount = 5000,
+                }
+            });
+
+            return indexerResult.GetLiquidityInfoList.Data;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "getClaimInfoList Indexer error");
+            return new List<LiquidityInfoIndexerDto>();
+        }
     }
 }

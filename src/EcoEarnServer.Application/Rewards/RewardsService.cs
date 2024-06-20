@@ -582,30 +582,30 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var unWithdrawList = list
             .Where(x => x.WithdrawTime != 0)
             .ToList();
-        
-        
+
+
         var rewardOperationRecordList = await _rewardsProvider.GetRewardOperationRecordListAsync(address);
         var rewardOperationRecordClaimIds = rewardOperationRecordList
             .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId).ToList())
             .ToList();
-    
+
         var operationClaimList = unWithdrawList
             .Where(x => rewardOperationRecordClaimIds.Contains(x.ClaimId))
             .ToList();
-        
+
         var earlyStakedIds = operationClaimList
             .Where(x => !string.IsNullOrEmpty(x.EarlyStakeSeed))
             .Select(x => x.StakeId)
             .Distinct().ToList();
-            
+
         var unLockedStakeIds = await _rewardsProvider.GetUnLockedStakeIdsAsync(earlyStakedIds, address);
-        
+
         var liquidityIds = operationClaimList
             .Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
             .Select(x => x.LiquidityId)
             .ToList();
-        var liquidityRemovedStakeIds = await _rewardsProvider.GetLiquidityRemovedLpIdsAsync(liquidityIds, address);
-        
+        var liquidityRemovedList = await _rewardsProvider.GetLiquidityRemovedLpIdsAsync(liquidityIds);
+        var liquidityRemovedStakeIds = liquidityRemovedList.Select(x => x.StakeId).ToList();
         var shouldRemoveClaimIds = operationClaimList
             .Where(x => !unLockedStakeIds.Contains(x.StakeId) && !liquidityRemovedStakeIds.Contains(x.StakeId))
             .Select(x => x.ClaimId)
@@ -613,35 +613,101 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var realList = unWithdrawList.Where(x => !shouldRemoveClaimIds.Contains(x.ClaimId))
             .ToList();
+        var lossAmountSeedDic = liquidityRemovedList
+            .GroupBy(x => x.Seed)
+            .ToDictionary(g => g.Key, g => new
+            {
+                TokenALoss = new
+                {
+                    Amount = g.Select(x => BigInteger.Parse(x.TokenALossAmount))
+                        .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
+                        .ToString(),
+                    Symbol = g.First().TokenASymbol
+                },
+                TokenBLoss = new
+                {
+                    Amount = g.Select(x => BigInteger.Parse(x.TokenBLossAmount))
+                        .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
+                        .ToString(),
+                    Symbol = g.First().TokenBSymbol
+                }
+            });
 
         var now = DateTime.UtcNow.ToUtcMilliSeconds();
         var frozenList = realList.Where(x => x.ReleaseTime >= now)
             .OrderBy(x => x.ReleaseTime)
             .ToList();
-        
+
         var frozen = frozenList
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
-            .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
-            .ToString();
+            .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+        var frozenLiquidityAddedSeedList = frozenList.Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
+            .Select(x => x.LiquidityAddedSeed).Distinct().ToList();
+
+        foreach (var entity in lossAmountSeedDic.Where(entity => frozenLiquidityAddedSeedList.Contains(entity.Key)))
+        {
+            if (pointsPoolAggDto.RewardsTokenName == entity.Value.TokenALoss.Symbol)
+            {
+                frozen -= BigInteger.Parse(entity.Value.TokenALoss.Amount);
+            }
+            else
+            {
+                frozen -= BigInteger.Parse(entity.Value.TokenBLoss.Amount);
+            }
+        }
+
         var withdrawableList = realList.Where(x => x.ReleaseTime < now)
             .ToList();
         var withdrawable = withdrawableList
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
-            .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
-            .ToString();
-        pointsPoolAggDto.Frozen = frozen;
-        pointsPoolAggDto.FrozenInUsd = (double.Parse(frozen) * usdRate).ToString(CultureInfo.InvariantCulture);
-        pointsPoolAggDto.Withdrawable = withdrawable;
-        pointsPoolAggDto.WithdrawableInUsd = (double.Parse(withdrawable) * usdRate).ToString(CultureInfo.InvariantCulture);
-        
+            .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+
+        var withdrawableSeedList = withdrawableList.Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
+            .Select(x => x.LiquidityAddedSeed).Distinct().ToList();
+
+        foreach (var entity in lossAmountSeedDic)
+        {
+            if (frozenLiquidityAddedSeedList.Contains(entity.Key))
+            {
+                if (pointsPoolAggDto.RewardsTokenName == entity.Value.TokenALoss.Symbol)
+                {
+                    frozen -= BigInteger.Parse(entity.Value.TokenALoss.Amount);
+                }
+                else
+                {
+                    frozen -= BigInteger.Parse(entity.Value.TokenBLoss.Amount);
+                }
+            }
+
+            if (withdrawableSeedList.Contains(entity.Key))
+            {
+                if (pointsPoolAggDto.RewardsTokenName == entity.Value.TokenALoss.Symbol)
+                {
+                    withdrawable -= BigInteger.Parse(entity.Value.TokenALoss.Amount);
+                }
+                else
+                {
+                    withdrawable -= BigInteger.Parse(entity.Value.TokenBLoss.Amount);
+                }
+            }
+        }
+
+        pointsPoolAggDto.Frozen = frozen.ToString();
+        pointsPoolAggDto.FrozenInUsd =
+            (double.Parse(frozen.ToString()) * usdRate).ToString(CultureInfo.InvariantCulture);
+        pointsPoolAggDto.Withdrawable = withdrawable.ToString();
+        pointsPoolAggDto.WithdrawableInUsd =
+            (double.Parse(withdrawable.ToString()) * usdRate).ToString(CultureInfo.InvariantCulture);
+
         var earlyStaked = operationClaimList
             .Where(x => earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId))
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
             .ToString();
         pointsPoolAggDto.EarlyStakedAmount = earlyStaked;
-        pointsPoolAggDto.EarlyStakedAmountInUsd = (double.Parse(earlyStaked) * usdRate).ToString(CultureInfo.InvariantCulture);
-        
+        pointsPoolAggDto.EarlyStakedAmountInUsd =
+            (double.Parse(earlyStaked) * usdRate).ToString(CultureInfo.InvariantCulture);
+
         pointsPoolAggDto.NextRewardsRelease = frozenList.First().ReleaseTime;
         pointsPoolAggDto.NextRewardsReleaseAmount = frozenList.First().ClaimedAmount;
         return pointsPoolAggDto;
