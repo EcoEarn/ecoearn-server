@@ -580,7 +580,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         pointsPoolAggDto.WithdrawnInUsd = (double.Parse(withdrawn) * usdRate).ToString(CultureInfo.InvariantCulture);
 
         var unWithdrawList = list
-            .Where(x => x.WithdrawTime != 0)
+            .Where(x => x.WithdrawTime == 0)
             .ToList();
 
 
@@ -643,19 +643,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
         var frozenLiquidityAddedSeedList = frozenList.Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
             .Select(x => x.LiquidityAddedSeed).Distinct().ToList();
-
-        foreach (var entity in lossAmountSeedDic.Where(entity => frozenLiquidityAddedSeedList.Contains(entity.Key)))
-        {
-            if (pointsPoolAggDto.RewardsTokenName == entity.Value.TokenALoss.Symbol)
-            {
-                frozen -= BigInteger.Parse(entity.Value.TokenALoss.Amount);
-            }
-            else
-            {
-                frozen -= BigInteger.Parse(entity.Value.TokenBLoss.Amount);
-            }
-        }
-
+        
         var withdrawableList = realList.Where(x => x.ReleaseTime < now)
             .ToList();
         var withdrawable = withdrawableList
@@ -708,8 +696,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         pointsPoolAggDto.EarlyStakedAmountInUsd =
             (double.Parse(earlyStaked) * usdRate).ToString(CultureInfo.InvariantCulture);
 
-        pointsPoolAggDto.NextRewardsRelease = frozenList.First().ReleaseTime;
-        pointsPoolAggDto.NextRewardsReleaseAmount = frozenList.First().ClaimedAmount;
+        pointsPoolAggDto.NextRewardsRelease = frozenList.Any() ? frozenList.First().ReleaseTime : 0;
+        pointsPoolAggDto.NextRewardsReleaseAmount = frozenList.Any() ? frozenList.First().ClaimedAmount : "0";
         return pointsPoolAggDto;
     }
 
