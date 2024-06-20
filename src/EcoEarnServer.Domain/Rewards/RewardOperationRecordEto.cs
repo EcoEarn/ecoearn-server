@@ -21,4 +21,5 @@ public class RewardOperationRecordEto
 public class ClaimInfoDto
 {
     public string ClaimId { get; set; }
+    public long ReleaseTime { get; set; }
 }
