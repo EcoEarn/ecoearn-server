@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using AElf;
@@ -325,7 +326,18 @@ public class RewardsService : IRewardsService, ISingletonDependency
             throw new UserFriendlyException("generating signature.");
         }
 
-        var claimIdsHex = executeClaimIds.SelectMany(id => Encoding.UTF8.GetBytes(id)).ToArray().ToHex();
+        var claimIdsArray = executeClaimIds.SelectMany(id => Encoding.UTF8.GetBytes(id)).ToArray();
+        string claimIdsHex;
+        using (var md5 = MD5.Create())
+        {
+            var hashBytes = md5.ComputeHash(claimIdsArray);
+            claimIdsHex = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        }
+
+        if (string.IsNullOrEmpty(claimIdsHex))
+        {
+            throw new UserFriendlyException("invalid params");
+        }
         var id = GuidHelper.GenerateId(address, poolType.ToString(), ExecuteType.Withdrawn.ToString(), claimIdsHex);
         var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
         var record = await rewardOperationRecordGrain.GetAsync();
