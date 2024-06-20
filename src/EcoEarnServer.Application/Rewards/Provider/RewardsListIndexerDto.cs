@@ -20,6 +20,11 @@ public class RewardsListIndexerDto
     public long EarlyStakeTime { get; set; }
     public string Account { get; set; }
     public PoolTypeEnums PoolType { get; set; }
+    public string WithdrawSeed { get; set; }
+    public string LiquidityId { get; set; }
+    public string ContractAddress { get; set; }
+    public string EarlyStakeSeed { get; set; }
+    public string LiquidityAddedSeed { get; set; }
 }
 
 public class RewardsListQuery

@@ -20,6 +20,7 @@ public interface IRewardsProvider
     Task<List<string>> GetUnLockedStakeIdsAsync(List<string> stakeIds, string address);
     Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address);
     Task<List<RewardOperationRecordIndex>> GetExecutingListAsync(string address, ExecuteType executeType);
+    Task<List<string>> GetLiquidityRemovedLpIdsAsync(List<string> liquidityIds, string address);
 }
 
 public class RewardsProvider : IRewardsProvider, ISingletonDependency
@@ -140,5 +141,10 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             skip: 0, limit: 5000);
         return list;
         
+    }
+
+    public async Task<List<string>> GetLiquidityRemovedLpIdsAsync(List<string> liquidityIds, string address)
+    {
+        return new List<string>();
     }
 }

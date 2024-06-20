@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -129,13 +130,13 @@ public class RewardsService : IRewardsService, ISingletonDependency
             {
                 case PoolTypeEnums.Points:
                     rewardsAggregationDto.PointsPoolAgg =
-                        await GetPointsPoolRewardsAggAsync(keyValuePair.Value, address);
+                        await GetRewardsAggAsync(keyValuePair.Value, address, 0);
                     break;
                 case PoolTypeEnums.Token:
-                    rewardsAggregationDto.TokenPoolAgg = await GetTokenPoolRewardsAggAsync(keyValuePair.Value, address);
+                    rewardsAggregationDto.TokenPoolAgg = await GetRewardsAggAsync(keyValuePair.Value, address, 0);
                     break;
                 case PoolTypeEnums.Lp:
-                    rewardsAggregationDto.LpPoolAgg = await GetLpPoolRewardsAggAsync(keyValuePair.Value, address);
+                    rewardsAggregationDto.LpPoolAgg = await GetRewardsAggAsync(keyValuePair.Value, address, 0);
                     break;
             }
         }
@@ -508,7 +509,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             pastReleaseTimeClaimInfoList = rewardsAllList;
         }
-        
+
         var pastReleaseTimeClaimIds = pastReleaseTimeClaimInfoList
             .Select(x => x.ClaimId)
             .Distinct()
@@ -552,7 +553,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
                amount.ToString() == withdrawAmount;
     }
 
-    private async Task<RewardsAggDto> GetPointsPoolRewardsAggAsync(List<RewardsListIndexerDto> list, string address)
+    private async Task<RewardsAggDto> GetRewardsAggAsync(List<RewardsListIndexerDto> list, string address,
+        double usdRate)
     {
         var pointsPoolAggDto = new RewardsAggDto();
         if (list.IsNullOrEmpty())
@@ -560,16 +562,88 @@ public class RewardsService : IRewardsService, ISingletonDependency
             return pointsPoolAggDto;
         }
 
-        var stakeIds = list
-            .Where(x => !string.IsNullOrEmpty(x.StakeId))
+        pointsPoolAggDto.RewardsTokenName = list.FirstOrDefault()?.ClaimedSymbol;
+
+        var totalRewards = list
+            .Select(x => BigInteger.Parse(x.ClaimedAmount))
+            .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
+            .ToString();
+        pointsPoolAggDto.TotalRewards = totalRewards;
+        pointsPoolAggDto.TotalRewardsInUsd =
+            (double.Parse(totalRewards) * usdRate).ToString(CultureInfo.InvariantCulture);
+
+        var withdrawn = list.Where(x => x.WithdrawTime != 0)
+            .Select(x => BigInteger.Parse(x.ClaimedAmount))
+            .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
+            .ToString();
+        pointsPoolAggDto.Withdrawn = withdrawn;
+        pointsPoolAggDto.WithdrawnInUsd = (double.Parse(withdrawn) * usdRate).ToString(CultureInfo.InvariantCulture);
+
+        var unWithdrawList = list
+            .Where(x => x.WithdrawTime != 0)
+            .ToList();
+        
+        
+        var rewardOperationRecordList = await _rewardsProvider.GetRewardOperationRecordListAsync(address);
+        var rewardOperationRecordClaimIds = rewardOperationRecordList
+            .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId).ToList())
+            .ToList();
+    
+        var operationClaimList = unWithdrawList
+            .Where(x => rewardOperationRecordClaimIds.Contains(x.ClaimId))
+            .ToList();
+        
+        var earlyStakedIds = operationClaimList
+            .Where(x => !string.IsNullOrEmpty(x.EarlyStakeSeed))
             .Select(x => x.StakeId)
             .Distinct().ToList();
-        var unLockedStakeIds = await _rewardsProvider.GetUnLockedStakeIdsAsync(stakeIds, address);
-
-        var stakingList = list
-            .Where(x => x.EarlyStakeTime == 0 || unLockedStakeIds.Contains(x.StakeId))
+            
+        var unLockedStakeIds = await _rewardsProvider.GetUnLockedStakeIdsAsync(earlyStakedIds, address);
+        
+        var liquidityIds = operationClaimList
+            .Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
+            .Select(x => x.LiquidityId)
             .ToList();
-        pointsPoolAggDto.RewardsTokenName = stakingList.MaxBy(x => x.ClaimedTime)?.ClaimedSymbol;
+        var liquidityRemovedStakeIds = await _rewardsProvider.GetLiquidityRemovedLpIdsAsync(liquidityIds, address);
+        
+        var shouldRemoveClaimIds = operationClaimList
+            .Where(x => !unLockedStakeIds.Contains(x.StakeId) && !liquidityRemovedStakeIds.Contains(x.StakeId))
+            .Select(x => x.ClaimId)
+            .ToList();
+
+        var realList = unWithdrawList.Where(x => !shouldRemoveClaimIds.Contains(x.ClaimId))
+            .ToList();
+
+        var now = DateTime.UtcNow.ToUtcMilliSeconds();
+        var frozenList = realList.Where(x => x.ReleaseTime >= now)
+            .OrderBy(x => x.ReleaseTime)
+            .ToList();
+        
+        var frozen = frozenList
+            .Select(x => BigInteger.Parse(x.ClaimedAmount))
+            .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
+            .ToString();
+        var withdrawableList = realList.Where(x => x.ReleaseTime < now)
+            .ToList();
+        var withdrawable = withdrawableList
+            .Select(x => BigInteger.Parse(x.ClaimedAmount))
+            .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
+            .ToString();
+        pointsPoolAggDto.Frozen = frozen;
+        pointsPoolAggDto.FrozenInUsd = (double.Parse(frozen) * usdRate).ToString(CultureInfo.InvariantCulture);
+        pointsPoolAggDto.Withdrawable = withdrawable;
+        pointsPoolAggDto.WithdrawableInUsd = (double.Parse(withdrawable) * usdRate).ToString(CultureInfo.InvariantCulture);
+        
+        var earlyStaked = operationClaimList
+            .Where(x => earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId))
+            .Select(x => BigInteger.Parse(x.ClaimedAmount))
+            .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
+            .ToString();
+        pointsPoolAggDto.EarlyStakedAmount = earlyStaked;
+        pointsPoolAggDto.EarlyStakedAmountInUsd = (double.Parse(earlyStaked) * usdRate).ToString(CultureInfo.InvariantCulture);
+        
+        pointsPoolAggDto.NextRewardsRelease = frozenList.First().ReleaseTime;
+        pointsPoolAggDto.NextRewardsReleaseAmount = frozenList.First().ClaimedAmount;
         return pointsPoolAggDto;
     }
 

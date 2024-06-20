@@ -18,6 +18,7 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Volo.Abp;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
@@ -105,7 +106,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 
             if (addressStakedInPoolDic.TryGetValue(tokenPoolsDto.PoolId, out var stakedInfos))
             {
-                var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(input.PoolType, input.Address,0,1);
+                var rewardsListIndexerResult =
+                    await _rewardsProvider.GetRewardsListAsync(input.PoolType, input.Address, 0, 1);
                 tokenPoolsDto.LatestClaimTime = !rewardsListIndexerResult.Data.IsNullOrEmpty()
                     ? rewardsListIndexerResult.Data.FirstOrDefault()!.ClaimedTime
                     : 0;
@@ -164,10 +166,34 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         return tokenPoolStakedInfoDto == null ? 0 : long.Parse(tokenPoolStakedInfoDto.TotalStakedAmount);
     }
 
-    public async Task<EarlyStakeInfoDto> GetStakedInfoAsync(string tokenName, string address, string chainId)
+    public async Task<EarlyStakeInfoDto> GetStakedInfoAsync(GetEarlyStakeInfoInput input)
     {
+        var tokenName = input.TokenName;
+        var address = input.Address;
+        var chainId = input.ChainId;
+        var poolType = input.PoolType;
+        var rate = input.Rate;
+        var tokenPoolIndexerListDto = await _tokenStakingProvider.GetTokenPoolByTokenAsync(tokenName);
+
+        TokenPoolsIndexerDto tokenPoolIndexerDto;
+        switch (poolType)
+        {
+            case PoolTypeEnums.Token:
+                tokenPoolIndexerDto = tokenPoolIndexerListDto[0];
+                break;
+            case PoolTypeEnums.Lp:
+            {
+                var stakeTokenContract =
+                    _lpPoolRateOptions.LpPoolRateDic.First(entity => Math.Abs(entity.Value - rate) == 0).Key;
+                tokenPoolIndexerDto =
+                    tokenPoolIndexerListDto.First(x => x.TokenPoolConfig.StakeTokenContract == stakeTokenContract);
+                break;
+            }
+            default:
+                throw new UserFriendlyException("invalid pool type");
+        }
+
         var stakedInfoIndexerDtos = await _tokenStakingProvider.GetStakedInfoAsync(tokenName, address);
-        var tokenPoolIndexerDto = await _tokenStakingProvider.GetTokenPoolByTokenAsync(tokenName);
         var yearlyRewards = YearlyBlocks * tokenPoolIndexerDto.TokenPoolConfig.RewardPerBlock;
         var tokenPoolStakedSum = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
             { PoolId = tokenPoolIndexerDto.PoolId, ChainId = chainId });
@@ -240,7 +266,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         catch (Exception e)
         {
             _logger.LogError(e, "get staked rewards: fail. stakeId: {stakeId}", stakeId);
-            return new System.Collections.Generic.Dictionary<string, RewardDataDto>();
+            return new Dictionary<string, RewardDataDto>();
         }
     }
 }

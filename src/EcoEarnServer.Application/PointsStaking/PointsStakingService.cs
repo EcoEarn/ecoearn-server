@@ -241,7 +241,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
                      claimingRecord => realClaimSeeds.Contains(claimingRecord.Seed)))
         {
             //change record status
-            await UpdateClaimStatusAsync(address, poolId, claimingRecord.Seed, "");
+            await UpdateClaimStatusAsync(address, poolId, claimingRecord.Id, "");
             //sub amount
             await SettleRewardsAsync(address, poolId, -((double)claimingRecord.Amount / 100000000));
             amount -= claimingRecord.Amount;
@@ -443,7 +443,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
 
     public async Task<EarlyStakeInfoDto> GetEarlyStakeInfoAsync(GetEarlyStakeInfoInput input)
     {
-        return await _tokenStakingService.GetStakedInfoAsync(input.TokenName, input.Address, input.ChainId);
+        return await _tokenStakingService.GetStakedInfoAsync(input);
     }
 
     public async Task<AddressRewardsDto> GetAddressRewardsAsync(GetAddressRewardsInput input)
