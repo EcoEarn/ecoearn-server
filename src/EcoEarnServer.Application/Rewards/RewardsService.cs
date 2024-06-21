@@ -240,7 +240,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
     public async Task<RewardsSignatureDto> EarlyStakeSignatureAsync(RewardsSignatureInput input)
     {
-        return await RewardsSignatureAsync(input, ExecuteType.Withdrawn);
+        return await RewardsSignatureAsync(input, ExecuteType.EarlyStake);
     }
 
     public async Task<string> EarlyStakeAsync(RewardsTransactionInput input)
@@ -253,7 +253,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             transaction.MethodName == "ManagerForwardCall")
         {
             var managerForwardCallInput = ManagerForwardCallInput.Parser.ParseFrom(transaction.Params);
-            if (managerForwardCallInput.MethodName == "Withdraw" &&
+            if (managerForwardCallInput.MethodName == "EarlyStake" &&
                 managerForwardCallInput.ContractAddress.ToBase58() ==
                 _earnContractOptions.EcoEarnRewardsContractAddress)
             {
@@ -261,7 +261,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             }
         }
         else if (transaction.To.ToBase58() == _earnContractOptions.EcoEarnRewardsContractAddress &&
-                 transaction.MethodName == "Withdraw")
+                 transaction.MethodName == "EarlyStake")
         {
             withdrawInput = WithdrawInput.Parser.ParseFrom(transaction.Params);
         }
