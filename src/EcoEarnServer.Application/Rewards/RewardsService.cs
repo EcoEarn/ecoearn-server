@@ -20,6 +20,7 @@ using EcoEarnServer.Rewards.Provider;
 using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
 using Google.Protobuf;
+using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -248,7 +249,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var transaction =
             Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
 
-        var withdrawInput = new WithdrawInput();
+        var earlyStakeInput = new EarlyStakeInput();
         if (transaction.To.ToBase58() == _earnContractOptions.CAContractAddress &&
             transaction.MethodName == "ManagerForwardCall")
         {
@@ -257,29 +258,25 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 managerForwardCallInput.ContractAddress.ToBase58() ==
                 _earnContractOptions.EcoEarnRewardsContractAddress)
             {
-                withdrawInput = WithdrawInput.Parser.ParseFrom(managerForwardCallInput.Args);
+                earlyStakeInput = EarlyStakeInput.Parser.ParseFrom(managerForwardCallInput.Args);
             }
         }
         else if (transaction.To.ToBase58() == _earnContractOptions.EcoEarnRewardsContractAddress &&
                  transaction.MethodName == "EarlyStake")
         {
-            withdrawInput = WithdrawInput.Parser.ParseFrom(transaction.Params);
+            earlyStakeInput = EarlyStakeInput.Parser.ParseFrom(transaction.Params);
         }
         else
         {
             throw new UserFriendlyException("Invalid transaction");
         }
 
-        var computedHash = HashHelper.ComputeFrom(new WithdrawInput
+        
+        var computedHash = HashHelper.ComputeFrom(new EarlyStakeInput
         {
-            ClaimIds = { withdrawInput.ClaimIds },
-            Account = withdrawInput.Account,
-            Amount = withdrawInput.Amount,
-            Seed = withdrawInput.Seed,
-            ExpirationTime = withdrawInput.ExpirationTime,
-            DappId = withdrawInput.DappId
+            StakeInput = earlyStakeInput.StakeInput,
         }.ToByteArray());
-        if (!CryptoHelper.RecoverPublicKey(withdrawInput.Signature.ToByteArray(), computedHash.ToByteArray(),
+        if (!CryptoHelper.RecoverPublicKey(earlyStakeInput.Signature.ToByteArray(), computedHash.ToByteArray(),
                 out var publicKeyByte))
         {
             throw new UserFriendlyException("invalid Signature");
@@ -292,7 +289,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             throw new UserFriendlyException("invalid Signature");
         }
 
-        if (withdrawInput.ExpirationTime * 1000 < DateTime.UtcNow.ToUtcMilliSeconds())
+        if (earlyStakeInput.StakeInput.ExpirationTime * 1000 < DateTime.UtcNow.ToUtcMilliSeconds())
         {
             throw new UserFriendlyException("Please wait for the reward to be settled");
         }
@@ -386,11 +383,13 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .AddSeconds(-expiredPeriod)
             .ToUtcMilliSeconds();
         var seed = Guid.NewGuid().ToString();
+        var repeatedField = new RepeatedField<Hash>();
+        repeatedField.AddRange(executeClaimIds.Select(Hash.LoadFromHex).ToList());
         IMessage data = executeType switch
         {
             ExecuteType.Withdrawn => new WithdrawInput
             {
-                ClaimIds = { executeClaimIds.Select(Hash.LoadFromHex).ToList() },
+                ClaimIds = { repeatedField },
                 Account = Address.FromBase58(address),
                 Amount = amount,
                 Seed = HashHelper.ComputeFrom(seed),
@@ -401,19 +400,19 @@ public class RewardsService : IRewardsService, ISingletonDependency
             {
                 StakeInput = new StakeInput
                 {
-                    ClaimIds = { executeClaimIds.Select(Hash.LoadFromHex).ToList() },
+                    ClaimIds = { repeatedField },
                     Account = Address.FromBase58(address),
                     Amount = amount,
                     Seed = HashHelper.ComputeFrom(seed),
                     ExpirationTime = expiredTime / 1000,
-                    PoolId = HashHelper.ComputeFrom(poolId),
+                    PoolId = Hash.LoadFromHex(poolId),
                     Period = period,
                     DappId = Hash.LoadFromHex(dappId)
                 }
             },
             ExecuteType.LiquidityAdded => new WithdrawInput
             {
-                ClaimIds = { executeClaimIds.Select(Hash.LoadFromHex).ToList() },
+                ClaimIds = { repeatedField },
                 Account = Address.FromBase58(address),
                 Amount = amount,
                 Seed = HashHelper.ComputeFrom(seed),
