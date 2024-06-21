@@ -338,7 +338,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             throw new UserFriendlyException("invalid params");
         }
-        var id = GuidHelper.GenerateId(address, poolType.ToString(), ExecuteType.Withdrawn.ToString(), claimIdsHex);
+        var id = GuidHelper.GenerateId(address, poolType.ToString(), executeType.ToString(), claimIdsHex);
         var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
         var record = await rewardOperationRecordGrain.GetAsync();
         if (record != null)
