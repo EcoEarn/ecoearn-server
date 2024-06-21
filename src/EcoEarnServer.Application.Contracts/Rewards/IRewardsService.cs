@@ -13,4 +13,6 @@ public interface IRewardsService
 
     Task<RewardsSignatureDto> EarlyStakeSignatureAsync(RewardsSignatureInput input);
     Task<string> EarlyStakeAsync(RewardsTransactionInput input);
+    Task<RewardsSignatureDto> AddLiquiditySignatureAsync(RewardsSignatureInput input);
+    Task<string> AddLiquidityAsync(RewardsTransactionInput input);
 }

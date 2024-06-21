@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using EcoEarnServer.Farm.Dtos;
 
-namespace EcoEarnServer.Rewards.Provider;
+namespace EcoEarnServer.Farm.Provider;
 
 public class LiquidityInfoListIndexerQuery
 {

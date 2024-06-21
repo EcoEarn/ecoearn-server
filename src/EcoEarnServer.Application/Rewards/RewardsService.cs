@@ -12,6 +12,8 @@ using AElf.Types;
 using EcoEarn.Contracts.Rewards;
 using EcoEarnServer.Common;
 using EcoEarnServer.Common.AElfSdk;
+using EcoEarnServer.Farm.Dtos;
+using EcoEarnServer.Farm.Provider;
 using EcoEarnServer.Grains.Grain.Rewards;
 using EcoEarnServer.Options;
 using EcoEarnServer.PointsStaking.Provider;
@@ -53,6 +55,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly EcoEarnContractOptions _earnContractOptions;
     private readonly ContractProvider _contractProvider;
+    private readonly IFarmProvider _farmProvider;
 
     public RewardsService(IRewardsProvider rewardsProvider, IObjectMapper objectMapper, ILogger<RewardsService> logger,
         IOptionsSnapshot<TokenPoolIconsOptions> tokenPoolIconsOptions, IPointsStakingProvider pointsStakingProvider,
@@ -60,7 +63,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         IAbpDistributedLock distributedLock, IClusterClient clusterClient, IOptionsSnapshot<ChainOption> chainOption,
         IOptionsSnapshot<ProjectKeyPairInfoOptions> projectKeyPairInfoOptions, ISecretProvider secretProvider,
         IDistributedEventBus distributedEventBus, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
-        ContractProvider contractProvider)
+        ContractProvider contractProvider, IFarmProvider farmProvider)
     {
         _rewardsProvider = rewardsProvider;
         _objectMapper = objectMapper;
@@ -72,6 +75,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         _secretProvider = secretProvider;
         _distributedEventBus = distributedEventBus;
         _contractProvider = contractProvider;
+        _farmProvider = farmProvider;
         _earnContractOptions = earnContractOptions.Value;
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
         _chainOption = chainOption.Value;
@@ -271,7 +275,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             throw new UserFriendlyException("Invalid transaction");
         }
 
-        
+
         var computedHash = HashHelper.ComputeFrom(new EarlyStakeInput
         {
             StakeInput = earlyStakeInput.StakeInput,
@@ -304,6 +308,74 @@ public class RewardsService : IRewardsService, ISingletonDependency
         return transactionOutput.TransactionId;
     }
 
+    public async Task<RewardsSignatureDto> AddLiquiditySignatureAsync(RewardsSignatureInput input)
+    {
+        return await RewardsSignatureAsync(input, ExecuteType.LiquidityAdded);
+    }
+
+    public async Task<string> AddLiquidityAsync(RewardsTransactionInput input)
+    {
+        var transaction =
+            Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
+
+        var addLiquidityAndStakeInput = new AddLiquidityAndStakeInput();
+        if (transaction.To.ToBase58() == _earnContractOptions.CAContractAddress &&
+            transaction.MethodName == "ManagerForwardCall")
+        {
+            var managerForwardCallInput = ManagerForwardCallInput.Parser.ParseFrom(transaction.Params);
+            if (managerForwardCallInput.MethodName == "AddLiquidityAndStake" &&
+                managerForwardCallInput.ContractAddress.ToBase58() ==
+                _earnContractOptions.EcoEarnRewardsContractAddress)
+            {
+                addLiquidityAndStakeInput = AddLiquidityAndStakeInput.Parser.ParseFrom(managerForwardCallInput.Args);
+            }
+        }
+        else if (transaction.To.ToBase58() == _earnContractOptions.EcoEarnRewardsContractAddress &&
+                 transaction.MethodName == "AddLiquidityAndStake")
+        {
+            addLiquidityAndStakeInput = AddLiquidityAndStakeInput.Parser.ParseFrom(transaction.Params);
+        }
+        else
+        {
+            throw new UserFriendlyException("Invalid transaction");
+        }
+
+
+        var computedHash = HashHelper.ComputeFrom(new AddLiquidityAndStakeInput
+        {
+            StakeInput = addLiquidityAndStakeInput.StakeInput,
+            TokenAMin = addLiquidityAndStakeInput.TokenAMin,
+            TokenBMin = addLiquidityAndStakeInput.TokenBMin,
+        }.ToByteArray());
+        if (!CryptoHelper.RecoverPublicKey(addLiquidityAndStakeInput.Signature.ToByteArray(),
+                computedHash.ToByteArray(),
+                out var publicKeyByte))
+        {
+            throw new UserFriendlyException("invalid Signature");
+        }
+
+        var publicKey = publicKeyByte.ToHex();
+        if (!_projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(CommonConstant.Project, out var pubKey)
+            || pubKey.PublicKey != publicKey)
+        {
+            throw new UserFriendlyException("invalid Signature");
+        }
+
+        if (addLiquidityAndStakeInput.StakeInput.ExpirationTime * 1000 < DateTime.UtcNow.ToUtcMilliSeconds())
+        {
+            throw new UserFriendlyException("Please wait for the reward to be settled");
+        }
+
+        // var poolId = claimInput.PoolId.ToHex();
+        // var address = claimInput.Account.ToBase58();
+        // await SettleRewardsAsync(address, poolId, -((double)claimInput.Amount / 100000000));
+        //
+        // await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
+
+        var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
+        return transactionOutput.TransactionId;
+    }
+
 
     private async Task<RewardsSignatureDto> RewardsSignatureAsync(RewardsSignatureInput input, ExecuteType executeType)
     {
@@ -314,6 +386,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var dappId = input.DappId;
         var poolId = input.PoolId;
         var period = input.Period;
+        var tokenAMin = input.TokenAMin;
+        var tokenBMin = input.TokenBMin;
 
         //prevention of duplicate withdraw
         await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + address);
@@ -335,6 +409,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             throw new UserFriendlyException("invalid params");
         }
+
         var id = GuidHelper.GenerateId(address, poolType.ToString(), executeType.ToString(), claimIdsHex);
         var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
         var record = await rewardOperationRecordGrain.GetAsync();
@@ -410,14 +485,21 @@ public class RewardsService : IRewardsService, ISingletonDependency
                     DappId = Hash.LoadFromHex(dappId)
                 }
             },
-            ExecuteType.LiquidityAdded => new WithdrawInput
+            ExecuteType.LiquidityAdded => new AddLiquidityAndStakeInput
             {
-                ClaimIds = { repeatedField },
-                Account = Address.FromBase58(address),
-                Amount = amount,
-                Seed = HashHelper.ComputeFrom(seed),
-                ExpirationTime = expiredTime / 1000,
-                DappId = Hash.LoadFromHex(dappId)
+                StakeInput = new StakeInput
+                {
+                    ClaimIds = { repeatedField },
+                    Account = Address.FromBase58(address),
+                    Amount = amount,
+                    Seed = HashHelper.ComputeFrom(seed),
+                    ExpirationTime = expiredTime / 1000,
+                    PoolId = Hash.LoadFromHex(poolId),
+                    Period = period,
+                    DappId = Hash.LoadFromHex(dappId)
+                },
+                TokenAMin = tokenAMin,
+                TokenBMin = tokenBMin,
             },
             _ => null
         };
@@ -612,7 +694,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
             .Select(x => x.LiquidityId)
             .ToList();
-        var liquidityRemovedList = await _rewardsProvider.GetLiquidityRemovedLpIdsAsync(liquidityIds);
+        var liquidityRemovedList =
+            await _farmProvider.GetLiquidityInfoAsync(liquidityIds, "", LpStatus.Removed, 0, 5000);
         var liquidityRemovedStakeIds = liquidityRemovedList.Select(x => x.StakeId).ToList();
         var shouldRemoveClaimIds = operationClaimList
             .Where(x => !unLockedStakeIds.Contains(x.StakeId) && !liquidityRemovedStakeIds.Contains(x.StakeId))

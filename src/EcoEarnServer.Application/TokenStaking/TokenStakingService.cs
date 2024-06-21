@@ -197,6 +197,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         var yearlyRewards = YearlyBlocks * tokenPoolIndexerDto.TokenPoolConfig.RewardPerBlock;
         var tokenPoolStakedSum = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
             { PoolId = tokenPoolIndexerDto.PoolId, ChainId = chainId });
+        var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{tokenPoolIndexerDto.TokenPoolConfig.RewardToken.ToUpper()}_USDT");
         var stakeInfoDto = new EarlyStakeInfoDto
         {
             StakeId = stakedInfoIndexerDtos.StakeId,
@@ -215,6 +216,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             FixedBoostFactor = tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor,
             UnlockWindowDuration = tokenPoolIndexerDto.TokenPoolConfig.UnlockWindowDuration,
             MinimumClaimAmount = tokenPoolIndexerDto.TokenPoolConfig.MinimumClaimAmount,
+            EarnedSymbol = tokenPoolIndexerDto.TokenPoolConfig.RewardToken,
+            UsdRate = usdtRate,
             SubStakeInfos = stakedInfoIndexerDtos.SubStakeInfos.Select(dto =>
             {
                 var subStakeInfoDto = _objectMapper.Map<SubStakeInfoIndexerDto, SubStakeInfoDto>(dto);

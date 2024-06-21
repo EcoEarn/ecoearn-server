@@ -55,4 +55,17 @@ public class RewardsController : EcoEarnServerController
     {
         return await _rewardsService.EarlyStakeAsync(input);
     }
+    
+    
+    [HttpPost("add/liquidity/signature")]
+    public async Task<RewardsSignatureDto> AddLiquiditySignatureAsync(RewardsSignatureInput input)
+    {
+        return await _rewardsService.AddLiquiditySignatureAsync(input);
+    }
+    
+    [HttpPost("add/liquidity")]
+    public async Task<string> AddLiquidityAsync(RewardsTransactionInput input)
+    {
+        return await _rewardsService.AddLiquidityAsync(input);
+    }
 }

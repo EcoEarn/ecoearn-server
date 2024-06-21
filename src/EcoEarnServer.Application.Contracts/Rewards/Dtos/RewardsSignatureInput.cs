@@ -13,6 +13,8 @@ public class RewardsSignatureInput
     
     public string PoolId { get; set; }
     public long Period { get; set; }
+    public long TokenAMin { get; set; }
+    public long TokenBMin { get; set; }
 }
 
 public class RewardsEarlyStakeSignatureInput : RewardsSignatureInput

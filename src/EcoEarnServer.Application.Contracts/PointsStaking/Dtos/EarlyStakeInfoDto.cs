@@ -19,5 +19,8 @@ public class EarlyStakeInfoDto
     public long LastOperationTime { get; set; }
     public long MinimumClaimAmount { get; set; }
     
+    public double UsdRate  { get; set; }
+    public string EarnedSymbol  { get; set; }
+    
     public List<SubStakeInfoDto> SubStakeInfos { get; set; }
 }
