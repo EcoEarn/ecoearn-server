@@ -1,16 +1,16 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using EcoEarnServer.Farm;
 using EcoEarnServer.Farm.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
-using Volo.Abp.Application.Dtos;
 
 namespace EcoEarnServer.Controllers;
 
 [RemoteService]
 [Area("app")]
 [ControllerName("RewardsController")]
-[Route("api/app/farm/my/liquidity")]
+[Route("api/app/farm")]
 public class FarmController : EcoEarnServerController
 {
     private readonly IFarmService _farmService;
@@ -21,8 +21,14 @@ public class FarmController : EcoEarnServerController
     }
     
     [HttpPost("my/liquidity")]
-    public async Task<PagedResultDto<LiquidityInfoDto>> GetMyLiquidityListAsync(GetMyLiquidityListInput input)
+    public async Task<List<LiquidityInfoDto>> GetMyLiquidityListAsync(GetMyLiquidityListInput input)
     {
         return await _farmService.GetMyLiquidityListAsync(input);
+    }
+    
+    [HttpPost("market")]
+    public async Task<List<LiquidityInfoDto>> GetMarketLiquidityListAsync(GetMyLiquidityListInput input)
+    {
+        return await _farmService.GetMarketLiquidityListAsync(input);
     }
 }

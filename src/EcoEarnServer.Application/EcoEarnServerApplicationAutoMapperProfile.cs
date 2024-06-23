@@ -1,4 +1,6 @@
 using AutoMapper;
+using EcoEarnServer.Farm.Dtos;
+using EcoEarnServer.Farm.Provider;
 using EcoEarnServer.Grains.Grain.PointsPool;
 using EcoEarnServer.Grains.Grain.PointsStakeRewards;
 using EcoEarnServer.Grains.Grain.Rewards;
@@ -58,5 +60,10 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
         CreateMap<PointsPoolClaimRecordDto, PointsPoolClaimRecordEto>().ReverseMap();
         CreateMap<RewardOperationRecordDto, RewardOperationRecordEto>().ReverseMap();
         CreateMap<SubStakeInfoIndexerDto, SubStakeInfoDto>().ReverseMap();
+        CreateMap<LiquidityInfoIndexerDto, LiquidityInfoDto>()
+            .ForMember(t => t.Banlance, m => m.MapFrom(f => f.LpAmount.ToString()))
+            .ForMember(t => t.TokenAAmount, m => m.MapFrom(f => f.TokenAAmount.ToString()))
+            .ForMember(t => t.TokenBAmount, m => m.MapFrom(f => f.TokenBAmount.ToString()))
+            .ReverseMap();
     }
 }

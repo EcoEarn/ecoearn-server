@@ -588,16 +588,19 @@ public class RewardsService : IRewardsService, ISingletonDependency
         PoolTypeEnums poolType, ExecuteType executeType)
     {
         var rewardsAllList = await GetAllRewardsList(address, poolType);
+        var unWithdrawList = rewardsAllList
+            .Where(x => x.WithdrawTime == 0)
+            .ToList();
         List<RewardsListIndexerDto> pastReleaseTimeClaimInfoList;
         if (executeType == ExecuteType.Withdrawn)
         {
-            pastReleaseTimeClaimInfoList = rewardsAllList
+            pastReleaseTimeClaimInfoList = unWithdrawList
                 .Where(x => x.ReleaseTime < DateTime.UtcNow.ToUtcMilliSeconds())
                 .ToList();
         }
         else
         {
-            pastReleaseTimeClaimInfoList = rewardsAllList;
+            pastReleaseTimeClaimInfoList = unWithdrawList;
         }
 
         var pastReleaseTimeClaimIds = pastReleaseTimeClaimInfoList
