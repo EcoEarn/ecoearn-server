@@ -11,7 +11,7 @@ public class LiquidityInfoDto
     public string Value { get; set; }
     public string TokenAAmount { get; set; }
     public string TokenASymbol { get; set; }
-    public long TokenBAmount { get; set; }
+    public string TokenBAmount { get; set; }
     public string TokenBSymbol { get; set; }
     public int Decimal { get; set; } = 8;
 }

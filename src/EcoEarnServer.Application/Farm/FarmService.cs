@@ -55,7 +55,15 @@ public class FarmService : IFarmService, ISingletonDependency
 
     public async Task<List<LiquidityInfoDto>> GetMarketLiquidityListAsync(GetMyLiquidityListInput input)
     {
-        return await GetMyLiquidityListAsync(input);
+        var awakenLiquidityInfoList = await _farmProvider.GetAwakenLiquidityInfoAsync("ELF", "USDT");
+        var result = new List<LiquidityInfoDto>();
+        foreach (var lpPriceItemDto in awakenLiquidityInfoList)
+        {
+            var liquidityInfoDto = _objectMapper.Map<LpPriceItemDto, LiquidityInfoDto>(lpPriceItemDto);
+            liquidityInfoDto.Icons = new List<string>();
+            result.Add(liquidityInfoDto);
+        }
+        return result;
     }
 
     private async Task<List<LiquidityInfoIndexerDto>> GetAllLiquidityList(string address)

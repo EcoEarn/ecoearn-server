@@ -1,3 +1,4 @@
+using System.Globalization;
 using AutoMapper;
 using EcoEarnServer.Farm.Dtos;
 using EcoEarnServer.Farm.Provider;
@@ -64,6 +65,16 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.Banlance, m => m.MapFrom(f => f.LpAmount.ToString()))
             .ForMember(t => t.TokenAAmount, m => m.MapFrom(f => f.TokenAAmount.ToString()))
             .ForMember(t => t.TokenBAmount, m => m.MapFrom(f => f.TokenBAmount.ToString()))
+            .ReverseMap();
+        CreateMap<LpPriceItemDto, LiquidityInfoDto>()
+            .ForPath(t => t.LpSymbol, m => m.MapFrom(f => "ALP " + f.Token0.Symbol + "-" + f.Token1.Symbol))
+            .ForPath(t => t.Banlance, m => m.MapFrom(f => f.TotalSupply))
+            .ForPath(t => t.Value, m => m.MapFrom(f => f.Tvl.ToString(CultureInfo.InvariantCulture)))
+            .ForPath(t => t.Rate, m => m.MapFrom(f => f.FeeRate))
+            .ForPath(t => t.TokenAAmount, m => m.MapFrom(f => f.ValueLocked0.ToString(CultureInfo.InvariantCulture)))
+            .ForPath(t => t.TokenBAmount, m => m.MapFrom(f => f.ValueLocked1.ToString(CultureInfo.InvariantCulture)))
+            .ForPath(t => t.TokenASymbol, m => m.MapFrom(f => f.Token0.Symbol))
+            .ForPath(t => t.TokenBSymbol, m => m.MapFrom(f => f.Token1.Symbol))
             .ReverseMap();
     }
 }
