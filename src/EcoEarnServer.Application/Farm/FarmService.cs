@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using EcoEarnServer.Farm.Dtos;
 using EcoEarnServer.Farm.Provider;
@@ -30,24 +31,33 @@ public class FarmService : IFarmService, ISingletonDependency
     public async Task<List<LiquidityInfoDto>> GetMyLiquidityListAsync(GetMyLiquidityListInput input)
     {
         var liquidityInfoIndexerDtos = await GetAllLiquidityList(input.Address);
+        var tokenAddressDic = liquidityInfoIndexerDtos
+            .GroupBy(x => x.TokenAddress)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         var result = new List<LiquidityInfoDto>();
-        foreach (var dto in liquidityInfoIndexerDtos)
+        foreach (var entity in tokenAddressDic)
         {
-            var liquidityInfoDtos =
-                _objectMapper.Map<LiquidityInfoIndexerDto, LiquidityInfoDto>(dto);
-
-            liquidityInfoDtos.Rate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(
-                dto.TokenAddress,
+            var liquidityInfoDto = new LiquidityInfoDto();
+            liquidityInfoDto.TokenASymbol = entity.Value.First()?.TokenASymbol;
+            liquidityInfoDto.TokenBSymbol = entity.Value.First()?.TokenBSymbol;
+            liquidityInfoDto.Banlance = entity.Value.Sum(x => x.LpAmount).ToString();
+            liquidityInfoDto.Rate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(
+                entity.Key,
                 out var poolRate)
                 ? poolRate
                 : 0;
+            var symbol = "ALP " + liquidityInfoDto.TokenASymbol + "-" + liquidityInfoDto.TokenBSymbol;
+            var lpPrice = await _priceProvider.GetLpPriceAsync(symbol, liquidityInfoDto.Rate);
+            liquidityInfoDto.Value =
+                (double.Parse(liquidityInfoDto.Banlance) * lpPrice).ToString(CultureInfo.InvariantCulture);
+            liquidityInfoDto.TokenAAmount =
+                (double.Parse(liquidityInfoDto.Banlance) * lpPrice).ToString(CultureInfo.InvariantCulture);
+            liquidityInfoDto.TokenBAmount =
+                (double.Parse(liquidityInfoDto.Banlance) * lpPrice).ToString(CultureInfo.InvariantCulture);
+            liquidityInfoDto.LiquidityIds = entity.Value.Select(x => x.LiquidityId).ToList();
 
-            var lpPrice = await _priceProvider.GetLpPriceAsync("ALP ELF-USD", liquidityInfoDtos.Rate);
-            liquidityInfoDtos.Value =
-                (double.Parse(liquidityInfoDtos.Banlance) * lpPrice).ToString(CultureInfo.InvariantCulture);
-            liquidityInfoDtos.Icons = new List<string>();
-            result.Add(liquidityInfoDtos);
+            result.Add(liquidityInfoDto);
         }
 
         return result;
@@ -56,13 +66,21 @@ public class FarmService : IFarmService, ISingletonDependency
     public async Task<List<LiquidityInfoDto>> GetMarketLiquidityListAsync(GetMyLiquidityListInput input)
     {
         var awakenLiquidityInfoList = await _farmProvider.GetAwakenLiquidityInfoAsync("ELF", "USDT");
+        var myLiquidityList = await GetMyLiquidityListAsync(input);
+        var rateDic = myLiquidityList.ToDictionary(x => x.Rate, x => x.LiquidityIds);
         var result = new List<LiquidityInfoDto>();
         foreach (var lpPriceItemDto in awakenLiquidityInfoList)
         {
             var liquidityInfoDto = _objectMapper.Map<LpPriceItemDto, LiquidityInfoDto>(lpPriceItemDto);
             liquidityInfoDto.Icons = new List<string>();
+            if (rateDic.TryGetValue(liquidityInfoDto.Rate, out var ids))
+            {
+                liquidityInfoDto.LiquidityIds = ids;
+            }
+
             result.Add(liquidityInfoDto);
         }
+
         return result;
     }
 

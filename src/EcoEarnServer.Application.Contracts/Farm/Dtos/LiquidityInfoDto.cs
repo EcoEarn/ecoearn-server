@@ -4,6 +4,7 @@ namespace EcoEarnServer.Farm.Dtos;
 
 public class LiquidityInfoDto
 {
+    public List<string> LiquidityIds { get; set; } = new();
     public string LpSymbol { get; set; }
     public List<string> Icons { get; set; }
     public double Rate { get; set; }
@@ -14,6 +15,7 @@ public class LiquidityInfoDto
     public string TokenBAmount { get; set; }
     public string TokenBSymbol { get; set; }
     public int Decimal { get; set; } = 8;
+    public int UsdDecimal { get; set; } = 6;
 }
 
 public enum LpStatus
