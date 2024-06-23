@@ -13,7 +13,7 @@ public class TokenStakedIndexerDto
     public long LastOperationTime { get; set; }
     public long StakingPeriod { get; set; }
     public long LongestReleaseTime { get; set; }
-    public List<SubStakeInfoIndexerDto> SubStakeInfos { get; set; }
+    public List<SubStakeInfoIndexerDto> SubStakeInfos { get; set; } = new();
     public long CreateTime { get; set; }
     public long UpdateTime { get; set; }
     public PoolTypeEnums PoolType { get; set; }
