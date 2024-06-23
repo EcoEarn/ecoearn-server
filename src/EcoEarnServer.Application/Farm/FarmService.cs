@@ -65,7 +65,7 @@ public class FarmService : IFarmService, ISingletonDependency
 
     public async Task<List<LiquidityInfoDto>> GetMarketLiquidityListAsync(GetMyLiquidityListInput input)
     {
-        var awakenLiquidityInfoList = await _farmProvider.GetAwakenLiquidityInfoAsync("ELF", "USDT");
+        var awakenLiquidityInfoList = await _farmProvider.GetAwakenLiquidityInfoAsync("EECOTEST-102", "EECOTEST-4");
         var myLiquidityList = await GetMyLiquidityListAsync(input);
         var rateDic = myLiquidityList.ToDictionary(x => x.Rate, x => x.LiquidityIds);
         var result = new List<LiquidityInfoDto>();
