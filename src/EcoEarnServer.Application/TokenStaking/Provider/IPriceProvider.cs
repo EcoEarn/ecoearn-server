@@ -43,34 +43,33 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
 
     public async Task<double> GetGateIoPriceAsync(string currencyPair)
     {
+        _logger.LogInformation("[PriceDataProvider][GateIo] Start.");
+        await ConnectAsync();
+        var redisValue = await RedisDatabase.StringGetAsync(currencyPair);
+        if (redisValue.HasValue)
+        {
+            _logger.LogInformation("get price cache: {redisValue}", redisValue);
+            return _serializer.Deserialize<double>(redisValue);
+        }
+
+        double price = 0;
         try
         {
-            _logger.LogInformation("[PriceDataProvider][GateIo] Start.");
-            await ConnectAsync();
-            var redisValue = await RedisDatabase.StringGetAsync(currencyPair);
-            if (redisValue.HasValue)
-            {
-                _logger.LogInformation("get price cache: {redisValue}", redisValue);
-                return _serializer.Deserialize<double>(redisValue);
-            }
-
             var spotApi = new SpotApi();
             var tickers = await spotApi.ListTickersAsync(currencyPair);
-            double price = 0;
             if (!tickers.IsNullOrEmpty())
             {
                 var last = tickers[0].Last;
                 price = double.Parse(last);
             }
-
-            await RedisDatabase.StringSetAsync(currencyPair, _serializer.Serialize(price), TimeSpan.FromMinutes(2));
-            return price;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "[PriceDataProvider][GateIo] Parse response error.");
-            return 0;
         }
+
+        await RedisDatabase.StringSetAsync(currencyPair, _serializer.Serialize(price), TimeSpan.FromMinutes(2));
+        return price;
     }
 
     public async Task<double> GetLpPriceAsync(string stakingToken, double feeRate)
