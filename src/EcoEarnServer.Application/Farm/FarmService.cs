@@ -5,8 +5,10 @@ using System.Threading.Tasks;
 using EcoEarnServer.Farm.Dtos;
 using EcoEarnServer.Farm.Provider;
 using EcoEarnServer.Options;
+using EcoEarnServer.Rewards.Provider;
 using EcoEarnServer.TokenStaking.Provider;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
@@ -18,26 +20,43 @@ public class FarmService : IFarmService, ISingletonDependency
     private readonly LpPoolRateOptions _lpPoolRateOptions;
     private readonly IObjectMapper _objectMapper;
     private readonly IPriceProvider _priceProvider;
+    private readonly IRewardsProvider _rewardsProvider;
 
     public FarmService(IFarmProvider farmProvider, IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions,
-        IObjectMapper objectMapper, IPriceProvider priceProvider)
+        IObjectMapper objectMapper, IPriceProvider priceProvider, IRewardsProvider rewardsProvider)
     {
         _farmProvider = farmProvider;
         _objectMapper = objectMapper;
         _priceProvider = priceProvider;
+        _rewardsProvider = rewardsProvider;
         _lpPoolRateOptions = lpPoolRateOptions.Value;
     }
 
     public async Task<List<LiquidityInfoDto>> GetMyLiquidityListAsync(GetMyLiquidityListInput input)
     {
         var liquidityInfoIndexerDtos = await GetAllLiquidityList(input.Address);
+        var stakeIds = liquidityInfoIndexerDtos
+            .Where(x => !string.IsNullOrEmpty(x.StakeId))
+            .Select(x => x.StakeId)
+            .Distinct()
+            .ToList();
+        var unLockedStakeIds = await _rewardsProvider.GetUnLockedStakeIdsAsync(stakeIds, input.Address);
+
+        if (unLockedStakeIds.IsNullOrEmpty())
+        {
+            return new List<LiquidityInfoDto>();
+        }
+
+        
         var tokenAddressDic = liquidityInfoIndexerDtos
+            .Where(x => unLockedStakeIds.Contains(x.StakeId))
             .GroupBy(x => x.TokenAddress)
             .ToDictionary(g => g.Key, g => g.ToList());
 
         var result = new List<LiquidityInfoDto>();
         foreach (var entity in tokenAddressDic)
         {
+            
             var liquidityInfoDto = new LiquidityInfoDto();
             liquidityInfoDto.LpSymbol = entity.Value.First()?.LpSymbol;
             liquidityInfoDto.TokenASymbol = entity.Value.First()?.TokenASymbol;
@@ -48,7 +67,8 @@ public class FarmService : IFarmService, ISingletonDependency
                 out var poolRate)
                 ? poolRate
                 : 0;
-            var lpPrice = await _priceProvider.GetLpPriceAsync("", liquidityInfoDto.Rate, liquidityInfoDto.TokenASymbol, liquidityInfoDto.TokenBSymbol);
+            var lpPrice = await _priceProvider.GetLpPriceAsync("", liquidityInfoDto.Rate, liquidityInfoDto.TokenASymbol,
+                liquidityInfoDto.TokenBSymbol);
             liquidityInfoDto.Value =
                 (double.Parse(liquidityInfoDto.Banlance) * lpPrice).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.TokenAAmount = entity.Value.Sum(x => x.TokenAAmount).ToString();
