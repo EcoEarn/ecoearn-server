@@ -6,7 +6,7 @@ public class LiquidityInfoDto
 {
     public List<string> LiquidityIds { get; set; } = new();
     public string LpSymbol { get; set; }
-    public List<string> Icons { get; set; }
+    public List<string> Icons { get; set; } = new() { "", "" };
     public double Rate { get; set; }
     public string Banlance { get; set; }
     public string Value { get; set; }

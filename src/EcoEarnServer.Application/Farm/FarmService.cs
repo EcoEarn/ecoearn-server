@@ -39,6 +39,7 @@ public class FarmService : IFarmService, ISingletonDependency
         foreach (var entity in tokenAddressDic)
         {
             var liquidityInfoDto = new LiquidityInfoDto();
+            liquidityInfoDto.LpSymbol = entity.Value.First()?.LpSymbol;
             liquidityInfoDto.TokenASymbol = entity.Value.First()?.TokenASymbol;
             liquidityInfoDto.TokenBSymbol = entity.Value.First()?.TokenBSymbol;
             liquidityInfoDto.Banlance = entity.Value.Sum(x => x.LpAmount).ToString();
@@ -47,14 +48,11 @@ public class FarmService : IFarmService, ISingletonDependency
                 out var poolRate)
                 ? poolRate
                 : 0;
-            var symbol = "ALP " + liquidityInfoDto.TokenASymbol + "-" + liquidityInfoDto.TokenBSymbol;
-            var lpPrice = await _priceProvider.GetLpPriceAsync(symbol, liquidityInfoDto.Rate);
+            var lpPrice = await _priceProvider.GetLpPriceAsync("", liquidityInfoDto.Rate, liquidityInfoDto.TokenASymbol, liquidityInfoDto.TokenBSymbol);
             liquidityInfoDto.Value =
                 (double.Parse(liquidityInfoDto.Banlance) * lpPrice).ToString(CultureInfo.InvariantCulture);
-            liquidityInfoDto.TokenAAmount =
-                (double.Parse(liquidityInfoDto.Banlance) * lpPrice).ToString(CultureInfo.InvariantCulture);
-            liquidityInfoDto.TokenBAmount =
-                (double.Parse(liquidityInfoDto.Banlance) * lpPrice).ToString(CultureInfo.InvariantCulture);
+            liquidityInfoDto.TokenAAmount = entity.Value.Sum(x => x.TokenAAmount).ToString();
+            liquidityInfoDto.TokenBAmount = entity.Value.Sum(x => x.TokenBAmount).ToString();
             liquidityInfoDto.LiquidityIds = entity.Value.Select(x => x.LiquidityId).ToList();
 
             result.Add(liquidityInfoDto);

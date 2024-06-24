@@ -20,7 +20,7 @@ namespace EcoEarnServer.TokenStaking.Provider;
 public interface IPriceProvider
 {
     Task<double> GetGateIoPriceAsync(string currencyPair);
-    Task<double> GetLpPriceAsync(string stakingToken, double feeRate);
+    Task<double> GetLpPriceAsync(string stakingToken, double feeRate, string symbol0 = "", string symbol1 = "");
 }
 
 public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
@@ -72,12 +72,15 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
         return price;
     }
 
-    public async Task<double> GetLpPriceAsync(string stakingToken, double feeRate)
+    public async Task<double> GetLpPriceAsync(string stakingToken, double feeRate, string symbol0 = "", string symbol1 = "")
     {
         try
         {
             _logger.LogInformation("[PriceDataProvider][GetLpPriceAsync] Start.");
-            var (symbol0, symbol1) = GetLpSymbols(stakingToken);
+            if (string.IsNullOrEmpty(symbol0) || string.IsNullOrEmpty(symbol1))
+            {
+                (symbol0, symbol1) = GetLpSymbols(stakingToken);
+            }
             if (string.IsNullOrEmpty(symbol0) || string.IsNullOrEmpty(symbol1))
             {
                 return 0;
