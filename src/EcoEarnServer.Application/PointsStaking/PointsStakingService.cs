@@ -22,7 +22,6 @@ using EcoEarnServer.TokenStaking;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nest;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -184,7 +183,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             dto.DailyRewards = dto.TotalStake == "0"
                 ? "0"
                 : Math.Floor(10000 * 30 / decimal.Parse(dto.TotalStake) * dto.PoolDailyRewards * 100000000)
-                .ToString(CultureInfo.InvariantCulture);
+                    .ToString(CultureInfo.InvariantCulture);
         });
         var sortedPointsPools = pointsPoolsDtos.OrderByDescending(dto => decimal.Parse(dto.DailyRewards)).ToList();
 
@@ -363,13 +362,19 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             throw new UserFriendlyException("Please wait for the reward to be settled");
         }
 
+        var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
+        var transactionResult =
+            await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
+        if (!transactionResult)
+        {
+            throw new UserFriendlyException("transaction fail.");
+        }
+
         var poolId = claimInput.PoolId.ToHex();
         var address = claimInput.Account.ToBase58();
         await SettleRewardsAsync(address, poolId, -((double)claimInput.Amount / 100000000));
-
         await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
 
-        var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
         return transactionOutput.TransactionId;
     }
 

@@ -235,6 +235,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
 
+        var transactionResult =
+            await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
+        if (!transactionResult)
+        {
+            throw new UserFriendlyException("transaction fail.");
+        }
         await UpdateOperationStatusAsync(withdrawInput.Account.ToBase58(), withdrawInput.ClaimIds);
         return transactionOutput.TransactionId;
     }
@@ -294,15 +300,15 @@ public class RewardsService : IRewardsService, ISingletonDependency
             throw new UserFriendlyException("Please wait for the reward to be settled");
         }
 
-        // var poolId = claimInput.PoolId.ToHex();
-        // var address = claimInput.Account.ToBase58();
-        // await SettleRewardsAsync(address, poolId, -((double)claimInput.Amount / 100000000));
-        //
-        // await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
-
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
         await UpdateOperationStatusAsync(earlyStakeInput.StakeInput.Account.ToBase58(),
             earlyStakeInput.StakeInput.ClaimIds);
+        var transactionResult =
+            await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
+        if (!transactionResult)
+        {
+            throw new UserFriendlyException("transaction fail.");
+        }
         return transactionOutput.TransactionId;
     }
 
@@ -364,15 +370,15 @@ public class RewardsService : IRewardsService, ISingletonDependency
             throw new UserFriendlyException("Please wait for the reward to be settled");
         }
 
-        // var poolId = claimInput.PoolId.ToHex();
-        // var address = claimInput.Account.ToBase58();
-        // await SettleRewardsAsync(address, poolId, -((double)claimInput.Amount / 100000000));
-        //
-        // await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
-
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
         await UpdateOperationStatusAsync(addLiquidityAndStakeInput.StakeInput.Account.ToBase58(),
             addLiquidityAndStakeInput.StakeInput.ClaimIds);
+        var transactionResult =
+            await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
+        if (!transactionResult)
+        {
+            throw new UserFriendlyException("transaction fail.");
+        }
         return transactionOutput.TransactionId;
     }
 
@@ -594,22 +600,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .ToList();
 
         var rewardOperationRecordList = await _rewardsProvider.GetRewardOperationRecordListAsync(address);
-
-        // // //get withdrawing record
-        // var withdrawingList = await _rewardsProvider.GetExecutingListAsync(address, ExecuteType.Withdrawn);
-        // //check seeds is withdrawn
-        // var seeds = withdrawingList.Select(x => x.Seed).ToList();
-        // var realClaimInfoList = await _rewardsProvider.GetRealWithdrawnListAsync(seeds, address, poolId);
-        // var realClaimSeeds = realClaimInfoList.Select(x => x.Seed).ToList();
-        // foreach (var claimingRecord in claimingList.Where(
-        //              claimingRecord => realClaimSeeds.Contains(claimingRecord.Seed)))
-        // {
-        //     //change record status
-        //     await UpdateClaimStatusAsync(address, poolId, claimingRecord.Seed, "");
-        //     //sub amount
-        //     await SettleRewardsAsync(address, poolId, -((double)claimingRecord.Amount / 100000000));
-        //     amount -= claimingRecord.Amount;
-        // }
 
         //withdrawn
         var withdrawnOperationList = rewardOperationRecordList

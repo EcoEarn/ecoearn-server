@@ -29,6 +29,8 @@ public interface IContractProvider
     Task<T> CallTransactionAsync<T>(string chainId, Transaction transaction) where T : class;
 
     Task<TransactionResultDto> QueryTransactionResult(string transactionId, string chainId);
+
+    Task<bool> CheckTransactionStatusAsync(string transactionId, string chainId);
 }
 
 public class ContractProvider : IContractProvider, ISingletonDependency
@@ -109,6 +111,47 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     public Task<TransactionResultDto> QueryTransactionResult(string transactionId, string chainId)
     {
         return Client(chainId).GetTransactionResultAsync(transactionId);
+    }
+
+    public async Task<bool> CheckTransactionStatusAsync(string transactionId, string chainId)
+    {
+        var retryTimes = 0;
+        var delayMilliseconds = 1000;
+        while (true)
+        {
+            if (retryTimes > 10)
+            {
+                delayMilliseconds += 4000;
+            }
+
+            if (retryTimes > 20)
+            {
+                return false;
+            }
+
+            var txResult = await QueryTransactionResult(transactionId, chainId);
+            if (txResult.Status == TransactionState.Pending)
+            {
+                _logger.LogWarning("transactionId {transactionId} is not mined", transactionId);
+                await Task.Delay(delayMilliseconds);
+                retryTimes++;
+                continue;
+            }
+
+            if (!string.IsNullOrEmpty(txResult.Error))
+            {
+                _logger.LogWarning("transactionId {transactionId} is fail.", transactionId);
+                return false;
+            }
+
+            if (txResult.Status != TransactionState.Mined)
+            {
+                _logger.LogWarning("transactionId {transactionId} is not Mined", transactionId);
+                return false;
+            }
+
+            return true;
+        }
     }
 
     public async Task<(Hash transactionId, Transaction transaction)> CreateTransaction(string chainId,
