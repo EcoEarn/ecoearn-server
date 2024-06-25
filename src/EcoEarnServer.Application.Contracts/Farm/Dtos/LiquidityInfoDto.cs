@@ -16,6 +16,7 @@ public class LiquidityInfoDto
     public string TokenBSymbol { get; set; }
     public int Decimal { get; set; } = 8;
     public int UsdDecimal { get; set; } = 6;
+    public string RewardSymbol { get; set; }
 }
 
 public enum LpStatus
