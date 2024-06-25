@@ -233,13 +233,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
             throw new UserFriendlyException("Please wait for the reward to be settled");
         }
 
-        // var poolId = claimInput.PoolId.ToHex();
-        // var address = claimInput.Account.ToBase58();
-        // await SettleRewardsAsync(address, poolId, -((double)claimInput.Amount / 100000000));
-        //
-        // await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
-
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
+
+        await UpdateOperationStatusAsync(withdrawInput.Account.ToBase58(), withdrawInput.ClaimIds);
         return transactionOutput.TransactionId;
     }
 
@@ -305,6 +301,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         // await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
 
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
+        await UpdateOperationStatusAsync(earlyStakeInput.StakeInput.Account.ToBase58(),
+            earlyStakeInput.StakeInput.ClaimIds);
         return transactionOutput.TransactionId;
     }
 
@@ -373,6 +371,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         // await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
 
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
+        await UpdateOperationStatusAsync(addLiquidityAndStakeInput.StakeInput.Account.ToBase58(),
+            addLiquidityAndStakeInput.StakeInput.ClaimIds);
         return transactionOutput.TransactionId;
     }
 
@@ -410,7 +410,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             throw new UserFriendlyException("invalid params");
         }
 
-        var id = GuidHelper.GenerateId(address, poolType.ToString(), executeType.ToString(), claimIdsHex);
+        var id = GuidHelper.GenerateId(address, claimIdsHex);
         var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
         var record = await rewardOperationRecordGrain.GetAsync();
         if (record != null)
@@ -432,21 +432,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
             throw new UserFriendlyException("invalid amount.");
         }
 
-        // // //get withdrawing record
-        // var withdrawingList = await _rewardsProvider.GetExecutingListAsync(address, ExecuteType.Withdrawn);
-        // //check seeds is withdrawn
-        // var seeds = withdrawingList.Select(x => x.Seed).ToList();
-        // var realClaimInfoList = await _rewardsProvider.GetRealWithdrawnListAsync(seeds, address, poolId);
-        // var realClaimSeeds = realClaimInfoList.Select(x => x.Seed).ToList();
-        // foreach (var claimingRecord in claimingList.Where(
-        //              claimingRecord => realClaimSeeds.Contains(claimingRecord.Seed)))
-        // {
-        //     //change record status
-        //     await UpdateClaimStatusAsync(address, poolId, claimingRecord.Seed, "");
-        //     //sub amount
-        //     await SettleRewardsAsync(address, poolId, -((double)claimingRecord.Amount / 100000000));
-        //     amount -= claimingRecord.Amount;
-        // }
 
         var expiredPeriod =
             _projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(CommonConstant.Project, out var projectInfo)
@@ -609,20 +594,43 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .ToList();
 
         var rewardOperationRecordList = await _rewardsProvider.GetRewardOperationRecordListAsync(address);
+
+        // // //get withdrawing record
+        // var withdrawingList = await _rewardsProvider.GetExecutingListAsync(address, ExecuteType.Withdrawn);
+        // //check seeds is withdrawn
+        // var seeds = withdrawingList.Select(x => x.Seed).ToList();
+        // var realClaimInfoList = await _rewardsProvider.GetRealWithdrawnListAsync(seeds, address, poolId);
+        // var realClaimSeeds = realClaimInfoList.Select(x => x.Seed).ToList();
+        // foreach (var claimingRecord in claimingList.Where(
+        //              claimingRecord => realClaimSeeds.Contains(claimingRecord.Seed)))
+        // {
+        //     //change record status
+        //     await UpdateClaimStatusAsync(address, poolId, claimingRecord.Seed, "");
+        //     //sub amount
+        //     await SettleRewardsAsync(address, poolId, -((double)claimingRecord.Amount / 100000000));
+        //     amount -= claimingRecord.Amount;
+        // }
+
         //withdrawn
-        var withdrawnClaimIds = rewardOperationRecordList
+        var withdrawnOperationList = rewardOperationRecordList
             .Where(x => x.ExecuteType == ExecuteType.Withdrawn)
+            .ToList();
+        var withdrawnClaimIds = withdrawnOperationList
             .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
             .ToList();
 
         //Early Staked
-        var earlyStakedClaimIds = rewardOperationRecordList
+        var earlyStakedOperationList = rewardOperationRecordList
             .Where(x => x.ExecuteType == ExecuteType.EarlyStake)
+            .ToList();
+        var earlyStakedClaimIds = earlyStakedOperationList
             .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
             .ToList();
         //Liquidity Added
-        var liquidityAddedClaimIds = rewardOperationRecordList
+        var liquidityAddedOperationList = rewardOperationRecordList
             .Where(x => x.ExecuteType == ExecuteType.LiquidityAdded)
+            .ToList();
+        var liquidityAddedClaimIds = liquidityAddedOperationList
             .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
             .ToList();
 
@@ -637,13 +645,60 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Except(excludedClaimIds)
             .ToList();
 
+        var includeClaimIds = resultList.Except(withdrawClaimIds).ToList();
+        if (includeClaimIds.Any())
+        {
+            var seeds = rewardOperationRecordList
+                .Where(x => x.ExecuteStatus == ExecuteStatus.Executing)
+                .Select(x => x.Seed).ToList();
+            var realClaimInfoList = await _pointsStakingProvider.GetRealClaimInfoListAsync(seeds, address, "");
+            var realClaimSeeds = realClaimInfoList.Select(x => x.Seed).ToList();
+            foreach (var operationRecord in rewardOperationRecordList.Where(operationRecord =>
+                         realClaimSeeds.Contains(operationRecord.Seed)))
+            {
+                await UpdateOperationStatusByIdAsync(operationRecord.Id);
+            }
+        }
+
         var withdrawAmount = pastReleaseTimeClaimInfoList
             .Where(x => resultList.Contains(x.ClaimId))
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
             .ToString();
-        return resultList.Count == withdrawClaimIds.Count && !resultList.Except(withdrawClaimIds).Any() &&
+        return resultList.Count == withdrawClaimIds.Count && !includeClaimIds.Any() &&
                amount.ToString() == withdrawAmount;
+    }
+
+    private async Task UpdateOperationStatusByIdAsync(string id)
+    {
+        var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
+
+        var saveResult = await rewardOperationRecordGrain.EndedAsync();
+
+        if (!saveResult.Success)
+        {
+            _logger.LogError(
+                "update operation statue fail, message:{message}, id: {id}", saveResult.Message, id);
+            throw new UserFriendlyException(saveResult.Message);
+        }
+
+        await _distributedEventBus.PublishAsync(
+            _objectMapper.Map<RewardOperationRecordDto, RewardOperationRecordEto>(saveResult.Data));
+    }
+
+    private async Task UpdateOperationStatusAsync(string address, IEnumerable<Hash> claimIds)
+    {
+        var claimIdsArray = claimIds.SelectMany(claimId => Encoding.UTF8.GetBytes(claimId.ToHex())).ToArray();
+        string claimIdsHex;
+        using (var md5 = MD5.Create())
+        {
+            var hashBytes = md5.ComputeHash(claimIdsArray);
+            claimIdsHex = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        }
+
+        var id = GuidHelper.GenerateId(address, claimIdsHex);
+
+        await UpdateOperationStatusByIdAsync(id);
     }
 
     private async Task<RewardsAggDto> GetRewardsAggAsync(List<RewardsListIndexerDto> list, string address,
@@ -677,7 +732,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .ToList();
 
 
-        var rewardOperationRecordList = await _rewardsProvider.GetRewardOperationRecordListAsync(address);
+        var rewardOperationRecordList =
+            await _rewardsProvider.GetRewardOperationRecordListAsync(address, ExecuteStatus.Ended);
         var rewardOperationRecordClaimIds = rewardOperationRecordList
             .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId).ToList())
             .ToList();
