@@ -43,12 +43,10 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
 
     public async Task<double> GetGateIoPriceAsync(string currencyPair)
     {
-        _logger.LogInformation("[PriceDataProvider][GateIo] Start.");
         await ConnectAsync();
         var redisValue = await RedisDatabase.StringGetAsync(currencyPair);
         if (redisValue.HasValue)
         {
-            _logger.LogInformation("get price cache: {redisValue}", redisValue);
             return _serializer.Deserialize<double>(redisValue);
         }
 
@@ -76,7 +74,6 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
     {
         try
         {
-            _logger.LogInformation("[PriceDataProvider][GetLpPriceAsync] Start.");
             if (string.IsNullOrEmpty(symbol0) || string.IsNullOrEmpty(symbol1))
             {
                 (symbol0, symbol1) = GetLpSymbols(stakingToken);
@@ -91,7 +88,6 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
             var redisValue = await RedisDatabase.StringGetAsync(key);
             if (redisValue.HasValue)
             {
-                _logger.LogInformation("get lp price cache: {redisValue}", redisValue);
                 return _serializer.Deserialize<double>(redisValue);
             }
 
