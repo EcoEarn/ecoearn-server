@@ -47,7 +47,7 @@ public class FarmService : IFarmService, ISingletonDependency
             return new List<LiquidityInfoDto>();
         }
 
-        
+
         var tokenAddressDic = liquidityInfoIndexerDtos
             .Where(x => unLockedStakeIds.Contains(x.StakeId))
             .GroupBy(x => x.TokenAddress)
@@ -56,12 +56,11 @@ public class FarmService : IFarmService, ISingletonDependency
         var result = new List<LiquidityInfoDto>();
         foreach (var entity in tokenAddressDic)
         {
-            
             var liquidityInfoDto = new LiquidityInfoDto();
             liquidityInfoDto.LpSymbol = entity.Value.First()?.LpSymbol;
             liquidityInfoDto.TokenASymbol = entity.Value.First()?.TokenASymbol;
             liquidityInfoDto.TokenBSymbol = entity.Value.First()?.TokenBSymbol;
-            liquidityInfoDto.Banlance = entity.Value.Sum(x => x.LpAmount).ToString();
+            liquidityInfoDto.Banlance = (decimal.Parse(entity.Value.Sum(x => x.LpAmount).ToString()) / 8).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.RewardSymbol = entity.Value.First()?.RewardSymbol;
             liquidityInfoDto.Rate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(
                 entity.Key,
@@ -72,8 +71,8 @@ public class FarmService : IFarmService, ISingletonDependency
                 liquidityInfoDto.TokenBSymbol);
             liquidityInfoDto.Value =
                 (double.Parse(liquidityInfoDto.Banlance) * lpPrice).ToString(CultureInfo.InvariantCulture);
-            liquidityInfoDto.TokenAAmount = entity.Value.Sum(x => x.TokenAAmount).ToString();
-            liquidityInfoDto.TokenBAmount = entity.Value.Sum(x => x.TokenBAmount).ToString();
+            liquidityInfoDto.TokenAAmount = (decimal.Parse(entity.Value.Sum(x => x.TokenAAmount).ToString()) / 8).ToString(CultureInfo.InvariantCulture);
+            liquidityInfoDto.TokenBAmount = (decimal.Parse(entity.Value.Sum(x => x.TokenBAmount).ToString()) / 8).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.LiquidityIds = entity.Value.Select(x => x.LiquidityId).ToList();
 
             result.Add(liquidityInfoDto);
