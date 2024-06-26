@@ -884,6 +884,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
             ClaimId = x.ClaimId,
             ReleaseTime = x.ReleaseTime
         }).ToList();
+        
+        pointsPoolAggDto.WithDrawClaimInfos = withdrawableList.Select(x => new ClaimInfoDto
+        {
+            ClaimId = x.ClaimId,
+            ReleaseTime = x.ReleaseTime
+        }).ToList();
         pointsPoolAggDto.NextRewardsRelease = frozenList.Any() ? frozenList.First().ReleaseTime : 0;
         pointsPoolAggDto.NextRewardsReleaseAmount = frozenList.Any() ? frozenList.First().ClaimedAmount : "0";
         return pointsPoolAggDto;
