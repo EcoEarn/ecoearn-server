@@ -66,7 +66,7 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.TokenAAmount, m => m.MapFrom(f => f.TokenAAmount.ToString()))
             .ForMember(t => t.TokenBAmount, m => m.MapFrom(f => f.TokenBAmount.ToString()))
             .ReverseMap();
-        CreateMap<LpPriceItemDto, LiquidityInfoDto>()
+        CreateMap<LpPriceItemDto, MarketLiquidityInfoDto>()
             .ForPath(t => t.LpSymbol, m => m.MapFrom(f => "ALP " + f.Token0.Symbol + "-" + f.Token1.Symbol))
             .ForPath(t => t.Banlance, m => m.MapFrom(f => f.TotalSupply))
             .ForPath(t => t.Value, m => m.MapFrom(f => f.Tvl.ToString(CultureInfo.InvariantCulture)))

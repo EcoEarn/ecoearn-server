@@ -27,7 +27,7 @@ public class FarmController : EcoEarnServerController
     }
     
     [HttpPost("market")]
-    public async Task<List<LiquidityInfoDto>> GetMarketLiquidityListAsync(GetMyLiquidityListInput input)
+    public async Task<List<MarketLiquidityInfoDto>> GetMarketLiquidityListAsync(GetMyLiquidityListInput input)
     {
         return await _farmService.GetMarketLiquidityListAsync(input);
     }
