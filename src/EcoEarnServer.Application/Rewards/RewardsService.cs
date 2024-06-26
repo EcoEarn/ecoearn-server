@@ -460,7 +460,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var id = GuidHelper.GenerateId(address, claimIdsHex);
         var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
         var record = await rewardOperationRecordGrain.GetAsync();
-        if (record != null)
+        if (record != null && record.ExecuteStatus != ExecuteStatus.Cancel &&
+            record.ExpiredTime < DateTime.UtcNow.ToUtcMilliSeconds())
         {
             _logger.LogWarning(
                 "already generated signature. id: {id}", id);
@@ -483,11 +484,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var expiredPeriod =
             _projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(CommonConstant.Project, out var projectInfo)
                 ? projectInfo.ExpiredSeconds
-                : 600;
-        var now = DateTime.UtcNow;
-        var expiredTime = new DateTime(now.Year, now.Month, now.Day)
-            .AddDays(1)
-            .AddSeconds(-expiredPeriod)
+                : 180;
+        var expiredTime = DateTime.UtcNow
+            .AddSeconds(expiredPeriod)
             .ToUtcMilliSeconds();
         var seed = Guid.NewGuid().ToString();
         var repeatedField = new RepeatedField<Hash>();
