@@ -60,7 +60,7 @@ public class FarmService : IFarmService, ISingletonDependency
             liquidityInfoDto.LpSymbol = entity.Value.First()?.LpSymbol;
             liquidityInfoDto.TokenASymbol = entity.Value.First()?.TokenASymbol;
             liquidityInfoDto.TokenBSymbol = entity.Value.First()?.TokenBSymbol;
-            liquidityInfoDto.Banlance = (decimal.Parse(entity.Value.Sum(x => x.LpAmount).ToString()) / 8).ToString(CultureInfo.InvariantCulture);
+            liquidityInfoDto.Banlance = (decimal.Parse(entity.Value.Sum(x => x.LpAmount).ToString()) / 100000000).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.RewardSymbol = entity.Value.First()?.RewardSymbol;
             liquidityInfoDto.Rate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(
                 entity.Key,
@@ -71,8 +71,8 @@ public class FarmService : IFarmService, ISingletonDependency
                 liquidityInfoDto.TokenBSymbol);
             liquidityInfoDto.Value =
                 (double.Parse(liquidityInfoDto.Banlance) * lpPrice).ToString(CultureInfo.InvariantCulture);
-            liquidityInfoDto.TokenAAmount = (decimal.Parse(entity.Value.Sum(x => x.TokenAAmount).ToString()) / 8).ToString(CultureInfo.InvariantCulture);
-            liquidityInfoDto.TokenBAmount = (decimal.Parse(entity.Value.Sum(x => x.TokenBAmount).ToString()) / 8).ToString(CultureInfo.InvariantCulture);
+            liquidityInfoDto.TokenAAmount = (decimal.Parse(entity.Value.Sum(x => x.TokenAAmount).ToString()) / 100000000).ToString(CultureInfo.InvariantCulture);
+            liquidityInfoDto.TokenBAmount = (decimal.Parse(entity.Value.Sum(x => x.TokenBAmount).ToString()) / 100000000).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.LiquidityIds = entity.Value.Select(x => x.LiquidityId).ToList();
 
             result.Add(liquidityInfoDto);
