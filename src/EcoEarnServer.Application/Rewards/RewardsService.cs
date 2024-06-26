@@ -876,7 +876,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
             (double.Parse(withdrawable.ToString()) * usdRate).ToString(CultureInfo.InvariantCulture);
 
         var earlyStaked = operationClaimList
-            .Where(x => earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId))
+            .Where(x => earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId) || 
+                        liquidityIds.Contains(x.LiquidityId) && !liquidityRemovedStakeIds.Contains(x.StakeId))
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
             .ToString();
