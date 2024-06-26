@@ -63,14 +63,15 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "[PriceDataProvider][GateIo] Parse response error.");
+            _logger.LogWarning("[PriceDataProvider][GateIo] Parse response error.");
         }
 
         await RedisDatabase.StringSetAsync(currencyPair, _serializer.Serialize(price), TimeSpan.FromMinutes(2));
         return price;
     }
 
-    public async Task<double> GetLpPriceAsync(string stakingToken, double feeRate, string symbol0 = "", string symbol1 = "")
+    public async Task<double> GetLpPriceAsync(string stakingToken, double feeRate, string symbol0 = "",
+        string symbol1 = "")
     {
         try
         {
@@ -78,6 +79,7 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
             {
                 (symbol0, symbol1) = GetLpSymbols(stakingToken);
             }
+
             if (string.IsNullOrEmpty(symbol0) || string.IsNullOrEmpty(symbol1))
             {
                 return 0;
@@ -112,7 +114,7 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "[PriceDataProvider][GetLpPriceAsync] Parse response error.");
+            _logger.LogError("[PriceDataProvider][GetLpPriceAsync] Parse response error.");
             return 0;
         }
     }

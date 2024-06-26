@@ -230,7 +230,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         if (withdrawInput.ExpirationTime * 1000 < DateTime.UtcNow.ToUtcMilliSeconds())
         {
-            throw new UserFriendlyException("Please wait for the reward to be settled");
+            throw new UserFriendlyException("Signature Expired");
         }
 
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
@@ -297,18 +297,20 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         if (earlyStakeInput.StakeInput.ExpirationTime * 1000 < DateTime.UtcNow.ToUtcMilliSeconds())
         {
-            throw new UserFriendlyException("Please wait for the reward to be settled");
+            throw new UserFriendlyException("Signature Expired");
         }
 
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
-        await UpdateOperationStatusAsync(earlyStakeInput.StakeInput.Account.ToBase58(),
-            earlyStakeInput.StakeInput.ClaimIds);
+        
         var transactionResult =
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
         if (!transactionResult)
         {
             throw new UserFriendlyException("transaction fail.");
         }
+        
+        await UpdateOperationStatusAsync(earlyStakeInput.StakeInput.Account.ToBase58(),
+            earlyStakeInput.StakeInput.ClaimIds);
         return transactionOutput.TransactionId;
     }
 
@@ -319,6 +321,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
     public async Task<string> AddLiquidityAsync(RewardsTransactionInput input)
     {
+        _logger.LogInformation("AddLiquidityAsync, RawTransaction : {}", input.RawTransaction);
         var transaction =
             Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
 
@@ -367,18 +370,19 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         if (addLiquidityAndStakeInput.StakeInput.ExpirationTime * 1000 < DateTime.UtcNow.ToUtcMilliSeconds())
         {
-            throw new UserFriendlyException("Please wait for the reward to be settled");
+            throw new UserFriendlyException("Signature Expired");
         }
 
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
-        await UpdateOperationStatusAsync(addLiquidityAndStakeInput.StakeInput.Account.ToBase58(),
-            addLiquidityAndStakeInput.StakeInput.ClaimIds);
+        
         var transactionResult =
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
         if (!transactionResult)
         {
             throw new UserFriendlyException("transaction fail.");
         }
+        await UpdateOperationStatusAsync(addLiquidityAndStakeInput.StakeInput.Account.ToBase58(),
+            addLiquidityAndStakeInput.StakeInput.ClaimIds);
         return transactionOutput.TransactionId;
     }
 
