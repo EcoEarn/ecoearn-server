@@ -130,9 +130,9 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             }
 
             var txResult = await QueryTransactionResult(transactionId, chainId);
-            if (txResult.Status == TransactionState.Pending)
+            if (txResult.Status is TransactionState.Pending or TransactionState.NotExisted)
             {
-                _logger.LogWarning("transactionId {transactionId} is not mined", transactionId);
+                _logger.LogWarning("transactionId {transactionId} is Pending or NotExisted", transactionId);
                 await Task.Delay(delayMilliseconds);
                 retryTimes++;
                 continue;

@@ -13,4 +13,5 @@ public static class TransactionState
 {
     public const string Mined = "MINED";
     public const string Pending = "PENDING";
+    public const string NotExisted = "NOTEXISTED";
 }
