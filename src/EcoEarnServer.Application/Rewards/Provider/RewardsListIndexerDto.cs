@@ -43,3 +43,9 @@ public class RewardsListIndexerResult
     public List<RewardsListIndexerDto> Data { get; set; }
     public long TotalCount { get; set; }
 }
+
+public class NextRewardsDto
+{
+    public long ReleaseTime { get; set; }
+    public string Amount { get; set; }
+}

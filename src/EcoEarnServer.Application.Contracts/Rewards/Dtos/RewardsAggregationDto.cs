@@ -35,7 +35,6 @@ public class RewardsAggDto
     public string NextRewardsReleaseAmount { get; set; } = "0";
     
     public List<ClaimInfoDto> ClaimInfos { get; set; }
-    public List<ClaimInfoDto> WithDrawClaimInfos { get; set; }
 }
 
 public class PointsPoolAggDto

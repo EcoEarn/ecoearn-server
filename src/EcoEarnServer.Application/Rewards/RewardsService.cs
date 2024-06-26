@@ -838,6 +838,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var withdrawableSeedList = withdrawableList.Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
             .Select(x => x.LiquidityAddedSeed).Distinct().ToList();
 
+        var lossAmount = BigInteger.Zero;
         foreach (var entity in lossAmountSeedDic)
         {
             if (frozenLiquidityAddedSeedList.Contains(entity.Key))
@@ -845,10 +846,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 if (pointsPoolAggDto.RewardsTokenName == entity.Value.TokenALoss.Symbol)
                 {
                     frozen -= BigInteger.Parse(entity.Value.TokenALoss.Amount);
+                    lossAmount += BigInteger.Parse(entity.Value.TokenALoss.Amount);
                 }
                 else
                 {
                     frozen -= BigInteger.Parse(entity.Value.TokenBLoss.Amount);
+                    lossAmount += BigInteger.Parse(entity.Value.TokenALoss.Amount);
                 }
             }
 
@@ -887,14 +890,54 @@ public class RewardsService : IRewardsService, ISingletonDependency
             ReleaseTime = x.ReleaseTime
         }).ToList();
         
-        pointsPoolAggDto.WithDrawClaimInfos = withdrawableList.Select(x => new ClaimInfoDto
-        {
-            ClaimId = x.ClaimId,
-            ReleaseTime = x.ReleaseTime
-        }).ToList();
-        pointsPoolAggDto.NextRewardsRelease = frozenList.Any() ? frozenList.First().ReleaseTime : 0;
-        pointsPoolAggDto.NextRewardsReleaseAmount = frozenList.Any() ? frozenList.First().ClaimedAmount : "0";
+        var nextRewards = GetNextReward(frozenList, long.Parse(lossAmount.ToString()));
+        pointsPoolAggDto.NextRewardsRelease = nextRewards?.ReleaseTime ?? 0;
+        pointsPoolAggDto.NextRewardsReleaseAmount = nextRewards != null ? nextRewards.ClaimedAmount : "0";
         return pointsPoolAggDto;
+    }
+
+    private RewardsListIndexerDto GetNextReward(List<RewardsListIndexerDto> rewards, long lossAmount)
+    {
+        long fiveDaysInMilliseconds = 5 * 24 * 60 * 60 * 1000;
+
+        var mergedRewards = new List<RewardsListIndexerDto>();
+
+        RewardsListIndexerDto current = null;
+
+        foreach (var reward in rewards)
+        {
+            if (current == null)
+            {
+                current = reward;
+            }
+            else
+            {
+                if (reward.ReleaseTime - current.ReleaseTime <= fiveDaysInMilliseconds)
+                {
+                    current.ClaimedAmount =
+                        (long.Parse(current.ClaimedAmount) + long.Parse(reward.ClaimedAmount)).ToString();
+                }
+                else
+                {
+                    mergedRewards.Add(current);
+                    current = reward;
+                }
+            }
+        }
+
+        if (current != null)
+        {
+            mergedRewards.Add(current);
+        }
+
+        while (mergedRewards.Count > 1 && long.Parse(mergedRewards.First().ClaimedAmount) < lossAmount)
+        {
+            mergedRewards[1].ClaimedAmount =
+                (long.Parse(mergedRewards[1].ClaimedAmount) + long.Parse(mergedRewards[0].ClaimedAmount)).ToString();
+            mergedRewards.RemoveAt(0);
+        }
+
+        return mergedRewards.FirstOrDefault(r => long.Parse(r.ClaimedAmount) > lossAmount);
     }
 
     private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType)
