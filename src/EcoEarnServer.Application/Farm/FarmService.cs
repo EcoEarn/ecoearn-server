@@ -96,6 +96,9 @@ public class FarmService : IFarmService, ISingletonDependency
             {
                 liquidityInfoDto.LiquidityIds = myLiquidity.LiquidityIds;
                 liquidityInfoDto.RewardSymbol = myLiquidity.RewardSymbol;
+                liquidityInfoDto.EcoEarnTokenAAmount = myLiquidity.TokenAAmount;
+                liquidityInfoDto.EcoEarnTokenBAmount = myLiquidity.TokenBAmount;
+                liquidityInfoDto.EcoEarnBanlance = myLiquidity.Banlance;
             }
 
             result.Add(liquidityInfoDto);
