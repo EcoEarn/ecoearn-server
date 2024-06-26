@@ -17,6 +17,7 @@ using Google.Protobuf.Collections;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Caching;
@@ -128,7 +129,11 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 }
 
                 var stakedAmount = stakedInfos.SubStakeInfos.Sum(x => x.StakedAmount);
+                var earlyStakedAmount = stakedInfos.SubStakeInfos
+                    .Where(x => !string.IsNullOrEmpty(x.Seed))
+                    .Sum(x => x.StakedAmount);
                 tokenPoolsDto.Staked = stakedAmount.ToString();
+                tokenPoolsDto.EarlyStakedAmount = earlyStakedAmount;
                 tokenPoolsDto.StakedInUsd = stakedInfos.LockState == LockState.Unlock
                     ? "0"
                     : (rate * stakedAmount).ToString(CultureInfo.CurrentCulture);

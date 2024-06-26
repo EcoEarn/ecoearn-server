@@ -37,5 +37,6 @@ public class TokenPoolsDto
     public long LastOperationTime { get; set; }
     public int Decimal { get; set; } = 8;
     public long LatestClaimTime { get; set; }
+    public long EarlyStakedAmount { get; set; }
     public List<SubStakeInfoDto> StakeInfos { get; set; } = new();
 }
