@@ -391,7 +391,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         return transactionOutput.TransactionId;
     }
 
-    public async Task CancelSignatureAsync(RewardsSignatureInput input)
+    public async Task<bool> CancelSignatureAsync(RewardsSignatureInput input)
     {
         var address = input.Address;
         var executeClaimIds = input.ClaimInfos.Select(x => x.ClaimId).ToList();
@@ -421,6 +421,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         await _distributedEventBus.PublishAsync(
             _objectMapper.Map<RewardOperationRecordDto, RewardOperationRecordEto>(saveResult.Data));
+
+        return true;
     }
 
 

@@ -70,8 +70,8 @@ public class RewardsController : EcoEarnServerController
     }
 
     [HttpPost("cancel/signature")]
-    public async Task CancelSignatureAsync(RewardsSignatureInput input)
+    public async Task<bool> CancelSignatureAsync(RewardsSignatureInput input)
     {
-        await _rewardsService.CancelSignatureAsync(input);
+        return await _rewardsService.CancelSignatureAsync(input);
     }
 }
