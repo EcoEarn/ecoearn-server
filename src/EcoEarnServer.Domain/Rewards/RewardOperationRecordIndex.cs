@@ -33,5 +33,6 @@ public enum ExecuteType
 public enum ExecuteStatus
 {
     Executing = 0,
-    Ended = 1
+    Ended = 1,
+    Cancel = 2,
 }

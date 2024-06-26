@@ -11,6 +11,7 @@ public interface IRewardOperationRecordGrain : IGrainWithStringKey
     Task<GrainResultDto<RewardOperationRecordDto>> CreateAsync(RewardOperationRecordDto input);
     Task<RewardOperationRecordDto> GetAsync();
     Task<GrainResultDto<RewardOperationRecordDto>> EndedAsync();
+    Task<GrainResultDto<RewardOperationRecordDto>> CancelAsync();
 }
 
 public class RewardOperationRecordGrain : Grain<RewardOperationRecordState>, IRewardOperationRecordGrain
@@ -57,6 +58,17 @@ public class RewardOperationRecordGrain : Grain<RewardOperationRecordState>, IRe
     public async Task<GrainResultDto<RewardOperationRecordDto>> EndedAsync()
     {
         State.ExecuteStatus = ExecuteStatus.Ended;
+        await WriteStateAsync();
+        return new GrainResultDto<RewardOperationRecordDto>
+        {
+            Success = true,
+            Data = _objectMapper.Map<RewardOperationRecordDto, RewardOperationRecordState>(State)
+        };
+    }
+
+    public async Task<GrainResultDto<RewardOperationRecordDto>> CancelAsync()
+    {
+        State.ExecuteStatus = ExecuteStatus.Cancel;
         await WriteStateAsync();
         return new GrainResultDto<RewardOperationRecordDto>
         {

@@ -181,6 +181,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
     public async Task<string> RewardsWithdrawAsync(RewardsTransactionInput input)
     {
+        _logger.LogInformation("RewardsWithdrawAsync, RawTransaction : {rawTransaction}", input.RawTransaction);
         var transaction =
             Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
 
@@ -241,6 +242,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             throw new UserFriendlyException("transaction fail.");
         }
+
         await UpdateOperationStatusAsync(withdrawInput.Account.ToBase58(), withdrawInput.ClaimIds);
         return transactionOutput.TransactionId;
     }
@@ -252,6 +254,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
     public async Task<string> EarlyStakeAsync(RewardsTransactionInput input)
     {
+        _logger.LogInformation("EarlyStakeAsync, RawTransaction : {rawTransaction}", input.RawTransaction);
+
         var transaction =
             Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
 
@@ -301,14 +305,14 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }
 
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
-        
+
         var transactionResult =
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
         if (!transactionResult)
         {
             throw new UserFriendlyException("transaction fail.");
         }
-        
+
         await UpdateOperationStatusAsync(earlyStakeInput.StakeInput.Account.ToBase58(),
             earlyStakeInput.StakeInput.ClaimIds);
         return transactionOutput.TransactionId;
@@ -321,7 +325,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
     public async Task<string> AddLiquidityAsync(RewardsTransactionInput input)
     {
-        _logger.LogInformation("AddLiquidityAsync, RawTransaction : {}", input.RawTransaction);
+        _logger.LogInformation("AddLiquidityAsync, RawTransaction : {rawTransaction}", input.RawTransaction);
         var transaction =
             Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
 
@@ -374,16 +378,49 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }
 
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
-        
+
         var transactionResult =
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
         if (!transactionResult)
         {
             throw new UserFriendlyException("transaction fail.");
         }
+
         await UpdateOperationStatusAsync(addLiquidityAndStakeInput.StakeInput.Account.ToBase58(),
             addLiquidityAndStakeInput.StakeInput.ClaimIds);
         return transactionOutput.TransactionId;
+    }
+
+    public async Task CancelSignatureAsync(RewardsSignatureInput input)
+    {
+        var address = input.Address;
+        var executeClaimIds = input.ClaimInfos.Select(x => x.ClaimId).ToList();
+        var claimIdsArray = executeClaimIds.SelectMany(id => Encoding.UTF8.GetBytes(id)).ToArray();
+        string claimIdsHex;
+        using (var md5 = MD5.Create())
+        {
+            var hashBytes = md5.ComputeHash(claimIdsArray);
+            claimIdsHex = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        }
+
+        if (string.IsNullOrEmpty(claimIdsHex))
+        {
+            throw new UserFriendlyException("invalid params");
+        }
+
+        var id = GuidHelper.GenerateId(address, claimIdsHex);
+        var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
+        var saveResult = await rewardOperationRecordGrain.CancelAsync();
+
+        if (!saveResult.Success)
+        {
+            _logger.LogError(
+                "cancel signature fail, message:{message}, id: {id}", saveResult.Message, id);
+            throw new UserFriendlyException(saveResult.Message);
+        }
+
+        await _distributedEventBus.PublishAsync(
+            _objectMapper.Map<RewardOperationRecordDto, RewardOperationRecordEto>(saveResult.Data));
     }
 
 
@@ -603,7 +640,10 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Distinct()
             .ToList();
 
-        var rewardOperationRecordList = await _rewardsProvider.GetRewardOperationRecordListAsync(address);
+        var rewardOperationRecordAllList = await _rewardsProvider.GetRewardOperationRecordListAsync(address);
+        var rewardOperationRecordList = rewardOperationRecordAllList
+            .Where(x => x.ExpiredTime > DateTime.UtcNow.ToUtcMilliSeconds())
+            .ToList();
 
         //withdrawn
         var withdrawnOperationList = rewardOperationRecordList
