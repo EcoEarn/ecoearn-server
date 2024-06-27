@@ -233,11 +233,11 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         //get claiming record
         var claimingList = await _pointsStakingProvider.GetClaimingListAsync(address, poolId);
         //check seeds is claimed
-        var seeds = claimingList.Select(x => x.Seed).ToList();
+        var seeds = claimingList.Select(x => HashHelper.ComputeFrom(x.Seed).ToHex()).ToList();
         var realClaimInfoList = await _pointsStakingProvider.GetRealClaimInfoListAsync(seeds, address, poolId);
         var realClaimSeeds = realClaimInfoList.Select(x => x.Seed).ToList();
         foreach (var claimingRecord in claimingList.Where(
-                     claimingRecord => realClaimSeeds.Contains(claimingRecord.Seed)))
+                     claimingRecord => realClaimSeeds.Contains(HashHelper.ComputeFrom(claimingRecord.Seed).ToHex())))
         {
             //change record status
             await UpdateClaimStatusAsync(address, poolId, claimingRecord.Id, "");

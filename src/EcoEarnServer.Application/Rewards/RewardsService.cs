@@ -684,13 +684,14 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var includeClaimIds = resultList.Except(withdrawClaimIds).ToList();
         if (includeClaimIds.Any())
         {
+            
             var seeds = rewardOperationRecordList
                 .Where(x => x.ExecuteStatus == ExecuteStatus.Executing)
-                .Select(x => x.Seed).ToList();
+                .Select(x => HashHelper.ComputeFrom(x.Seed).ToHex()).ToList();
             var realClaimInfoList = await _pointsStakingProvider.GetRealClaimInfoListAsync(seeds, address, "");
             var realClaimSeeds = realClaimInfoList.Select(x => x.Seed).ToList();
             foreach (var operationRecord in rewardOperationRecordList.Where(operationRecord =>
-                         realClaimSeeds.Contains(operationRecord.Seed)))
+                         realClaimSeeds.Contains(HashHelper.ComputeFrom(operationRecord.Seed).ToHex())))
             {
                 await UpdateOperationStatusByIdAsync(operationRecord.Id);
             }
