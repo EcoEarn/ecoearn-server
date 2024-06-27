@@ -25,7 +25,6 @@ using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -684,7 +683,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var includeClaimIds = resultList.Except(withdrawClaimIds).ToList();
         if (includeClaimIds.Any())
         {
-            
             var seeds = rewardOperationRecordList
                 .Where(x => x.ExecuteStatus == ExecuteStatus.Executing)
                 .Select(x => HashHelper.ComputeFrom(x.Seed).ToHex()).ToList();
@@ -708,8 +706,10 @@ public class RewardsService : IRewardsService, ISingletonDependency
         if (!checkResult)
         {
             _logger.LogWarning(
-                "check amount false. resultList: {resultList}, includeClaimIds: {resultList}, withdrawAmount: {withdrawAmount},",
-                JsonConvert.SerializeObject(resultList), JsonConvert.SerializeObject(includeClaimIds), withdrawAmount);
+                "check amount false. resultList: {resultList}, includeClaimIds: {resultList}, " +
+                "withdrawAmount: {withdrawAmount}, rewardOperationRecordAllList: {rewardOperationRecordAllList}, rewardOperationRecordList: {rewardOperationRecordList}, excludedClaimIds: {excludedClaimIds}",
+                resultList, includeClaimIds, withdrawAmount, rewardOperationRecordAllList, rewardOperationRecordList,
+                excludedClaimIds);
         }
 
         return checkResult;
