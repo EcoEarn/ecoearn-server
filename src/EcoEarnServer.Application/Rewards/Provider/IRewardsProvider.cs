@@ -18,7 +18,7 @@ public interface IRewardsProvider
         int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false);
 
     Task<List<string>> GetUnLockedStakeIdsAsync(List<string> stakeIds, string address);
-    Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address, ExecuteStatus executeStatus = ExecuteStatus.Executing);
+    Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address, List<ExecuteStatus> executeStatus);
     Task<List<RewardOperationRecordIndex>> GetExecutingListAsync(string address, ExecuteType executeType);
 }
 
@@ -115,12 +115,12 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         }
     }
 
-    public async Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address, ExecuteStatus executeStatus)
+    public async Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address, List<ExecuteStatus> executeStatus)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<RewardOperationRecordIndex>, QueryContainer>>();
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.ExecuteStatus).Value(executeStatus)));
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.ExecuteStatus).Terms(executeStatus)));
 
         QueryContainer Filter(QueryContainerDescriptor<RewardOperationRecordIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (total, list) = await _repository.GetListAsync(Filter,

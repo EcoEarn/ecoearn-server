@@ -644,7 +644,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         _logger.LogInformation("pastReleaseTimeClaimIds: {pastReleaseTimeClaimIds}", pastReleaseTimeClaimIds);
 
 
-        var rewardOperationRecordAllList = await _rewardsProvider.GetRewardOperationRecordListAsync(address);
+        var rewardOperationRecordAllList = await _rewardsProvider.GetRewardOperationRecordListAsync(address,
+            new List<ExecuteStatus> { ExecuteStatus.Executing, ExecuteStatus.Ended });
         var rewardOperationRecordList = rewardOperationRecordAllList
             .Where(x => x.ExpiredTime > DateTime.UtcNow.ToUtcMilliSeconds())
             .ToList();
@@ -686,7 +687,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
 
         var includeClaimIds = resultList.Except(withdrawClaimIds).ToList();
-        
+
         _logger.LogInformation("includeClaimIds: {includeClaimIds}", includeClaimIds);
         if (includeClaimIds.Any())
         {
@@ -786,7 +787,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
 
         var rewardOperationRecordList =
-            await _rewardsProvider.GetRewardOperationRecordListAsync(address, ExecuteStatus.Ended);
+            await _rewardsProvider.GetRewardOperationRecordListAsync(address,
+                new List<ExecuteStatus> { ExecuteStatus.Ended });
         var rewardOperationRecordClaimIds = rewardOperationRecordList
             .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId).ToList())
             .ToList();
