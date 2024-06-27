@@ -682,8 +682,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var resultList = pastReleaseTimeClaimIds
             .Except(excludedClaimIds)
             .ToList();
+        _logger.LogInformation("resultList: {resultList}", resultList);
+
 
         var includeClaimIds = resultList.Except(withdrawClaimIds).ToList();
+        
+        _logger.LogInformation("includeClaimIds: {includeClaimIds}", includeClaimIds);
         if (includeClaimIds.Any())
         {
             var seeds = rewardOperationRecordList
