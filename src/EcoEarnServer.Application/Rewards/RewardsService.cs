@@ -463,7 +463,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
         var record = await rewardOperationRecordGrain.GetAsync();
         if (record != null && record.ExecuteStatus != ExecuteStatus.Cancel &&
-            record.ExpiredTime < DateTime.UtcNow.ToUtcMilliSeconds())
+            record.ExpiredTime > DateTime.UtcNow.ToUtcMilliSeconds())
         {
             _logger.LogWarning(
                 "already generated signature. id: {id}", id);
