@@ -30,7 +30,7 @@ public class SubStakeInfoIndexerDto
     public long BoostedAmount { get; set; }
     public long RewardDebt { get; set; }
     public long RewardAmount { get; set; }
-    public string Seed { get; set; }
+    public long EarlyStakedAmount { get; set; }
 }
 
 public enum LockState

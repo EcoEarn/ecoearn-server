@@ -128,10 +128,9 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                         (rewardData.Amount * usdtRate).ToString(CultureInfo.InvariantCulture);
                 }
 
-                var stakedAmount = stakedInfos.SubStakeInfos.Sum(x => x.StakedAmount);
+                var stakedAmount = stakedInfos.SubStakeInfos.Sum(x => x.StakedAmount + x.EarlyStakedAmount);
                 var earlyStakedAmount = stakedInfos.SubStakeInfos
-                    .Where(x => !string.IsNullOrEmpty(x.Seed))
-                    .Sum(x => x.StakedAmount);
+                    .Sum(x => x.EarlyStakedAmount);
                 tokenPoolsDto.Staked = stakedAmount.ToString();
                 tokenPoolsDto.EarlyStakedAmount = earlyStakedAmount;
                 tokenPoolsDto.StakedInUsd = stakedInfos.LockState == LockState.Unlock
@@ -202,7 +201,9 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         var yearlyRewards = YearlyBlocks * tokenPoolIndexerDto.TokenPoolConfig.RewardPerBlock;
         var tokenPoolStakedSum = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
             { PoolId = tokenPoolIndexerDto.PoolId, ChainId = chainId });
-        var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{tokenPoolIndexerDto.TokenPoolConfig.RewardToken.ToUpper()}_USDT");
+        var usdtRate =
+            await _priceProvider.GetGateIoPriceAsync(
+                $"{tokenPoolIndexerDto.TokenPoolConfig.RewardToken.ToUpper()}_USDT");
         var stakeInfoDto = new EarlyStakeInfoDto
         {
             StakeId = stakedInfoIndexerDtos.StakeId,

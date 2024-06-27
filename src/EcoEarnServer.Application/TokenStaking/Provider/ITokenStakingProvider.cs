@@ -117,7 +117,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                             boostedAmount,
                             rewardDebt,
                             rewardAmount,
-                            seed
+                            earlyStakedAmount,
                         }
                     }
                 }
@@ -177,7 +177,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                             boostedAmount,
                             rewardDebt,
                             rewardAmount,
-                            seed
+                            earlyStakedAmount,
                         }
                     }
                 }
