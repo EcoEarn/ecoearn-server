@@ -647,7 +647,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var rewardOperationRecordAllList = await _rewardsProvider.GetRewardOperationRecordListAsync(address,
             new List<ExecuteStatus> { ExecuteStatus.Executing, ExecuteStatus.Ended });
         var rewardOperationRecordList = rewardOperationRecordAllList
-            .Where(x => x.ExecuteStatus == ExecuteStatus.Executing && x.ExpiredTime > DateTime.UtcNow.ToUtcMilliSeconds())
+            .Where(x => x.ExecuteStatus == ExecuteStatus.Ended || (x.ExecuteStatus == ExecuteStatus.Executing && x.ExpiredTime > DateTime.UtcNow.ToUtcMilliSeconds()))
             .ToList();
 
         //withdrawn
