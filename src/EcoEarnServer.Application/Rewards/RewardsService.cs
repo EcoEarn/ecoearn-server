@@ -621,6 +621,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         PoolTypeEnums poolType, ExecuteType executeType)
     {
         var rewardsAllList = await GetAllRewardsList(address, poolType);
+        _logger.LogInformation("rewardsAllList: {rewardsAllList}", rewardsAllList);
         var unWithdrawList = rewardsAllList
             .Where(x => x.WithdrawTime == 0)
             .ToList();
@@ -640,6 +641,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Select(x => x.ClaimId)
             .Distinct()
             .ToList();
+        _logger.LogInformation("pastReleaseTimeClaimIds: {pastReleaseTimeClaimIds}", pastReleaseTimeClaimIds);
+
 
         var rewardOperationRecordAllList = await _rewardsProvider.GetRewardOperationRecordListAsync(address);
         var rewardOperationRecordList = rewardOperationRecordAllList
