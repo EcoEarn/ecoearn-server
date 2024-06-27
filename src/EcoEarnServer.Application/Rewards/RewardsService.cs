@@ -890,17 +890,15 @@ public class RewardsService : IRewardsService, ISingletonDependency
             ClaimId = x.ClaimId,
             ReleaseTime = x.ReleaseTime
         }).ToList();
-        
-        var nextRewards = GetNextReward(frozenList, long.Parse(lossAmount.ToString()));
+
+        var nextRewards = GetNextReward(frozenList, long.Parse(lossAmount.ToString()), _earnContractOptions.MergeMilliseconds);
         pointsPoolAggDto.NextRewardsRelease = nextRewards?.ReleaseTime ?? 0;
         pointsPoolAggDto.NextRewardsReleaseAmount = nextRewards != null ? nextRewards.ClaimedAmount : "0";
         return pointsPoolAggDto;
     }
 
-    private RewardsListIndexerDto GetNextReward(List<RewardsListIndexerDto> rewards, long lossAmount)
+    private RewardsListIndexerDto GetNextReward(List<RewardsListIndexerDto> rewards, long lossAmount, long mergeMilliseconds)
     {
-        long fiveDaysInMilliseconds = 5 * 24 * 60 * 60 * 1000;
-
         var mergedRewards = new List<RewardsListIndexerDto>();
 
         RewardsListIndexerDto current = null;
@@ -913,7 +911,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             }
             else
             {
-                if (reward.ReleaseTime - current.ReleaseTime <= fiveDaysInMilliseconds)
+                if (reward.ReleaseTime - current.ReleaseTime <= mergeMilliseconds)
                 {
                     current.ClaimedAmount =
                         (long.Parse(current.ClaimedAmount) + long.Parse(reward.ClaimedAmount)).ToString();
