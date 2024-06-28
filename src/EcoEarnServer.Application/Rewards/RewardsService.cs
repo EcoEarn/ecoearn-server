@@ -996,7 +996,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             withdrawableAmount -= lossAmount;
             wClaimIds = pastRewards.SelectMany(x => x.ClaimIds).ToList();
-            next = futureRewards.First();
+            next = futureRewards.Any()? futureRewards.First() : new RewardsMergeDto();
         }
         else
         {
