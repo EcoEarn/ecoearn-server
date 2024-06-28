@@ -291,6 +291,7 @@ namespace EcoEarn.Contracts.Points {
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.SetPointsPoolRewardConfigInput> __Marshaller_SetPointsPoolRewardConfigInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.SetPointsPoolRewardConfigInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.SetPointsPoolRewardPerSecondInput> __Marshaller_SetPointsPoolRewardPerSecondInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.SetPointsPoolRewardPerSecondInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.GetPoolInfoOutput> __Marshaller_GetPoolInfoOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.GetPoolInfoOutput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.PoolData> __Marshaller_PoolData = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.PoolData.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.UpdateSnapshotInput> __Marshaller_UpdateSnapshotInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.UpdateSnapshotInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.GetSnapshotInput> __Marshaller_GetSnapshotInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.GetSnapshotInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.Snapshot> __Marshaller_Snapshot = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.Snapshot.Parser.ParseFrom);
@@ -403,6 +404,13 @@ namespace EcoEarn.Contracts.Points {
         "GetPoolInfo",
         __Marshaller_aelf_Hash,
         __Marshaller_GetPoolInfoOutput);
+
+    static readonly aelf::Method<global::AElf.Types.Hash, global::EcoEarn.Contracts.Points.PoolData> __Method_GetPoolData = new aelf::Method<global::AElf.Types.Hash, global::EcoEarn.Contracts.Points.PoolData>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetPoolData",
+        __Marshaller_aelf_Hash,
+        __Marshaller_PoolData);
 
     static readonly aelf::Method<global::AElf.Types.Hash, global::AElf.Types.Address> __Method_GetPoolAddress = new aelf::Method<global::AElf.Types.Hash, global::AElf.Types.Address>(
         aelf::MethodType.View,
@@ -538,6 +546,11 @@ namespace EcoEarn.Contracts.Points {
     //     throw new global::System.NotImplementedException();
     //   }
     //
+    //   public virtual global::EcoEarn.Contracts.Points.PoolData GetPoolData(global::AElf.Types.Hash input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
     //   public virtual global::AElf.Types.Address GetPoolAddress(global::AElf.Types.Hash input)
     //   {
     //     throw new global::System.NotImplementedException();
@@ -584,6 +597,7 @@ namespace EcoEarn.Contracts.Points {
     //       .AddMethod(__Method_SetPointsPoolRewardConfig, serviceImpl.SetPointsPoolRewardConfig)
     //       .AddMethod(__Method_SetPointsPoolRewardPerSecond, serviceImpl.SetPointsPoolRewardPerSecond)
     //       .AddMethod(__Method_GetPoolInfo, serviceImpl.GetPoolInfo)
+    //       .AddMethod(__Method_GetPoolData, serviceImpl.GetPoolData)
     //       .AddMethod(__Method_GetPoolAddress, serviceImpl.GetPoolAddress)
     //       .AddMethod(__Method_UpdateSnapshot, serviceImpl.UpdateSnapshot)
     //       .AddMethod(__Method_GetSnapshot, serviceImpl.GetSnapshot)

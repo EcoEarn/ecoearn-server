@@ -433,6 +433,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var address = input.Address;
         var amount = input.Amount;
         var executeClaimIds = input.ClaimInfos.Select(x => x.ClaimId).ToList();
+        var longestReleaseTime = input.ClaimInfos.First().ReleaseTime;
         var dappId = input.DappId;
         var poolId = input.PoolId;
         var period = input.Period;
@@ -516,7 +517,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
                     ExpirationTime = expiredTime / 1000,
                     PoolId = Hash.LoadFromHex(poolId),
                     Period = period,
-                    DappId = Hash.LoadFromHex(dappId)
+                    DappId = Hash.LoadFromHex(dappId),
+                    LongestReleaseTime = longestReleaseTime,
                 }
             },
             ExecuteType.LiquidityAdded => new AddLiquidityAndStakeInput
@@ -530,7 +532,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
                     ExpirationTime = expiredTime / 1000,
                     PoolId = Hash.LoadFromHex(poolId),
                     Period = period,
-                    DappId = Hash.LoadFromHex(dappId)
+                    DappId = Hash.LoadFromHex(dappId),
+                    LongestReleaseTime = longestReleaseTime,
                 },
                 TokenAMin = tokenAMin,
                 TokenBMin = tokenBMin,

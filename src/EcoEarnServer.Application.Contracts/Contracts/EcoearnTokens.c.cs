@@ -89,7 +89,6 @@ namespace EcoEarn.Contracts.Tokens {
       {
         PoolId = PoolId,
         ReleasePeriods = ReleasePeriods,
-        ClaimInterval = ClaimInterval,
       };
     }
   }
@@ -112,6 +111,7 @@ namespace EcoEarn.Contracts.Tokens {
         MaximumStakeDuration = MaximumStakeDuration,
         MinimumClaimAmount = MinimumClaimAmount,
         MinimumStakeDuration = MinimumStakeDuration,
+        MinimumAddLiquidityAmount = MinimumAddLiquidityAmount,
       };
     }
   }
@@ -310,6 +310,25 @@ namespace EcoEarn.Contracts.Tokens {
     }
   }
 
+  public partial class TokensPoolMergeIntervalSet : aelf::IEvent<TokensPoolMergeIntervalSet>
+  {
+    public global::System.Collections.Generic.IEnumerable<TokensPoolMergeIntervalSet> GetIndexed()
+    {
+      return new List<TokensPoolMergeIntervalSet>
+      {
+      };
+    }
+
+    public TokensPoolMergeIntervalSet GetNonIndexed()
+    {
+      return new TokensPoolMergeIntervalSet
+      {
+        PoolId = PoolId,
+        MergeInterval = MergeInterval,
+      };
+    }
+  }
+
   public partial class Renewed : aelf::IEvent<Renewed>
   {
     public global::System.Collections.Generic.IEnumerable<Renewed> GetIndexed()
@@ -351,6 +370,7 @@ namespace EcoEarn.Contracts.Tokens {
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Tokens.SetTokensPoolFixedBoostFactorInput> __Marshaller_SetTokensPoolFixedBoostFactorInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Tokens.SetTokensPoolFixedBoostFactorInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Tokens.SetTokensPoolRewardPerSecondInput> __Marshaller_SetTokensPoolRewardPerSecondInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Tokens.SetTokensPoolRewardPerSecondInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Tokens.SetTokensPoolUnlockWindowDurationInput> __Marshaller_SetTokensPoolUnlockWindowDurationInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Tokens.SetTokensPoolUnlockWindowDurationInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Tokens.SetTokensPoolMergeIntervalInput> __Marshaller_SetTokensPoolMergeIntervalInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Tokens.SetTokensPoolMergeIntervalInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Tokens.StakeInput> __Marshaller_StakeInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Tokens.StakeInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Tokens.StakeForInput> __Marshaller_StakeForInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Tokens.StakeForInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Tokens.RenewInput> __Marshaller_RenewInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Tokens.RenewInput.Parser.ParseFrom);
@@ -462,6 +482,13 @@ namespace EcoEarn.Contracts.Tokens {
         __ServiceName,
         "SetTokensPoolUnlockWindowDuration",
         __Marshaller_SetTokensPoolUnlockWindowDurationInput,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::EcoEarn.Contracts.Tokens.SetTokensPoolMergeIntervalInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetTokensPoolMergeInterval = new aelf::Method<global::EcoEarn.Contracts.Tokens.SetTokensPoolMergeIntervalInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "SetTokensPoolMergeInterval",
+        __Marshaller_SetTokensPoolMergeIntervalInput,
         __Marshaller_google_protobuf_Empty);
 
     static readonly aelf::Method<global::EcoEarn.Contracts.Tokens.StakeInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_Stake = new aelf::Method<global::EcoEarn.Contracts.Tokens.StakeInput, global::Google.Protobuf.WellKnownTypes.Empty>(
@@ -590,7 +617,7 @@ namespace EcoEarn.Contracts.Tokens {
     }
     #endregion
 
-    // /// <summary>Base class for the contract of EcoEarnTokensContract</summary>
+    /// <summary>Base class for the contract of EcoEarnTokensContract</summary>
     // public abstract partial class EcoEarnTokensContractBase : AElf.Sdk.CSharp.CSharpSmartContract<EcoEarn.Contracts.Tokens.EcoEarnTokensContractState>
     // {
     //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Register(global::EcoEarn.Contracts.Tokens.RegisterInput input)
@@ -659,6 +686,11 @@ namespace EcoEarn.Contracts.Tokens {
     //   }
     //
     //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetTokensPoolUnlockWindowDuration(global::EcoEarn.Contracts.Tokens.SetTokensPoolUnlockWindowDurationInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetTokensPoolMergeInterval(global::EcoEarn.Contracts.Tokens.SetTokensPoolMergeIntervalInput input)
     //   {
     //     throw new global::System.NotImplementedException();
     //   }
@@ -758,6 +790,7 @@ namespace EcoEarn.Contracts.Tokens {
     //       .AddMethod(__Method_SetTokensPoolFixedBoostFactor, serviceImpl.SetTokensPoolFixedBoostFactor)
     //       .AddMethod(__Method_SetTokensPoolRewardPerSecond, serviceImpl.SetTokensPoolRewardPerSecond)
     //       .AddMethod(__Method_SetTokensPoolUnlockWindowDuration, serviceImpl.SetTokensPoolUnlockWindowDuration)
+    //       .AddMethod(__Method_SetTokensPoolMergeInterval, serviceImpl.SetTokensPoolMergeInterval)
     //       .AddMethod(__Method_Stake, serviceImpl.Stake)
     //       .AddMethod(__Method_StakeFor, serviceImpl.StakeFor)
     //       .AddMethod(__Method_Renew, serviceImpl.Renew)
