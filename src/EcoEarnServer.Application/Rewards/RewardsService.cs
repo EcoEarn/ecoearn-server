@@ -977,7 +977,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
     {
         if (rewards == null || rewards.Count == 0)
         {
-            return (null, null);
+            return (new RewardsMergeDto(), new RewardsMergeDto());
         }
 
         var withdrawableAmount = 0L;

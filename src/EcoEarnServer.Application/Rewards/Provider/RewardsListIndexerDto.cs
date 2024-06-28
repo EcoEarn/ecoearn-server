@@ -46,14 +46,14 @@ public class RewardsListIndexerResult
 
 public class RewardsDto
 {
-    public string ClaimedAmount { get; set; } 
+    public string ClaimedAmount { get; set; } = "0";
     public long ReleaseTime { get; set; }
     public string ClaimId { get; set; }
 }
 
 public class RewardsMergeDto
 {
-    public string ClaimedAmount { get; set; }
+    public string ClaimedAmount { get; set; } = "0";
     public long ReleaseTime { get; set; }
-    public List<string> ClaimIds { get; set; }
+    public List<string> ClaimIds { get; set; } = new();
 }
