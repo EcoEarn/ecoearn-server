@@ -947,7 +947,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 if (daysDifference <= mergeDays)
                 {
                     currentMerge.ClaimedAmount =
-                        (int.Parse(currentMerge.ClaimedAmount) + int.Parse(reward.ClaimedAmount)).ToString();
+                        (long.Parse(currentMerge.ClaimedAmount) + long.Parse(reward.ClaimedAmount)).ToString();
                     currentMerge.ReleaseTime = reward.ReleaseTime;
                     currentMerge.ClaimIds.Add(reward.ClaimId);
                 }
