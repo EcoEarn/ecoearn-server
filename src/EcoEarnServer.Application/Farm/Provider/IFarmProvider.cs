@@ -69,7 +69,6 @@ public class FarmProvider : IFarmProvider, ISingletonDependency
     					tokenBAmount,
     					tokenBSymbol,
     					addedTime,
-    					removedTime,
     					dappId,
     					swapAddress,
     					tokenAddress,

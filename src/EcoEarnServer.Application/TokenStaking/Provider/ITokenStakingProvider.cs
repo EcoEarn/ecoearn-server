@@ -61,8 +61,8 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                             stakeTokenContract
                             minimumClaimAmount
                             releasePeriods
-                            claimInterval
-                            minimumEarlyStakeAmount
+                            mergeInterval
+                            minimumAddLiquidityAmount
                         },
     					createTime,
     					poolType
@@ -103,7 +103,6 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                         unlockTime,
                         lastOperationTime,
                         stakingPeriod,
-                        longestReleaseTime,
                         createTime,
     					updateTime,
     					poolType,
@@ -163,7 +162,6 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                         unlockTime,
                         lastOperationTime,
                         stakingPeriod,
-                        longestReleaseTime,
                         createTime,
     					updateTime,
     					poolType,
@@ -227,8 +225,8 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                             stakeTokenContract
                             minimumClaimAmount
                             releasePeriods
-                            claimInterval
-                            minimumEarlyStakeAmount
+                            mergeInterval
+                            minimumAddLiquidityAmount
                         },
     					createTime,
     					poolType

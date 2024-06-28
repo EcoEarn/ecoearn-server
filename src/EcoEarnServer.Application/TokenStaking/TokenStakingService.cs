@@ -115,7 +115,6 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 tokenPoolsDto.StakeId = stakedInfos.StakeId;
                 tokenPoolsDto.UnlockTime = stakedInfos.UnlockTime;
                 tokenPoolsDto.StakingPeriod = stakedInfos.StakingPeriod;
-                tokenPoolsDto.LongestReleaseTime = stakedInfos.LongestReleaseTime;
                 tokenPoolsDto.LastOperationTime = stakedInfos.LastOperationTime;
                 var rewardDataDic = await GetStakedRewardsAsync(tokenPoolsDto.StakeId, input.ChainId);
 
@@ -214,7 +213,6 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             UnlockTime = stakedInfoIndexerDtos.UnlockTime,
             LastOperationTime = stakedInfoIndexerDtos.LastOperationTime,
             StakingPeriod = stakedInfoIndexerDtos.StakingPeriod,
-            LongestReleaseTime = stakedInfoIndexerDtos.LongestReleaseTime,
             Staked = stakedInfoIndexerDtos.LockState == LockState.Unlock
                 ? "0"
                 : stakedInfoIndexerDtos.SubStakeInfos.Sum(x => x.StakedAmount).ToString(),

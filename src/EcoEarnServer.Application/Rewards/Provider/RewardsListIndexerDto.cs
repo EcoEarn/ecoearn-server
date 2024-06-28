@@ -44,8 +44,16 @@ public class RewardsListIndexerResult
     public long TotalCount { get; set; }
 }
 
-public class NextRewardsDto
+public class RewardsDto
 {
+    public string ClaimedAmount { get; set; } 
     public long ReleaseTime { get; set; }
-    public string Amount { get; set; }
+    public string ClaimId { get; set; }
+}
+
+public class RewardsMergeDto
+{
+    public string ClaimedAmount { get; set; }
+    public long ReleaseTime { get; set; }
+    public List<string> ClaimIds { get; set; }
 }

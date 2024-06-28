@@ -28,6 +28,8 @@ public class TokenPoolConfigIndexerDto
     public string RewardTokenContract { get; set; }
     public string StakeTokenContract { get; set; }
     public long MinimumClaimAmount { get; set; }
+    public long MergeInterval { get; set; }
+    public long MinimumAddLiquidityAmount { get; set; }
     public long UnlockWindowDuration { get; set; }
 }
 

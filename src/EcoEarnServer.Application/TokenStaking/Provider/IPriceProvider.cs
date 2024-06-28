@@ -77,7 +77,7 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
         {
             if (string.IsNullOrEmpty(symbol0) || string.IsNullOrEmpty(symbol1))
             {
-                (symbol0, symbol1) = GetLpSymbols(stakingToken);
+                (symbol0, symbol1) = LpSymbolHelper.GetLpSymbols(stakingToken);
             }
 
             if (string.IsNullOrEmpty(symbol0) || string.IsNullOrEmpty(symbol1))
@@ -117,27 +117,5 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
             _logger.LogError("[PriceDataProvider][GetLpPriceAsync] Parse response error.");
             return 0;
         }
-    }
-
-    private (string, string) GetLpSymbols(string stakingToken)
-    {
-        if (string.IsNullOrEmpty(stakingToken))
-        {
-            return ("", "");
-        }
-
-        var split = stakingToken.Split("ALP ");
-        if (split.Length != 2)
-        {
-            return ("", "");
-        }
-
-        var symbols = split[1].Split("-");
-        if (symbols.Length != 2)
-        {
-            return ("", "");
-        }
-
-        return (symbols[0], symbols[1]);
     }
 }
