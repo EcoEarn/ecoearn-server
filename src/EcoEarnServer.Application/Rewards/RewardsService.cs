@@ -917,7 +917,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         return pointsPoolAggDto;
     }
 
-    public static List<RewardsMergeDto> MergeRewards(List<RewardsDto> rewards, long mergeDays = 5)
+    public static List<RewardsMergeDto> MergeRewards(List<RewardsDto> rewards, double mergeDays)
     {
         rewards = rewards.OrderBy(r => r.ReleaseTime).ToList();
         var mergedRewards = new List<RewardsMergeDto>();
