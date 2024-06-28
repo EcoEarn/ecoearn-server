@@ -17,6 +17,7 @@ public class LiquidityInfoDto
     public int Decimal { get; set; } = 8;
     public int UsdDecimal { get; set; } = 6;
     public string RewardSymbol { get; set; }
+    public long LpAmount { get; set; }
 }
 
 public enum LpStatus
@@ -43,4 +44,5 @@ public class MarketLiquidityInfoDto
     public string EcoEarnTokenAAmount { get; set; }
     public string EcoEarnTokenBAmount { get; set; }
     public string EcoEarnBanlance { get; set; }
+    public long LpAmount { get; set; }
 }

@@ -86,6 +86,7 @@ public class FarmService : IFarmService, ISingletonDependency
                 (decimal.Parse(entity.Value.Sum(x => x.TokenBAmount).ToString()) / 100000000).ToString(CultureInfo
                     .InvariantCulture);
             liquidityInfoDto.LiquidityIds = entity.Value.Select(x => x.LiquidityId).ToList();
+            liquidityInfoDto.LpAmount = entity.Value.Sum(x => x.LpAmount);
 
             result.Add(liquidityInfoDto);
         }
@@ -124,6 +125,7 @@ public class FarmService : IFarmService, ISingletonDependency
             if (rateDic.TryGetValue(liquidityInfoDto.Rate, out var myLiquidity))
             {
                 liquidityInfoDto.LiquidityIds = myLiquidity.LiquidityIds;
+                liquidityInfoDto.LpAmount = myLiquidity.LpAmount;
                 liquidityInfoDto.RewardSymbol = myLiquidity.RewardSymbol;
                 liquidityInfoDto.EcoEarnTokenAAmount = myLiquidity.TokenAAmount;
                 liquidityInfoDto.EcoEarnTokenBAmount = myLiquidity.TokenBAmount;
