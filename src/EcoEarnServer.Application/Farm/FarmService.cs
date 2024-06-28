@@ -97,6 +97,7 @@ public class FarmService : IFarmService, ISingletonDependency
     {
         var myLiquidityList = await GetMyLiquidityListAsync(input);
         var rateDic = myLiquidityList.ToDictionary(x => x.Rate, x => x);
+        var rates = _lpPoolRateOptions.LpPoolRateDic.Values.Select(x => x).ToList();
         var tokenPoolsIndexerDtos = await _tokenStakingProvider.GetTokenPoolsAsync(new GetTokenPoolsInput()
         {
             PoolType = PoolTypeEnums.Lp
@@ -108,7 +109,7 @@ public class FarmService : IFarmService, ISingletonDependency
             var awakenLiquidityInfos = await _farmProvider.GetAwakenLiquidityInfoAsync(symbol0, symbol1);
             foreach (var lpPriceItemDto in awakenLiquidityInfos)
             {
-                if (rateDic.TryGetValue(lpPriceItemDto.FeeRate, out var lpPriceItem))
+                if (rates.Contains(lpPriceItemDto.FeeRate))
                 {
                     awakenLiquidityInfoList.Add(lpPriceItemDto);
                 }
