@@ -12,7 +12,7 @@ using scg = global::System.Collections.Generic;
 namespace EcoEarn.Contracts.Rewards {
 
   /// <summary>Holder for reflection information generated from ecoearn_rewards.proto</summary>
-  internal static partial class EcoearnRewardsReflection {
+  public static partial class EcoearnRewardsReflection {
 
     #region Descriptor
     /// <summary>File descriptor for ecoearn_rewards.proto</summary>
@@ -180,7 +180,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
   #region Messages
-  internal sealed partial class InitializeInput : pb::IMessage<InitializeInput>
+  public sealed partial class InitializeInput : pb::IMessage<InitializeInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -470,7 +470,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class RegisterInput : pb::IMessage<RegisterInput>
+  public sealed partial class RegisterInput : pb::IMessage<RegisterInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -760,7 +760,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class DappConfig : pb::IMessage<DappConfig>
+  public sealed partial class DappConfig : pb::IMessage<DappConfig>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -958,7 +958,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class DappInfo : pb::IMessage<DappInfo>
+  public sealed partial class DappInfo : pb::IMessage<DappInfo>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -1248,7 +1248,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class GetRewardAddressInput : pb::IMessage<GetRewardAddressInput>
+  public sealed partial class GetRewardAddressInput : pb::IMessage<GetRewardAddressInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -1492,7 +1492,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class ClaimInput : pb::IMessage<ClaimInput>
+  public sealed partial class ClaimInput : pb::IMessage<ClaimInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -1930,7 +1930,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class ClaimInfo : pb::IMessage<ClaimInfo>
+  public sealed partial class ClaimInfo : pb::IMessage<ClaimInfo>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -2515,7 +2515,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class ClaimInfos : pb::IMessage<ClaimInfos>
+  public sealed partial class ClaimInfos : pb::IMessage<ClaimInfos>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -3865,7 +3865,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class SetDappAdminInput : pb::IMessage<SetDappAdminInput>
+  public sealed partial class SetDappAdminInput : pb::IMessage<SetDappAdminInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -4109,7 +4109,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class SetDappConfigInput : pb::IMessage<SetDappConfigInput>
+  public sealed partial class SetDappConfigInput : pb::IMessage<SetDappConfigInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -4353,7 +4353,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class HashList : pb::IMessage<HashList>
+  public sealed partial class HashList : pb::IMessage<HashList>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -4886,7 +4886,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class RemoveLiquidityInput : pb::IMessage<RemoveLiquidityInput>
+  public sealed partial class RemoveLiquidityInput : pb::IMessage<RemoveLiquidityInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -5267,7 +5267,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class StakeLiquidityInput : pb::IMessage<StakeLiquidityInput>
+  public sealed partial class StakeLiquidityInput : pb::IMessage<StakeLiquidityInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -5657,7 +5657,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class LiquidityInfo : pb::IMessage<LiquidityInfo>
+  public sealed partial class LiquidityInfo : pb::IMessage<LiquidityInfo>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -6390,7 +6390,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class LiquidityInfos : pb::IMessage<LiquidityInfos>
+  public sealed partial class LiquidityInfos : pb::IMessage<LiquidityInfos>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -6571,7 +6571,7 @@ namespace EcoEarn.Contracts.Rewards {
   /// <summary>
   /// log event
   /// </summary>
-  internal sealed partial class AdminSet : pb::IMessage<AdminSet>
+  public sealed partial class AdminSet : pb::IMessage<AdminSet>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -6769,7 +6769,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class Registered : pb::IMessage<Registered>
+  public sealed partial class Registered : pb::IMessage<Registered>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -7059,7 +7059,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class DappConfigSet : pb::IMessage<DappConfigSet>
+  public sealed partial class DappConfigSet : pb::IMessage<DappConfigSet>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -7303,7 +7303,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class Claimed : pb::IMessage<Claimed>
+  public sealed partial class Claimed : pb::IMessage<Claimed>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -7501,7 +7501,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class DappAdminSet : pb::IMessage<DappAdminSet>
+  public sealed partial class DappAdminSet : pb::IMessage<DappAdminSet>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -7745,7 +7745,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class Withdrawn : pb::IMessage<Withdrawn>
+  public sealed partial class Withdrawn : pb::IMessage<Withdrawn>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -8118,7 +8118,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class EarlyStaked : pb::IMessage<EarlyStaked>
+  public sealed partial class EarlyStaked : pb::IMessage<EarlyStaked>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -8620,7 +8620,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class LiquidityAdded : pb::IMessage<LiquidityAdded>
+  public sealed partial class LiquidityAdded : pb::IMessage<LiquidityAdded>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -9076,7 +9076,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class LiquidityRemoved : pb::IMessage<LiquidityRemoved>
+  public sealed partial class LiquidityRemoved : pb::IMessage<LiquidityRemoved>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -9385,7 +9385,7 @@ namespace EcoEarn.Contracts.Rewards {
 
   }
 
-  internal sealed partial class LiquidityStaked : pb::IMessage<LiquidityStaked>
+  public sealed partial class LiquidityStaked : pb::IMessage<LiquidityStaked>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif

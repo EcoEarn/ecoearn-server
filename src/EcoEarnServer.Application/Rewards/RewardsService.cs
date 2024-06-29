@@ -26,6 +26,7 @@ using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver.Linq;
+using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -439,6 +440,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var period = input.Period;
         var tokenAMin = input.TokenAMin;
         var tokenBMin = input.TokenBMin;
+
+        
+        _logger.LogInformation("RewardsSignatureAsync, input: {input}", JsonConvert.SerializeObject(input));
 
         //prevention of duplicate withdraw
         await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + address);
