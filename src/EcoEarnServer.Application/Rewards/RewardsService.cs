@@ -434,7 +434,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var address = input.Address;
         var amount = input.Amount;
         var executeClaimIds = input.ClaimInfos.Select(x => x.ClaimId).ToList();
-        var longestReleaseTime = input.ClaimInfos.First().ReleaseTime;
+        var longestReleaseTime = input.ClaimInfos.Last().ReleaseTime;
         var dappId = input.DappId;
         var poolId = input.PoolId;
         var period = input.Period;
