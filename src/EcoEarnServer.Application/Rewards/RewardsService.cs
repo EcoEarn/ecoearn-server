@@ -25,7 +25,6 @@ using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
@@ -427,6 +426,32 @@ public class RewardsService : IRewardsService, ISingletonDependency
         return true;
     }
 
+    public async Task<RewardsSignatureDto> LiquidityStakeSignatureAsync(LiquiditySignatureInput input)
+    {
+        return await LiquiditySignatureAsync(input, ExecuteType.LiquidityStake);
+    }
+
+    public async Task<string> LiquidityStakeAsync(RewardsTransactionInput input)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<RewardsSignatureDto> RemoveLiquiditySignatureAsync(LiquiditySignatureInput input)
+    {
+        return await LiquiditySignatureAsync(input, ExecuteType.LiquidityRemove);
+    }
+
+    public async Task<string> RemoveLiquidityAsync(RewardsTransactionInput input)
+    {
+        throw new NotImplementedException();
+    }
+
+
+    private async Task<RewardsSignatureDto> LiquiditySignatureAsync(LiquiditySignatureInput input,
+        ExecuteType executeType)
+    {
+        throw new NotImplementedException();
+    }
 
     private async Task<RewardsSignatureDto> RewardsSignatureAsync(RewardsSignatureInput input, ExecuteType executeType)
     {
@@ -434,14 +459,14 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var address = input.Address;
         var amount = input.Amount;
         var executeClaimIds = input.ClaimInfos.Select(x => x.ClaimId).ToList();
-        var longestReleaseTime = input.ClaimInfos.Last().ReleaseTime;
+        var longestReleaseTime = input.ClaimInfos.Last().ReleaseTime / 1000;
         var dappId = input.DappId;
         var poolId = input.PoolId;
         var period = input.Period;
         var tokenAMin = input.TokenAMin;
         var tokenBMin = input.TokenBMin;
 
-        
+
         _logger.LogInformation("RewardsSignatureAsync, input: {input}", JsonConvert.SerializeObject(input));
 
         //prevention of duplicate withdraw
@@ -1003,7 +1028,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             withdrawableAmount -= lossAmount;
             wClaimIds = pastRewards.SelectMany(x => x.ClaimIds).ToList();
-            next = futureRewards.Any()? futureRewards.First() : new RewardsMergeDto();
+            next = futureRewards.Any() ? futureRewards.First() : new RewardsMergeDto();
         }
         else
         {

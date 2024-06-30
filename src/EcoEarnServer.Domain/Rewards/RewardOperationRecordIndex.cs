@@ -29,6 +29,8 @@ public enum ExecuteType
     Withdrawn = 0,
     EarlyStake = 1,
     LiquidityAdded = 2,
+    LiquidityRemove = 3,
+    LiquidityStake = 4,
 }
 public enum ExecuteStatus
 {

@@ -16,4 +16,8 @@ public interface IRewardsService
     Task<RewardsSignatureDto> AddLiquiditySignatureAsync(RewardsSignatureInput input);
     Task<string> AddLiquidityAsync(RewardsTransactionInput input);
     Task<bool> CancelSignatureAsync(RewardsSignatureInput input);
+    Task<RewardsSignatureDto> LiquidityStakeSignatureAsync(LiquiditySignatureInput input);
+    Task<string> LiquidityStakeAsync(RewardsTransactionInput input);
+    Task<RewardsSignatureDto> RemoveLiquiditySignatureAsync(LiquiditySignatureInput input);
+    Task<string> RemoveLiquidityAsync(RewardsTransactionInput input);
 }

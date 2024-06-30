@@ -74,4 +74,28 @@ public class RewardsController : EcoEarnServerController
     {
         return await _rewardsService.CancelSignatureAsync(input);
     }
+    
+    [HttpPost("liquidity/stake/signature")]
+    public async Task<RewardsSignatureDto> LiquidityStakeSignatureAsync(LiquiditySignatureInput input)
+    {
+        return await _rewardsService.LiquidityStakeSignatureAsync(input);
+    }
+
+    [HttpPost("liquidity/stake")]
+    public async Task<string> LiquidityStakeAsync(RewardsTransactionInput input)
+    {
+        return await _rewardsService.LiquidityStakeAsync(input);
+    }
+    
+    [HttpPost("remove/liquidity/signature")]
+    public async Task<RewardsSignatureDto> RemoveLiquiditySignatureAsync(LiquiditySignatureInput input)
+    {
+        return await _rewardsService.RemoveLiquiditySignatureAsync(input);
+    }
+
+    [HttpPost("remove/liquidity")]
+    public async Task<string> RemoveLiquidityAsync(RewardsTransactionInput input)
+    {
+        return await _rewardsService.RemoveLiquidityAsync(input);
+    }
 }
