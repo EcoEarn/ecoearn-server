@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using EcoEarnServer.Rewards.Dtos;
+using EcoEarnServer.TokenStaking.Provider;
 
 namespace EcoEarnServer.Rewards.Provider;
 
@@ -20,6 +21,7 @@ public class RewardsListIndexerDto
     public long EarlyStakeTime { get; set; }
     public string Account { get; set; }
     public PoolTypeEnums PoolType { get; set; }
+    public LockState PoolLockStateType { get; set; }
     public string WithdrawSeed { get; set; }
     public string LiquidityId { get; set; }
     public string ContractAddress { get; set; }

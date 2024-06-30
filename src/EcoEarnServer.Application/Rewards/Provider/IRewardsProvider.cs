@@ -54,18 +54,25 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
                         totalCount,
                         data{
                         claimId,
-                        poolId,
                         stakeId,
+                        poolId,
                         claimedAmount,
-                        earlyStakedAmount,
+                        seed,
                         claimedSymbol,
                         claimedBlockNumber,
+                        earlyStakedAmount,
     					claimedTime,
     					releaseTime,
     					withdrawTime,
     					earlyStakeTime,
     					account,
-    					poolType
+    					poolType,
+    					lockState,
+    					withdrawSeed,
+    					liquidityId,
+    					contractAddress,
+    					earlyStakeSeed,
+    					liquidityAddedSeed,
                     }
                 }
             }",
