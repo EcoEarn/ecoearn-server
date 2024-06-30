@@ -215,7 +215,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             StakingPeriod = stakedInfoIndexerDtos.StakingPeriod,
             Staked = stakedInfoIndexerDtos.LockState == LockState.Unlock
                 ? "0"
-                : stakedInfoIndexerDtos.SubStakeInfos.Sum(x => x.StakedAmount).ToString(),
+                : stakedInfoIndexerDtos.SubStakeInfos.Sum(x => x.StakedAmount + x.EarlyStakedAmount).ToString(),
             YearlyRewards = yearlyRewards,
             FixedBoostFactor = tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor,
             UnlockWindowDuration = tokenPoolIndexerDto.TokenPoolConfig.UnlockWindowDuration,
