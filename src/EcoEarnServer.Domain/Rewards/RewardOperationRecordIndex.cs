@@ -13,6 +13,7 @@ public class RewardOperationRecordIndex : AbstractEntity<string>, IIndexBuild
     [Keyword] public string Signature { get; set; }
     [Nested(Name = "ClaimInfos", Enabled = true, IncludeInParent = true, IncludeInRoot = true)]
     public List<ClaimInfo> ClaimInfos { get; set; }
+    public List<string> LiquidityIds { get; set; }
     public ExecuteStatus ExecuteStatus { get; set; }
     public ExecuteType ExecuteType { get; set; }
     public long CreateTime { get; set; }

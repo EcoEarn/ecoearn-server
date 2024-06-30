@@ -9,4 +9,7 @@ public class LiquiditySignatureInput
     public long LpAmount { get; set; }
     public long Period { get; set; }
     public string DappId { get; set; }
+    public long TokenAMin { get; set; }
+    public long TokenBMin { get; set; }
+    public string Address { get; set; }
 }

@@ -15,7 +15,7 @@ namespace EcoEarnServer.Rewards.Provider;
 public interface IRewardsProvider
 {
     Task<RewardsListIndexerResult> GetRewardsListAsync(PoolTypeEnums poolType, string address, int skipCount,
-        int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false);
+        int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false, List<string> liquidityIds = null);
 
     Task<List<string>> GetUnLockedStakeIdsAsync(List<string> stakeIds, string address);
     Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address, List<ExecuteStatus> executeStatus);
@@ -37,7 +37,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
     }
 
     public async Task<RewardsListIndexerResult> GetRewardsListAsync(PoolTypeEnums poolType, string address,
-        int skipCount, int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false)
+        int skipCount, int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false, List<string> liquidityIds = null)
     {
         if (string.IsNullOrEmpty(address))
         {
@@ -49,8 +49,8 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<RewardsListQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($poolType:PoolType!, $filterUnlock:Boolean!,$filterWithdraw:Boolean!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
-                    getClaimInfoList(input: {poolType:$poolType,filterUnlock:$filterUnlock,filterWithdraw:$filterWithdraw,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($poolType:PoolType!, $liquidityIds:[String!]!, $filterUnlock:Boolean!,$filterWithdraw:Boolean!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
+                    getClaimInfoList(input: {poolType:$poolType,liquidityIds:$liquidityIds,filterUnlock:$filterUnlock,filterWithdraw:$filterWithdraw,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         claimId,
@@ -79,7 +79,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
                 Variables = new
                 {
                     poolType = poolType, filterUnlock = filterUnlocked, filterWithdraw = filterWithdraw,
-                    address = address, skipCount = skipCount, maxResultCount = maxResultCount,
+                    address = address, skipCount = skipCount, maxResultCount = maxResultCount, liquidityIds = liquidityIds ?? new List<string>()
                 }
             });
 

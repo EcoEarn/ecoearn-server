@@ -195,6 +195,8 @@ namespace EcoEarn.Contracts.Rewards {
         LpAmount = LpAmount,
         TokenAAmount = TokenAAmount,
         TokenBAmount = TokenBAmount,
+        DappId = DappId,
+        Seed = Seed,
       };
     }
   }
@@ -214,9 +216,10 @@ namespace EcoEarn.Contracts.Rewards {
       {
         LiquidityIds = LiquidityIds,
         PoolId = PoolId,
-        Amount = Amount,
+        LpAmount = LpAmount,
         Period = Period,
         StakeId = StakeId,
+        Seed = Seed,
       };
     }
   }
@@ -380,112 +383,112 @@ namespace EcoEarn.Contracts.Rewards {
     }
     #endregion
 
-//     /// <summary>Base class for the contract of EcoEarnRewardsContract</summary>
-//     public abstract partial class EcoEarnRewardsContractBase : AElf.Sdk.CSharp.CSharpSmartContract<EcoEarn.Contracts.Rewards.EcoEarnRewardsContractState>
-//     {
-//       public virtual global::Google.Protobuf.WellKnownTypes.Empty Initialize(global::EcoEarn.Contracts.Rewards.InitializeInput input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::Google.Protobuf.WellKnownTypes.Empty SetAdmin(global::AElf.Types.Address input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::AElf.Types.Address GetAdmin(global::Google.Protobuf.WellKnownTypes.Empty input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::Google.Protobuf.WellKnownTypes.Empty Register(global::EcoEarn.Contracts.Rewards.RegisterInput input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::Google.Protobuf.WellKnownTypes.Empty SetDappAdmin(global::EcoEarn.Contracts.Rewards.SetDappAdminInput input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::Google.Protobuf.WellKnownTypes.Empty SetDappConfig(global::EcoEarn.Contracts.Rewards.SetDappConfigInput input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::EcoEarn.Contracts.Rewards.DappInfo GetDappInfo(global::AElf.Types.Hash input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::AElf.Types.Address GetRewardAddress(global::EcoEarn.Contracts.Rewards.GetRewardAddressInput input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::Google.Protobuf.WellKnownTypes.Empty Claim(global::EcoEarn.Contracts.Rewards.ClaimInput input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::EcoEarn.Contracts.Rewards.ClaimInfo GetClaimInfo(global::AElf.Types.Hash input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::Google.Protobuf.WellKnownTypes.Empty Withdraw(global::EcoEarn.Contracts.Rewards.WithdrawInput input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::Google.Protobuf.WellKnownTypes.Empty EarlyStake(global::EcoEarn.Contracts.Rewards.EarlyStakeInput input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::Google.Protobuf.WellKnownTypes.Empty AddLiquidityAndStake(global::EcoEarn.Contracts.Rewards.AddLiquidityAndStakeInput input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveLiquidity(global::EcoEarn.Contracts.Rewards.RemoveLiquidityInput input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::Google.Protobuf.WellKnownTypes.Empty StakeLiquidity(global::EcoEarn.Contracts.Rewards.StakeLiquidityInput input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//       public virtual global::EcoEarn.Contracts.Rewards.LiquidityInfo GetLiquidityInfo(global::AElf.Types.Hash input)
-//       {
-//         throw new global::System.NotImplementedException();
-//       }
-//
-//     }
-//
-//     public static aelf::ServerServiceDefinition BindService(EcoEarnRewardsContractBase serviceImpl)
-//     {
-//       return aelf::ServerServiceDefinition.CreateBuilder()
-//           .AddDescriptors(Descriptors)
-//           .AddMethod(__Method_Initialize, serviceImpl.Initialize)
-//           .AddMethod(__Method_SetAdmin, serviceImpl.SetAdmin)
-//           .AddMethod(__Method_GetAdmin, serviceImpl.GetAdmin)
-//           .AddMethod(__Method_Register, serviceImpl.Register)
-//           .AddMethod(__Method_SetDappAdmin, serviceImpl.SetDappAdmin)
-//           .AddMethod(__Method_SetDappConfig, serviceImpl.SetDappConfig)
-//           .AddMethod(__Method_GetDappInfo, serviceImpl.GetDappInfo)
-//           .AddMethod(__Method_GetRewardAddress, serviceImpl.GetRewardAddress)
-//           .AddMethod(__Method_Claim, serviceImpl.Claim)
-//           .AddMethod(__Method_GetClaimInfo, serviceImpl.GetClaimInfo)
-//           .AddMethod(__Method_Withdraw, serviceImpl.Withdraw)
-//           .AddMethod(__Method_EarlyStake, serviceImpl.EarlyStake)
-//           .AddMethod(__Method_AddLiquidityAndStake, serviceImpl.AddLiquidityAndStake)
-//           .AddMethod(__Method_RemoveLiquidity, serviceImpl.RemoveLiquidity)
-//           .AddMethod(__Method_StakeLiquidity, serviceImpl.StakeLiquidity)
-//           .AddMethod(__Method_GetLiquidityInfo, serviceImpl.GetLiquidityInfo).Build();
-//     }
+    /// <summary>Base class for the contract of EcoEarnRewardsContract</summary>
+    // public abstract partial class EcoEarnRewardsContractBase : AElf.Sdk.CSharp.CSharpSmartContract<EcoEarn.Contracts.Rewards.EcoEarnRewardsContractState>
+    // {
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Initialize(global::EcoEarn.Contracts.Rewards.InitializeInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetAdmin(global::AElf.Types.Address input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AElf.Types.Address GetAdmin(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Register(global::EcoEarn.Contracts.Rewards.RegisterInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetDappAdmin(global::EcoEarn.Contracts.Rewards.SetDappAdminInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetDappConfig(global::EcoEarn.Contracts.Rewards.SetDappConfigInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::EcoEarn.Contracts.Rewards.DappInfo GetDappInfo(global::AElf.Types.Hash input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AElf.Types.Address GetRewardAddress(global::EcoEarn.Contracts.Rewards.GetRewardAddressInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Claim(global::EcoEarn.Contracts.Rewards.ClaimInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::EcoEarn.Contracts.Rewards.ClaimInfo GetClaimInfo(global::AElf.Types.Hash input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Withdraw(global::EcoEarn.Contracts.Rewards.WithdrawInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty EarlyStake(global::EcoEarn.Contracts.Rewards.EarlyStakeInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty AddLiquidityAndStake(global::EcoEarn.Contracts.Rewards.AddLiquidityAndStakeInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveLiquidity(global::EcoEarn.Contracts.Rewards.RemoveLiquidityInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty StakeLiquidity(global::EcoEarn.Contracts.Rewards.StakeLiquidityInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::EcoEarn.Contracts.Rewards.LiquidityInfo GetLiquidityInfo(global::AElf.Types.Hash input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    // }
+    //
+    // public static aelf::ServerServiceDefinition BindService(EcoEarnRewardsContractBase serviceImpl)
+    // {
+    //   return aelf::ServerServiceDefinition.CreateBuilder()
+    //       .AddDescriptors(Descriptors)
+    //       .AddMethod(__Method_Initialize, serviceImpl.Initialize)
+    //       .AddMethod(__Method_SetAdmin, serviceImpl.SetAdmin)
+    //       .AddMethod(__Method_GetAdmin, serviceImpl.GetAdmin)
+    //       .AddMethod(__Method_Register, serviceImpl.Register)
+    //       .AddMethod(__Method_SetDappAdmin, serviceImpl.SetDappAdmin)
+    //       .AddMethod(__Method_SetDappConfig, serviceImpl.SetDappConfig)
+    //       .AddMethod(__Method_GetDappInfo, serviceImpl.GetDappInfo)
+    //       .AddMethod(__Method_GetRewardAddress, serviceImpl.GetRewardAddress)
+    //       .AddMethod(__Method_Claim, serviceImpl.Claim)
+    //       .AddMethod(__Method_GetClaimInfo, serviceImpl.GetClaimInfo)
+    //       .AddMethod(__Method_Withdraw, serviceImpl.Withdraw)
+    //       .AddMethod(__Method_EarlyStake, serviceImpl.EarlyStake)
+    //       .AddMethod(__Method_AddLiquidityAndStake, serviceImpl.AddLiquidityAndStake)
+    //       .AddMethod(__Method_RemoveLiquidity, serviceImpl.RemoveLiquidity)
+    //       .AddMethod(__Method_StakeLiquidity, serviceImpl.StakeLiquidity)
+    //       .AddMethod(__Method_GetLiquidityInfo, serviceImpl.GetLiquidityInfo).Build();
+    // }
 
   }
 }

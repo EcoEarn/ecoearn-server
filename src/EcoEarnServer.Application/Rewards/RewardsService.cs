@@ -433,7 +433,69 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
     public async Task<string> LiquidityStakeAsync(RewardsTransactionInput input)
     {
-        throw new NotImplementedException();
+        _logger.LogInformation("LiquidityStakeAsync, RawTransaction : {rawTransaction}", input.RawTransaction);
+        var transaction =
+            Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
+
+        var stakeLiquidityInput = new StakeLiquidityInput();
+        if (transaction.To.ToBase58() == _earnContractOptions.CAContractAddress &&
+            transaction.MethodName == "ManagerForwardCall")
+        {
+            var managerForwardCallInput = ManagerForwardCallInput.Parser.ParseFrom(transaction.Params);
+            if (managerForwardCallInput.MethodName == "StakeLiquidity" &&
+                managerForwardCallInput.ContractAddress.ToBase58() ==
+                _earnContractOptions.EcoEarnRewardsContractAddress)
+            {
+                stakeLiquidityInput = StakeLiquidityInput.Parser.ParseFrom(managerForwardCallInput.Args);
+            }
+        }
+        else if (transaction.To.ToBase58() == _earnContractOptions.EcoEarnRewardsContractAddress &&
+                 transaction.MethodName == "StakeLiquidity")
+        {
+            stakeLiquidityInput = StakeLiquidityInput.Parser.ParseFrom(transaction.Params);
+        }
+        else
+        {
+            throw new UserFriendlyException("Invalid transaction");
+        }
+
+        var computedHash = HashHelper.ComputeFrom(new StakeLiquidityInput
+        {
+            LiquidityInput = stakeLiquidityInput.LiquidityInput,
+            PoolId = stakeLiquidityInput.PoolId,
+            Period = stakeLiquidityInput.Period,
+            LongestReleaseTime = stakeLiquidityInput.LongestReleaseTime,
+        }.ToByteArray());
+        if (!CryptoHelper.RecoverPublicKey(stakeLiquidityInput.Signature.ToByteArray(),
+                computedHash.ToByteArray(),
+                out var publicKeyByte))
+        {
+            throw new UserFriendlyException("invalid Signature");
+        }
+
+        var publicKey = publicKeyByte.ToHex();
+        if (!_projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(CommonConstant.Project, out var pubKey)
+            || pubKey.PublicKey != publicKey)
+        {
+            throw new UserFriendlyException("invalid Signature");
+        }
+
+        if (stakeLiquidityInput.LiquidityInput.ExpirationTime * 1000 < DateTime.UtcNow.ToUtcMilliSeconds())
+        {
+            throw new UserFriendlyException("Signature Expired");
+        }
+
+        var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
+
+        var transactionResult =
+            await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
+        if (!transactionResult)
+        {
+            throw new UserFriendlyException("transaction fail.");
+        }
+
+        await UpdateOperationStatusAsync(ExecuteType.LiquidityStake.ToString(), stakeLiquidityInput.LiquidityInput.LiquidityIds);
+        return transactionOutput.TransactionId;
     }
 
     public async Task<RewardsSignatureDto> RemoveLiquiditySignatureAsync(LiquiditySignatureInput input)
@@ -443,14 +505,211 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
     public async Task<string> RemoveLiquidityAsync(RewardsTransactionInput input)
     {
-        throw new NotImplementedException();
+        _logger.LogInformation("RemoveLiquidityAsync, RawTransaction : {rawTransaction}", input.RawTransaction);
+        var transaction =
+            Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
+
+        var removeLiquidityInput = new RemoveLiquidityInput();
+        if (transaction.To.ToBase58() == _earnContractOptions.CAContractAddress &&
+            transaction.MethodName == "ManagerForwardCall")
+        {
+            var managerForwardCallInput = ManagerForwardCallInput.Parser.ParseFrom(transaction.Params);
+            if (managerForwardCallInput.MethodName == "RemoveLiquidity" &&
+                managerForwardCallInput.ContractAddress.ToBase58() ==
+                _earnContractOptions.EcoEarnRewardsContractAddress)
+            {
+                removeLiquidityInput = RemoveLiquidityInput.Parser.ParseFrom(managerForwardCallInput.Args);
+            }
+        }
+        else if (transaction.To.ToBase58() == _earnContractOptions.EcoEarnRewardsContractAddress &&
+                 transaction.MethodName == "RemoveLiquidity")
+        {
+            removeLiquidityInput = RemoveLiquidityInput.Parser.ParseFrom(transaction.Params);
+        }
+        else
+        {
+            throw new UserFriendlyException("Invalid transaction");
+        }
+
+
+        var computedHash = HashHelper.ComputeFrom(new RemoveLiquidityInput
+        {
+            LiquidityInput = removeLiquidityInput.LiquidityInput,
+            TokenAMin = removeLiquidityInput.TokenAMin,
+            TokenBMin = removeLiquidityInput.TokenBMin,
+        }.ToByteArray());
+        if (!CryptoHelper.RecoverPublicKey(removeLiquidityInput.Signature.ToByteArray(),
+                computedHash.ToByteArray(),
+                out var publicKeyByte))
+        {
+            throw new UserFriendlyException("invalid Signature");
+        }
+
+        var publicKey = publicKeyByte.ToHex();
+        if (!_projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(CommonConstant.Project, out var pubKey)
+            || pubKey.PublicKey != publicKey)
+        {
+            throw new UserFriendlyException("invalid Signature");
+        }
+
+        if (removeLiquidityInput.LiquidityInput.ExpirationTime * 1000 < DateTime.UtcNow.ToUtcMilliSeconds())
+        {
+            throw new UserFriendlyException("Signature Expired");
+        }
+
+        var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
+
+        var transactionResult =
+            await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
+        if (!transactionResult)
+        {
+            throw new UserFriendlyException("transaction fail.");
+        }
+
+        await UpdateOperationStatusAsync(ExecuteType.LiquidityRemove.ToString(), removeLiquidityInput.LiquidityInput.LiquidityIds);
+        return transactionOutput.TransactionId;
     }
 
 
     private async Task<RewardsSignatureDto> LiquiditySignatureAsync(LiquiditySignatureInput input,
         ExecuteType executeType)
     {
-        throw new NotImplementedException();
+        var address = input.Address;
+        var lpAmount = input.LpAmount;
+        var dappId = input.DappId;
+        var poolId = input.PoolId;
+        var period = input.Period;
+        var tokenAMin = input.TokenAMin;
+        var tokenBMin = input.TokenBMin;
+        var liquidityIds = input.LiquidityIds;
+
+
+        _logger.LogInformation("LiquiditySignatureAsync, input: {input}", JsonConvert.SerializeObject(input));
+
+        //prevention of duplicate withdraw
+        await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + address);
+
+        if (handle == null)
+        {
+            throw new UserFriendlyException("generating signature.");
+        }
+
+        var liquidityIdsArray = liquidityIds.SelectMany(id => Encoding.UTF8.GetBytes(id)).ToArray();
+        string liquidityIdsHex;
+        using (var md5 = MD5.Create())
+        {
+            var hashBytes = md5.ComputeHash(liquidityIdsArray);
+            liquidityIdsHex = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        }
+
+        if (string.IsNullOrEmpty(liquidityIdsHex))
+        {
+            throw new UserFriendlyException("invalid params");
+        }
+
+        var id = GuidHelper.GenerateId(liquidityIdsHex);
+        var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
+        var record = await rewardOperationRecordGrain.GetAsync();
+        if (record != null && record.ExecuteStatus != ExecuteStatus.Cancel &&
+            record.ExpiredTime > DateTime.UtcNow.ToUtcMilliSeconds())
+        {
+            _logger.LogWarning(
+                "already generated signature. id: {id}", id);
+            return new RewardsSignatureDto
+            {
+                Seed = HashHelper.ComputeFrom(record.Seed).ToHex(),
+                Signature = ByteStringHelper.FromHexString(record.Signature),
+                ExpirationTime = record.ExpiredTime / 1000
+            };
+        }
+
+        // //prevention of over withdraw
+        // var isValid = await CheckAmountValidityAsync(address, amount, executeClaimIds, poolType, executeType);
+        // if (!isValid)
+        // {
+        //     throw new UserFriendlyException("invalid amount.");
+        // }
+
+
+        var expiredPeriod =
+            _projectKeyPairInfoOptions.ProjectKeyPairInfos.TryGetValue(CommonConstant.Project, out var projectInfo)
+                ? projectInfo.ExpiredSeconds
+                : 180;
+        var expiredTime = DateTime.UtcNow
+            .AddSeconds(expiredPeriod)
+            .ToUtcMilliSeconds();
+        var seed = Guid.NewGuid().ToString();
+        var repeatedField = new RepeatedField<Hash>();
+        repeatedField.AddRange(liquidityIds.Select(Hash.LoadFromHex).ToList());
+        var rewardsAllList = await GetAllRewardsList(address, PoolTypeEnums.All, liquidityIds);
+        var longestReleaseTime = rewardsAllList.Select(x => x.ReleaseTime).Max();
+        IMessage data = executeType switch
+        {
+            ExecuteType.LiquidityRemove => new RemoveLiquidityInput()
+            {
+                LiquidityInput = new LiquidityInput
+                {
+                    LiquidityIds = { repeatedField },
+                    LpAmount = lpAmount,
+                    DappId = Hash.LoadFromHex(dappId),
+                    Seed = HashHelper.ComputeFrom(seed),
+                    ExpirationTime = expiredTime / 1000,
+                },
+                TokenAMin = tokenAMin,
+                TokenBMin = tokenBMin,
+            },
+            ExecuteType.LiquidityStake => new StakeLiquidityInput()
+            {
+                LiquidityInput = new LiquidityInput
+                {
+                    LiquidityIds = { repeatedField },
+                    LpAmount = lpAmount,
+                    DappId = Hash.LoadFromHex(dappId),
+                    Seed = HashHelper.ComputeFrom(seed),
+                    ExpirationTime = expiredTime / 1000,
+                },
+                PoolId = Hash.LoadFromHex(poolId),
+                Period = period,
+                LongestReleaseTime = longestReleaseTime / 1000,
+            },
+            _ => null
+        };
+
+        var signature = await GenerateSignatureByPubKeyAsync(projectInfo.PublicKey, data);
+
+        //save signature
+        var recordDto = new RewardOperationRecordDto()
+        {
+            Id = id,
+            Amount = lpAmount,
+            Address = address,
+            Seed = seed,
+            Signature = signature,
+            LiquidityIds = liquidityIds,
+            ExecuteStatus = ExecuteStatus.Executing,
+            ExecuteType = executeType,
+            CreateTime = DateTime.UtcNow.ToUtcMilliSeconds(),
+            ExpiredTime = expiredTime
+        };
+
+        var saveResult = await rewardOperationRecordGrain.CreateAsync(recordDto);
+
+        if (!saveResult.Success)
+        {
+            _logger.LogError(
+                "save withdraw record fail, message:{message}, id: {id}", saveResult.Message, id);
+            throw new UserFriendlyException(saveResult.Message);
+        }
+
+        await _distributedEventBus.PublishAsync(
+            _objectMapper.Map<RewardOperationRecordDto, RewardOperationRecordEto>(saveResult.Data));
+
+        return new RewardsSignatureDto
+        {
+            Seed = HashHelper.ComputeFrom(seed).ToHex(),
+            Signature = ByteStringHelper.FromHexString(signature),
+            ExpirationTime = expiredTime / 1000
+        };
     }
 
     private async Task<RewardsSignatureDto> RewardsSignatureAsync(RewardsSignatureInput input, ExecuteType executeType)
@@ -931,7 +1190,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         pointsPoolAggDto.NextRewardsReleaseAmount = nextReward.ClaimedAmount;
 
 
-        _logger.LogInformation("operationClaimList: {operationClaimList}", JsonConvert.SerializeObject(operationClaimList));
+        _logger.LogInformation("operationClaimList: {operationClaimList}",
+            JsonConvert.SerializeObject(operationClaimList));
         var earlyStaked = operationClaimList
             .Where(x => earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId) ||
                         liquidityIds.Contains(x.LiquidityId) && !liquidityRemovedStakeIds.Contains(x.StakeId))
@@ -1064,7 +1324,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
     }
 
 
-    private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType)
+    private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType, List<string> liquidityIds = null)
     {
         var res = new List<RewardsListIndexerDto>();
         var skipCount = 0;
