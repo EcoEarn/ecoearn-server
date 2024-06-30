@@ -395,21 +395,21 @@ public class RewardsService : IRewardsService, ISingletonDependency
     public async Task<bool> CancelSignatureAsync(RewardsSignatureInput input)
     {
         var address = input.Address;
-        var executeClaimIds = input.ClaimInfos.Select(x => x.ClaimId).ToList();
-        var claimIdsArray = executeClaimIds.SelectMany(id => Encoding.UTF8.GetBytes(id)).ToArray();
-        string claimIdsHex;
+        var ids = input.ClaimInfos.Any() ? input.ClaimInfos.Select(x => x.ClaimId).ToList() : input.LiquidityIds;
+        var idsArray = ids.SelectMany(id => Encoding.UTF8.GetBytes(id)).ToArray();
+        string idsHex;
         using (var md5 = MD5.Create())
         {
-            var hashBytes = md5.ComputeHash(claimIdsArray);
-            claimIdsHex = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+            var hashBytes = md5.ComputeHash(idsArray);
+            idsHex = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
         }
 
-        if (string.IsNullOrEmpty(claimIdsHex))
+        if (string.IsNullOrEmpty(idsHex))
         {
             throw new UserFriendlyException("invalid params");
         }
 
-        var id = GuidHelper.GenerateId(address, claimIdsHex);
+        var id = input.ClaimInfos.Any() ? GuidHelper.GenerateId(address, idsHex) : GuidHelper.GenerateId(idsHex);
         var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
         var saveResult = await rewardOperationRecordGrain.CancelAsync();
 
@@ -1188,10 +1188,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             nowRewards.ClaimIds.Select(x => new ClaimInfoDto { ClaimId = x }).ToList();
         pointsPoolAggDto.NextRewardsRelease = nextReward.ReleaseTime;
         pointsPoolAggDto.NextRewardsReleaseAmount = nextReward.ClaimedAmount;
-
-
-        _logger.LogInformation("operationClaimList: {operationClaimList}",
-            JsonConvert.SerializeObject(operationClaimList));
+        
         var earlyStaked = operationClaimList
             .Where(x => earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId) ||
                         liquidityIds.Contains(x.LiquidityId) && !liquidityRemovedStakeIds.Contains(x.StakeId))
@@ -1206,7 +1203,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
             ClaimId = x.ClaimId,
             ReleaseTime = x.ReleaseTime
         }).ToList();
-
+        pointsPoolAggDto.AllRewardsRelease =
+            unWithdrawList.Select(x => x.ReleaseTime).Max() < DateTime.UtcNow.ToUtcMilliSeconds();
         return pointsPoolAggDto;
     }
 

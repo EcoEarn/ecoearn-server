@@ -11,31 +11,31 @@ public class RewardsAggregationDto
     public string DappId { get; set; }
 }
 
-
 public class RewardsAggDto
 {
     public string TotalRewards { get; set; }
     public string TotalRewardsInUsd { get; set; } = "0";
     public string RewardsTokenName { get; set; }
     public int Decimal { get; set; } = 8;
-    
+
     public string Withdrawn { get; set; }
     public string WithdrawnInUsd { get; set; } = "0";
-    
+
     public string Frozen { get; set; }
     public string FrozenInUsd { get; set; } = "0";
-    
+
     public string Withdrawable { get; set; }
     public string WithdrawableInUsd { get; set; } = "0";
-    
+
     public string EarlyStakedAmount { get; set; }
     public string EarlyStakedAmountInUsd { get; set; } = "0";
-    
+
     public long NextRewardsRelease { get; set; }
     public string NextRewardsReleaseAmount { get; set; } = "0";
-    
+
     public List<ClaimInfoDto> ClaimInfos { get; set; }
     public List<ClaimInfoDto> WithdrawableClaimInfos { get; set; }
+    public bool AllRewardsRelease { get; set; }
 }
 
 public class PointsPoolAggDto

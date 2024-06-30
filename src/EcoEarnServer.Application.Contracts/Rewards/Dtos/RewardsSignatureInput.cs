@@ -8,8 +8,9 @@ public class RewardsSignatureInput
     public string Address { get; set; }
     public string DappId { get; set; }
     public PoolTypeEnums PoolType { get; set; }
-    
-    public List<ClaimInfoDto> ClaimInfos { get; set; }
+    public List<string> LiquidityIds { get; set; } = new();
+
+    public List<ClaimInfoDto> ClaimInfos { get; set; } = new();
     
     public string PoolId { get; set; }
     public long Period { get; set; }
