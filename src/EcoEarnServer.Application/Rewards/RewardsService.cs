@@ -931,6 +931,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         pointsPoolAggDto.NextRewardsReleaseAmount = nextReward.ClaimedAmount;
 
 
+        _logger.LogInformation("operationClaimList: {operationClaimList}", JsonConvert.SerializeObject(operationClaimList));
         var earlyStaked = operationClaimList
             .Where(x => earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId) ||
                         liquidityIds.Contains(x.LiquidityId) && !liquidityRemovedStakeIds.Contains(x.StakeId))
