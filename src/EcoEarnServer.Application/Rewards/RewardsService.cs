@@ -1221,10 +1221,10 @@ public class RewardsService : IRewardsService, ISingletonDependency
         pointsPoolAggDto.NextRewardsReleaseAmount = nextReward.ClaimedAmount;
 
         _logger.LogInformation("earlyStakedIds: {earlyStakedIds} , unLockedStakeIds: {unLockedStakeIds}",
-            earlyStakedIds.ToString(), unLockedStakeIds.ToString());
+            JsonConvert.SerializeObject(earlyStakedIds), JsonConvert.SerializeObject(unLockedStakeIds));
         _logger.LogInformation("liquidityIds: {liquidityIds} , liquidityRemovedStakeIds: {liquidityRemovedStakeIds}",
-            earlyStakedIds.ToString(), unLockedStakeIds.ToString());
-        _logger.LogInformation("operationClaimList: {operationClaimList}", operationClaimList.ToString());
+            JsonConvert.SerializeObject(earlyStakedIds), JsonConvert.SerializeObject(unLockedStakeIds));
+        _logger.LogInformation("operationClaimList: {operationClaimList}", JsonConvert.SerializeObject(operationClaimList));
         var earlyStaked = operationClaimList
             .Where(x => (earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId)) ||
                         (liquidityIds.Contains(x.LiquidityId) && !liquidityRemovedStakeIds.Contains(x.StakeId)))
