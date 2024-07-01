@@ -117,9 +117,17 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }
 
 
+        var claimedTimeDic = result.GroupBy(x => x.ClaimedTime).ToDictionary(g => g.Key, g =>
+        {
+            var rewardsSum = g.Sum(x => double.Parse(x.Rewards));
+            var rewardsListDto = g.First();
+            rewardsListDto.Rewards = rewardsSum.ToString(CultureInfo.InvariantCulture);
+            return rewardsListDto;
+        });
+
         return new PagedResultDto<RewardsListDto>
         {
-            Items = result,
+            Items = claimedTimeDic.Values.ToList(),
             TotalCount = rewardsListIndexerResult.TotalCount
         };
     }
@@ -1218,7 +1226,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             nowRewards.ClaimIds.Select(x => new ClaimInfoDto { ClaimId = x }).ToList();
         pointsPoolAggDto.NextRewardsRelease = nextReward.ReleaseTime;
         pointsPoolAggDto.NextRewardsReleaseAmount = nextReward.ClaimedAmount;
-        
+
         var earlyStaked = operationClaimList
             .Where(x => (earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId)) ||
                         (liquidityIds.Contains(x.LiquidityId) && !liquidityRemovedSeeds.Contains(x.LiquidityAddedSeed)))

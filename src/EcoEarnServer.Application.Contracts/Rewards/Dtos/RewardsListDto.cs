@@ -6,6 +6,7 @@ public class RewardsListDto
 {
     public PoolTypeEnums PoolType { get; set; }
     public string ProjectOwner { get; set; }
+    public long ClaimedTime { get; set; }
     public string RewardsToken { get; set; }
     public long RewardsTokenDecimal { get; set; } = 8;
     public string RewardsInUsd { get; set; } = "0";
