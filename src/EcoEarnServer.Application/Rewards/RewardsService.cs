@@ -924,45 +924,44 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Where(x => x.WithdrawTime == 0)
             .ToList();
         List<RewardsListIndexerDto> pastReleaseTimeClaimInfoList;
+        var rewardsTokenName = unWithdrawList.FirstOrDefault()?.ClaimedSymbol;
+        var endedOperationClaimIds = rewardOperationRecordAllList.Where(x => x.ExecuteStatus == ExecuteStatus.Ended)
+            .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
+            .ToList();
+        var operationClaimList = unWithdrawList
+            .Where(x => endedOperationClaimIds.Contains(x.ClaimId))
+            .ToList();
+        var liquidityIds = operationClaimList
+            .Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
+            .Select(x => x.LiquidityId)
+            .ToList();
+        var liquidityRemovedList =
+            await _farmProvider.GetLiquidityInfoAsync(liquidityIds, "", LpStatus.Removed, 0, 5000);
+
+        var lossAmount = BigInteger.Zero;
+        foreach (var liquidityInfoIndexerDto in liquidityRemovedList)
+        {
+            if (rewardsTokenName == liquidityInfoIndexerDto.TokenASymbol)
+            {
+                lossAmount += BigInteger.Parse(liquidityInfoIndexerDto.TokenALossAmount);
+            }
+            else
+            {
+                lossAmount += BigInteger.Parse(liquidityInfoIndexerDto.TokenBLossAmount);
+            }
+        }
+
+        var rewardsDtos = unWithdrawList.Select(x => new RewardsDto
+        {
+            ClaimedAmount = x.ClaimedAmount,
+            ClaimId = x.ClaimId,
+            ReleaseTime = x.ReleaseTime,
+        }).ToList();
+        var rewardsMergeDtos = MergeRewards(rewardsDtos, _earnContractOptions.MergeMilliseconds);
+        var (nowRewards, nextReward) = GetNextReward(rewardsMergeDtos, DateTime.UtcNow.ToUtcMilliSeconds(),
+            long.Parse(lossAmount.ToString()));
         if (executeType == ExecuteType.Withdrawn)
         {
-            var rewardsTokenName = unWithdrawList.FirstOrDefault()?.ClaimedSymbol;
-            var endedOperationClaimIds = rewardOperationRecordAllList.Where(x => x.ExecuteStatus == ExecuteStatus.Ended)
-                .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
-                .ToList();
-            var operationClaimList = unWithdrawList
-                .Where(x => endedOperationClaimIds.Contains(x.ClaimId))
-                .ToList();
-            var liquidityIds = operationClaimList
-                .Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
-                .Select(x => x.LiquidityId)
-                .ToList();
-            var liquidityRemovedList =
-                await _farmProvider.GetLiquidityInfoAsync(liquidityIds, "", LpStatus.Removed, 0, 5000);
-
-            var lossAmount = BigInteger.Zero;
-            foreach (var liquidityInfoIndexerDto in liquidityRemovedList)
-            {
-                if (rewardsTokenName == liquidityInfoIndexerDto.TokenASymbol)
-                {
-                    lossAmount += BigInteger.Parse(liquidityInfoIndexerDto.TokenALossAmount);
-                }
-                else
-                {
-                    lossAmount += BigInteger.Parse(liquidityInfoIndexerDto.TokenBLossAmount);
-                }
-            }
-
-            var rewardsDtos = unWithdrawList.Select(x => new RewardsDto
-            {
-                ClaimedAmount = x.ClaimedAmount,
-                ClaimId = x.ClaimId,
-                ReleaseTime = x.ReleaseTime,
-            }).ToList();
-            var rewardsMergeDtos = MergeRewards(rewardsDtos, _earnContractOptions.MergeMilliseconds);
-            var (nowRewards, nextReward) = GetNextReward(rewardsMergeDtos, DateTime.UtcNow.ToUtcMilliSeconds(),
-                long.Parse(lossAmount.ToString()));
-
             pastReleaseTimeClaimInfoList = unWithdrawList
                 .Where(x => nowRewards.ClaimIds.Contains(x.ClaimId))
                 .ToList();
@@ -1068,8 +1067,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
             .ToString();
+        var realWithdrawAmount = long.Parse(withdrawAmount) - long.Parse(lossAmount.ToString());
         var checkResult = resultList.Count == withdrawClaimIds.Count && !includeClaimIds.Any() &&
-                          amount.ToString() == withdrawAmount;
+                          amount.ToString() == realWithdrawAmount.ToString();
 
         if (!checkResult)
         {
@@ -1223,7 +1223,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
             JsonConvert.SerializeObject(earlyStakedIds), JsonConvert.SerializeObject(unLockedStakeIds));
         _logger.LogInformation("liquidityIds: {liquidityIds} , liquidityRemovedStakeIds: {liquidityRemovedStakeIds}",
             JsonConvert.SerializeObject(earlyStakedIds), JsonConvert.SerializeObject(unLockedStakeIds));
-        _logger.LogInformation("operationClaimList: {operationClaimList}", JsonConvert.SerializeObject(operationClaimList));
+        _logger.LogInformation("operationClaimList: {operationClaimList}",
+            JsonConvert.SerializeObject(operationClaimList));
         var earlyStaked = operationClaimList
             .Where(x => (earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId)) ||
                         (liquidityIds.Contains(x.LiquidityId) && !liquidityRemovedSeeds.Contains(x.LiquidityAddedSeed)))
@@ -1238,8 +1239,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
             ClaimId = x.ClaimId,
             ReleaseTime = x.ReleaseTime
         }).ToList();
-        pointsPoolAggDto.AllRewardsRelease = 
-            unWithdrawList.Any() && unWithdrawList.Select(x => x.ReleaseTime).Max() < DateTime.UtcNow.ToUtcMilliSeconds();
+        pointsPoolAggDto.AllRewardsRelease =
+            unWithdrawList.Any() &&
+            unWithdrawList.Select(x => x.ReleaseTime).Max() < DateTime.UtcNow.ToUtcMilliSeconds();
         return pointsPoolAggDto;
     }
 
