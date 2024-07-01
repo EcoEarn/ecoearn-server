@@ -1218,13 +1218,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             nowRewards.ClaimIds.Select(x => new ClaimInfoDto { ClaimId = x }).ToList();
         pointsPoolAggDto.NextRewardsRelease = nextReward.ReleaseTime;
         pointsPoolAggDto.NextRewardsReleaseAmount = nextReward.ClaimedAmount;
-
-        _logger.LogInformation("earlyStakedIds: {earlyStakedIds} , unLockedStakeIds: {unLockedStakeIds}",
-            JsonConvert.SerializeObject(earlyStakedIds), JsonConvert.SerializeObject(unLockedStakeIds));
-        _logger.LogInformation("liquidityIds: {liquidityIds} , liquidityRemovedStakeIds: {liquidityRemovedStakeIds}",
-            JsonConvert.SerializeObject(earlyStakedIds), JsonConvert.SerializeObject(unLockedStakeIds));
-        _logger.LogInformation("operationClaimList: {operationClaimList}",
-            JsonConvert.SerializeObject(operationClaimList));
+        
         var earlyStaked = operationClaimList
             .Where(x => (earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId)) ||
                         (liquidityIds.Contains(x.LiquidityId) && !liquidityRemovedSeeds.Contains(x.LiquidityAddedSeed)))
@@ -1241,7 +1235,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }).ToList();
         pointsPoolAggDto.AllRewardsRelease =
             unWithdrawList.Any() &&
-            unWithdrawList.Select(x => x.ReleaseTime).Max() < DateTime.UtcNow.ToUtcMilliSeconds();
+            unWithdrawList.Select(x => x.ReleaseTime).Max() < DateTime.UtcNow.ToUtcMilliSeconds() && earlyStaked == "0";
         return pointsPoolAggDto;
     }
 
