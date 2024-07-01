@@ -87,6 +87,9 @@ public class FarmService : IFarmService, ISingletonDependency
                     .InvariantCulture);
             liquidityInfoDto.LiquidityIds = entity.Value.Select(x => x.LiquidityId).ToList();
             liquidityInfoDto.LpAmount = entity.Value.Sum(x => x.LpAmount);
+            var rewardsAllList = await GetAllRewardsList(input.Address, PoolTypeEnums.All, liquidityInfoDto.LiquidityIds);
+            var longestReleaseTime = rewardsAllList.Select(x => x.ReleaseTime).Max();
+            liquidityInfoDto.LongestReleaseTime = longestReleaseTime;
 
             result.Add(liquidityInfoDto);
         }
@@ -125,6 +128,7 @@ public class FarmService : IFarmService, ISingletonDependency
             if (rateDic.TryGetValue(liquidityInfoDto.Rate, out var myLiquidity))
             {
                 liquidityInfoDto.LiquidityIds = myLiquidity.LiquidityIds;
+                liquidityInfoDto.LongestReleaseTime = myLiquidity.LongestReleaseTime;
                 liquidityInfoDto.LpAmount = myLiquidity.LpAmount;
                 liquidityInfoDto.RewardSymbol = myLiquidity.RewardSymbol;
                 liquidityInfoDto.EcoEarnTokenAAmount = myLiquidity.TokenAAmount;
@@ -149,6 +153,30 @@ public class FarmService : IFarmService, ISingletonDependency
             var listIndexerResult = await _farmProvider.GetLiquidityInfoAsync(new List<string>(), address,
                 LpStatus.Added, skipCount, maxResultCount);
             list = listIndexerResult;
+            var count = list.Count;
+            res.AddRange(list);
+            if (list.IsNullOrEmpty() || count < maxResultCount)
+            {
+                break;
+            }
+
+            skipCount += count;
+        } while (!list.IsNullOrEmpty());
+
+        return res;
+    }
+    
+    private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType, List<string> liquidityIds = null)
+    {
+        var res = new List<RewardsListIndexerDto>();
+        var skipCount = 0;
+        var maxResultCount = 5000;
+        List<RewardsListIndexerDto> list;
+        do
+        {
+            var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(poolType, address,
+                skipCount, maxResultCount);
+            list = rewardsListIndexerResult.Data;
             var count = list.Count;
             res.AddRange(list);
             if (list.IsNullOrEmpty() || count < maxResultCount)
