@@ -1209,6 +1209,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var (nowRewards, nextReward) = GetNextReward(rewardsMergeDtos, now, long.Parse(lossAmount.ToString()));
         
         var frozen = nextReward.Frozen;
+        _logger.LogInformation("totalRewards: {totalRewards}, lossAmount: {lossAmount}", totalRewards, lossAmount);
         pointsPoolAggDto.TotalRewards = (BigInteger.Parse(totalRewards) - lossAmount).ToString();
         pointsPoolAggDto.TotalRewardsInUsd =
             (double.Parse(pointsPoolAggDto.TotalRewards) * usdRate).ToString(CultureInfo.InvariantCulture);
