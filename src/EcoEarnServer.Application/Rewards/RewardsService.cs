@@ -25,6 +25,7 @@ using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
@@ -993,15 +994,38 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var earlyStakedOperationList = rewardOperationRecordList
             .Where(x => x.ExecuteType == ExecuteType.EarlyStake)
             .ToList();
+        var earlySeeds = earlyStakedOperationList.Select(x => HashHelper.ComputeFrom(x.Seed).ToHex()).ToList();
+        var earlyStakedClaimInfoList = await _pointsStakingProvider.GetRealClaimInfoListAsync(earlySeeds, address, "");
+        var earlyStakedIds = earlyStakedClaimInfoList
+            .Where(x => !string.IsNullOrEmpty(x.EarlyStakeSeed))
+            .Select(x => x.StakeId)
+            .Distinct().ToList();
+        var unLockedStakeIds = await _rewardsProvider.GetUnLockedStakeIdsAsync(earlyStakedIds, address);
+        var unlockedClaimInfos = earlyStakedClaimInfoList.Where(x => unLockedStakeIds.Contains(x.StakeId)).ToList();
+        var unlockedClaimIds = unlockedClaimInfos.Select(x => x.ClaimId).ToList();
+
         var earlyStakedClaimIds = earlyStakedOperationList
             .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
+            .Where(claimId => !unlockedClaimIds.Contains(claimId))
             .ToList();
+        
         //Liquidity Added
         var liquidityAddedOperationList = rewardOperationRecordList
             .Where(x => x.ExecuteType == ExecuteType.LiquidityAdded)
             .ToList();
+        var liquidityAddedSeeds = liquidityAddedOperationList.Select(x => HashHelper.ComputeFrom(x.Seed).ToHex()).ToList();
+        var liquidityAddedClaimInfoList = await _pointsStakingProvider.GetRealClaimInfoListAsync(liquidityAddedSeeds, address, "");
+        var liquidityAddedIds = liquidityAddedClaimInfoList
+            .Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
+            .Select(x => x.LiquidityId)
+            .ToList();
+        var liquidityRemovedInfoList =
+            await _farmProvider.GetLiquidityInfoAsync(liquidityAddedIds, "", LpStatus.Removed, 0, 5000);
+        var removedIds = liquidityRemovedInfoList.Select(x => x.LiquidityId).ToList();
+        var removedClaimIds = liquidityAddedClaimInfoList.Where(x => removedIds.Contains(x.LiquidityId)).Select(x => x.ClaimId);
         var liquidityAddedClaimIds = liquidityAddedOperationList
             .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
+            .Where(claimId => !removedClaimIds.Contains(claimId))
             .ToList();
 
         // Combine all excluded claim ids
