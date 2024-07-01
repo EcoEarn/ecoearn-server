@@ -1167,9 +1167,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .ToList();
         var liquidityRemovedList =
             await _farmProvider.GetLiquidityInfoAsync(liquidityIds, "", LpStatus.Removed, 0, 5000);
-        var liquidityRemovedStakeIds = liquidityRemovedList.Select(x => x.StakeId).ToList();
+        var liquidityRemovedSeeds = liquidityRemovedList.Select(x => x.Seed).ToList();
         var shouldRemoveClaimIds = operationClaimList
-            .Where(x => !unLockedStakeIds.Contains(x.StakeId) && !liquidityRemovedStakeIds.Contains(x.StakeId))
+            .Where(x => !unLockedStakeIds.Contains(x.StakeId) && !liquidityRemovedSeeds.Contains(x.LiquidityAddedSeed))
             .Select(x => x.ClaimId)
             .ToList();
 
@@ -1227,7 +1227,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         _logger.LogInformation("operationClaimList: {operationClaimList}", JsonConvert.SerializeObject(operationClaimList));
         var earlyStaked = operationClaimList
             .Where(x => (earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId)) ||
-                        (liquidityIds.Contains(x.LiquidityId) && !liquidityRemovedStakeIds.Contains(x.StakeId)))
+                        (liquidityIds.Contains(x.LiquidityId) && !liquidityRemovedSeeds.Contains(x.LiquidityAddedSeed)))
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
             .ToString();
