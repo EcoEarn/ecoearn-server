@@ -1101,9 +1101,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
             .ToString();
-        pointsPoolAggDto.TotalRewards = totalRewards;
-        pointsPoolAggDto.TotalRewardsInUsd =
-            (double.Parse(totalRewards) * usdRate).ToString(CultureInfo.InvariantCulture);
+        
 
         var withdrawn = list.Where(x => x.WithdrawTime != 0)
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
@@ -1178,6 +1176,10 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
         var frozen = frozenSum - lossAmount;
+        
+        pointsPoolAggDto.TotalRewards = (BigInteger.Parse(totalRewards) - lossAmount).ToString();
+        pointsPoolAggDto.TotalRewardsInUsd =
+            (double.Parse(pointsPoolAggDto.TotalRewards) * usdRate).ToString(CultureInfo.InvariantCulture);
         pointsPoolAggDto.Frozen = frozen.ToString();
         pointsPoolAggDto.FrozenInUsd =
             (double.Parse(frozen.ToString()) * usdRate).ToString(CultureInfo.InvariantCulture);
