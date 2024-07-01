@@ -1238,8 +1238,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
             ClaimId = x.ClaimId,
             ReleaseTime = x.ReleaseTime
         }).ToList();
-        pointsPoolAggDto.AllRewardsRelease =
-            unWithdrawList.Select(x => x.ReleaseTime).Max() < DateTime.UtcNow.ToUtcMilliSeconds();
+        pointsPoolAggDto.AllRewardsRelease = 
+            unWithdrawList.Any() && unWithdrawList.Select(x => x.ReleaseTime).Max() < DateTime.UtcNow.ToUtcMilliSeconds();
         return pointsPoolAggDto;
     }
 
