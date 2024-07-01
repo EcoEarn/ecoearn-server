@@ -1207,12 +1207,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }).ToList();
         var rewardsMergeDtos = MergeRewards(rewardsDtos, _earnContractOptions.MergeMilliseconds);
         var (nowRewards, nextReward) = GetNextReward(rewardsMergeDtos, now, long.Parse(lossAmount.ToString()));
-
-        var frozenList = realList.Where(x => !nowRewards.ClaimIds.Contains(x.ClaimId)).ToList();
-        var frozenSum = frozenList
-            .Select(x => BigInteger.Parse(x.ClaimedAmount))
-            .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
-        var frozen = frozenSum == BigInteger.Zero ? frozenSum : frozenSum - lossAmount;
+        
+        var frozen = nextReward.Frozen;
         pointsPoolAggDto.TotalRewards = (BigInteger.Parse(totalRewards) - lossAmount).ToString();
         pointsPoolAggDto.TotalRewardsInUsd =
             (double.Parse(pointsPoolAggDto.TotalRewards) * usdRate).ToString(CultureInfo.InvariantCulture);
@@ -1352,6 +1348,13 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 }
             }
 
+            if (long.Parse(next.ClaimedAmount) < 0)
+            {
+                next.ClaimedAmount = "0";
+            }
+
+            var surplus = futureRewards.Sum(x => long.Parse(x.ClaimedAmount));
+            next.Frozen = (long.Parse(next.ClaimedAmount) + surplus).ToString();
             next.ClaimIds = nClaimIds;
         }
 

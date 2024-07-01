@@ -58,4 +58,5 @@ public class RewardsMergeDto
     public string ClaimedAmount { get; set; } = "0";
     public long ReleaseTime { get; set; }
     public List<string> ClaimIds { get; set; } = new();
+    public string Frozen { get; set; } = "0";
 }
