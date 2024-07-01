@@ -88,7 +88,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
     public async Task<PagedResultDto<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input)
     {
         var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(input.PoolType, input.Address,
-            input.SkipCount, input.MaxResultCount, filterUnlocked: input.FilterUnlocked);
+            input.SkipCount * 5, input.MaxResultCount * 5, filterUnlocked: input.FilterUnlocked);
         var result =
             _objectMapper.Map<List<RewardsListIndexerDto>, List<RewardsListDto>>(rewardsListIndexerResult.Data);
 
