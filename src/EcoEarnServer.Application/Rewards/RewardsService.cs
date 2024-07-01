@@ -1331,7 +1331,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         do
         {
             var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(poolType, address,
-                skipCount, maxResultCount);
+                skipCount, maxResultCount, liquidityIds: liquidityIds);
             list = rewardsListIndexerResult.Data;
             var count = list.Count;
             res.AddRange(list);
