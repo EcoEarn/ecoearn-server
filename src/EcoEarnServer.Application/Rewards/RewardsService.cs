@@ -1319,6 +1319,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var nClaimIds = new List<string>();
         var next = new RewardsMergeDto();
         var now = new RewardsMergeDto();
+        long surplus = 0;
         if (pastRewards.Any())
         {
             withdrawableAmount = pastRewards.Sum(r => long.Parse(r.ClaimedAmount));
@@ -1361,8 +1362,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
             }
             
             next.ClaimIds = nClaimIds;
+            surplus = futureRewards.Sum(x => long.Parse(x.ClaimedAmount));
         }
-        var surplus = futureRewards.Sum(x => long.Parse(x.ClaimedAmount));
         next.Frozen = (long.Parse(next.ClaimedAmount) + surplus).ToString();
         
         now.ClaimedAmount = withdrawableAmount.ToString();
