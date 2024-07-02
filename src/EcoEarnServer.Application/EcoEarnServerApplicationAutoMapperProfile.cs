@@ -60,7 +60,10 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
         CreateMap<PointsStakeRewardsSumDto, PointsStakeRewardsSumEto>().ReverseMap();
         CreateMap<PointsPoolClaimRecordDto, PointsPoolClaimRecordEto>().ReverseMap();
         CreateMap<RewardOperationRecordDto, RewardOperationRecordEto>().ReverseMap();
-        CreateMap<SubStakeInfoIndexerDto, SubStakeInfoDto>().ReverseMap();
+        CreateMap<SubStakeInfoIndexerDto, SubStakeInfoDto>()
+            .ForPath(t => t.StakedAmount, m => m.MapFrom(f => f.StakedAmount + f.EarlyStakedAmount))
+
+            .ReverseMap();
         CreateMap<LiquidityInfoIndexerDto, LiquidityInfoDto>()
             .ForMember(t => t.Banlance, m => m.MapFrom(f => f.LpAmount.ToString()))
             .ForMember(t => t.TokenAAmount, m => m.MapFrom(f => f.TokenAAmount.ToString()))
