@@ -1187,6 +1187,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var now = DateTime.UtcNow.ToUtcMilliSeconds();
         var lossAmount = BigInteger.Zero;
+        _logger.LogInformation("liquidityRemovedList: {liquidityRemovedList}", JsonConvert.SerializeObject(liquidityRemovedList));
         foreach (var liquidityInfoIndexerDto in liquidityRemovedList)
         {
             if (pointsPoolAggDto.RewardsTokenName == liquidityInfoIndexerDto.TokenASymbol)
