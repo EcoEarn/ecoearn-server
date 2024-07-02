@@ -87,8 +87,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
     public async Task<PagedResultDto<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input)
     {
+        var releaseCount = _earnContractOptions.ReleaseCount;
         var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(input.PoolType, input.Address,
-            input.SkipCount * 5, input.MaxResultCount * 5, filterUnlocked: input.FilterUnlocked);
+            input.SkipCount * releaseCount, input.MaxResultCount * releaseCount, filterUnlocked: input.FilterUnlocked);
+        
+        var rewardsCount = await _rewardsProvider.GetRewardsCountAsync(input.PoolType, input.Address,
+            input.SkipCount * releaseCount, input.MaxResultCount * releaseCount, filterUnlocked: input.FilterUnlocked);
         var result =
             _objectMapper.Map<List<RewardsListIndexerDto>, List<RewardsListDto>>(rewardsListIndexerResult.Data);
 
@@ -124,11 +128,10 @@ public class RewardsService : IRewardsService, ISingletonDependency
             rewardsListDto.Rewards = rewardsSum.ToString(CultureInfo.InvariantCulture);
             return rewardsListDto;
         });
-
         return new PagedResultDto<RewardsListDto>
         {
             Items = claimedTimeDic.Values.ToList(),
-            TotalCount = rewardsListIndexerResult.TotalCount
+            TotalCount = rewardsCount / releaseCount,
         };
     }
 

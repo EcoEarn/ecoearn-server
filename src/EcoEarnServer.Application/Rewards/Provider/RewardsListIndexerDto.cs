@@ -34,6 +34,11 @@ public class RewardsListQuery
     public RewardsListIndexerResult GetClaimInfoList { get; set; }
 }
 
+public class RewardsCountQuery
+{
+    public long GetClaimInfoCount { get; set; }
+}
+
 public class RealRewardsListQuery
 {
     public RewardsListIndexerResult GetRealClaimInfoList { get; set; }

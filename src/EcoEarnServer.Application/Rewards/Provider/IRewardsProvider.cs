@@ -20,6 +20,9 @@ public interface IRewardsProvider
     Task<List<string>> GetUnLockedStakeIdsAsync(List<string> stakeIds, string address);
     Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address, List<ExecuteStatus> executeStatus);
     Task<List<RewardOperationRecordIndex>> GetExecutingListAsync(string address, ExecuteType executeType);
+    
+    Task<long> GetRewardsCountAsync(PoolTypeEnums poolType, string address, int skipCount,
+        int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false, List<string> liquidityIds = null);
 }
 
 public class RewardsProvider : IRewardsProvider, ISingletonDependency
@@ -147,5 +150,37 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         var (total, list) = await _repository.GetListAsync(Filter,
             skip: 0, limit: 5000);
         return list;
+    }
+    
+     public async Task<long> GetRewardsCountAsync(PoolTypeEnums poolType, string address,
+        int skipCount, int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false, List<string> liquidityIds = null)
+    {
+        if (string.IsNullOrEmpty(address))
+        {
+            return 0;
+        }
+
+        try
+        {
+            var indexerResult = await _graphQlHelper.QueryAsync<RewardsCountQuery>(new GraphQLRequest
+            {
+                Query =
+                    @"query($poolType:PoolType!, $liquidityIds:[String!]!, $filterUnlock:Boolean!,$filterWithdraw:Boolean!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
+                    getClaimInfoCount(input: {poolType:$poolType,liquidityIds:$liquidityIds,filterUnlock:$filterUnlock,filterWithdraw:$filterWithdraw,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount})
+            }",
+                Variables = new
+                {
+                    poolType = poolType, filterUnlock = filterUnlocked, filterWithdraw = filterWithdraw,
+                    address = address, skipCount = skipCount, maxResultCount = maxResultCount, liquidityIds = liquidityIds ?? new List<string>()
+                }
+            });
+
+            return indexerResult.GetClaimInfoCount;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "getClaimInfoList Indexer error");
+            return 0;
+        }
     }
 }
