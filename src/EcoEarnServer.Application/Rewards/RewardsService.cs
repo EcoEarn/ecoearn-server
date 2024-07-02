@@ -1162,6 +1162,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Where(x => rewardOperationRecordClaimIds.Contains(x.ClaimId))
             .ToList();
 
+        _logger.LogInformation("operationClaimList: {operationClaimList}", JsonConvert.SerializeObject(operationClaimList));
+
         var earlyStakedIds = operationClaimList
             .Where(x => !string.IsNullOrEmpty(x.EarlyStakeSeed))
             .Select(x => x.StakeId)
