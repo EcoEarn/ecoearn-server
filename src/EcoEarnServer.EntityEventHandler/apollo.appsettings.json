@@ -1,0 +1,11 @@
+{
+  "ClientId": "EcoEarnServer_Entity_Handler_001",
+  "apollo": {
+    "UseApollo" : false,
+    "AppId": "EcoEarn-Testnet",
+    "MetaServer": "http://127.0.0.1:8080",
+    "Namespaces": [
+      "entity_appsettings.json"
+    ]
+  }
+}

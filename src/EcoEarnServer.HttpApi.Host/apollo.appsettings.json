@@ -1,0 +1,11 @@
+{
+  "ClientId": "EcoEarnServer_HttpApi_Host_001",
+  "apollo": {
+    "UseApollo" : false,
+    "AppId": "EcoEarn-Testnet",
+    "MetaServer": "http://172.31.38.194:8080,http://172.31.34.253:8080,http://172.31.47.21:8080",
+    "Namespaces": [
+      "host_appsettings.json"
+    ]
+  }
+}
