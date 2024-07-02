@@ -1354,12 +1354,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
             {
                 next.ClaimedAmount = "0";
             }
-
-            var surplus = futureRewards.Sum(x => long.Parse(x.ClaimedAmount));
-            next.Frozen = (long.Parse(next.ClaimedAmount) + surplus).ToString();
+            
             next.ClaimIds = nClaimIds;
         }
-
+        var surplus = futureRewards.Sum(x => long.Parse(x.ClaimedAmount));
+        next.Frozen = (long.Parse(next.ClaimedAmount) + surplus).ToString();
+        
         now.ClaimedAmount = withdrawableAmount.ToString();
         now.ClaimIds = wClaimIds;
         return (now, next);
