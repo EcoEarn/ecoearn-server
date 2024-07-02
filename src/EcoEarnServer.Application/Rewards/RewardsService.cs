@@ -1154,9 +1154,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var rewardOperationRecordList =
             await _rewardsProvider.GetRewardOperationRecordListAsync(address,
                 new List<ExecuteStatus> { ExecuteStatus.Ended });
+        _logger.LogInformation("rewardOperationRecordList: {rewardOperationRecordList}", JsonConvert.SerializeObject(rewardOperationRecordList));
+
         var rewardOperationRecordClaimIds = rewardOperationRecordList
             .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId).ToList())
             .ToList();
+        _logger.LogInformation("rewardOperationRecordClaimIds: {rewardOperationRecordList}", JsonConvert.SerializeObject(rewardOperationRecordClaimIds));
 
         var operationClaimList = unWithdrawList
             .Where(x => rewardOperationRecordClaimIds.Contains(x.ClaimId))
