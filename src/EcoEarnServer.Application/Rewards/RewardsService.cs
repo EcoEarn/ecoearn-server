@@ -253,7 +253,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
         if (!transactionResult)
         {
-            throw new UserFriendlyException("transaction fail.");
+            throw new UserFriendlyException("transaction fail. transactionId: " + transactionOutput.TransactionId);
         }
 
         await UpdateOperationStatusAsync(withdrawInput.Account.ToBase58(), withdrawInput.ClaimIds);
@@ -323,7 +323,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
         if (!transactionResult)
         {
-            throw new UserFriendlyException("transaction fail.");
+            throw new UserFriendlyException("transaction fail. transactionId: " + transactionOutput.TransactionId);
         }
 
         await UpdateOperationStatusAsync(earlyStakeInput.StakeInput.Account.ToBase58(),
@@ -396,7 +396,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
         if (!transactionResult)
         {
-            throw new UserFriendlyException("transaction fail.");
+            throw new UserFriendlyException("transaction fail. transactionId: " + transactionOutput.TransactionId);
         }
 
         await UpdateOperationStatusAsync(addLiquidityAndStakeInput.StakeInput.Account.ToBase58(),
@@ -503,7 +503,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
         if (!transactionResult)
         {
-            throw new UserFriendlyException("transaction fail.");
+            throw new UserFriendlyException("transaction fail. transactionId: " + transactionOutput.TransactionId);
         }
 
         await UpdateOperationStatusAsync(ExecuteType.LiquidityStake.ToString(),
@@ -576,7 +576,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
         if (!transactionResult)
         {
-            throw new UserFriendlyException("transaction fail.");
+            throw new UserFriendlyException("transaction fail. transactionId: " + transactionOutput.TransactionId);
         }
 
         await UpdateOperationStatusAsync(ExecuteType.LiquidityRemove.ToString(),
