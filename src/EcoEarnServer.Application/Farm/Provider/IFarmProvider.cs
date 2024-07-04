@@ -152,6 +152,7 @@ public class FarmProvider : IFarmProvider, ISingletonDependency
     					tokenBSymbol,
     					addedTime,
     					dappId,
+    					address,
     					swapAddress,
     					tokenAddress,
     					tokenALossAmount,
