@@ -10,7 +10,7 @@ public class LiquidityInfoListIndexerQuery
 
 public class LiquidityInfoListIndexerResult
 {
-    public List<LiquidityInfoIndexerDto> Data { get; set; }
+    public List<LiquidityInfoIndexerDto> Data { get; set; } = new();
     public long TotalCount { get; set; }
 }
 
@@ -33,4 +33,5 @@ public class LiquidityInfoIndexerDto
     public string TokenALossAmount { get; set; }
     public string TokenBLossAmount { get; set; }
     public LpStatus LpStatus { get; set; }
+    public string Address { get; set; }
 }

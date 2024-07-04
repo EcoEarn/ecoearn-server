@@ -48,3 +48,18 @@ public class MarketLiquidityInfoDto
     public long LpAmount { get; set; }
     public long LongestReleaseTime { get; set; }
 }
+
+public class LiquidityInfoListDto
+{
+    public long LpAmount { get; set; }
+    public string LpUsdAmount { get; set; }
+    public string LpSymbol { get; set; }
+    public string Address { get; set; }
+    public long TokenAAmount { get; set; }
+    public string TokenASymbol { get; set; }
+    public long TokenBAmount { get; set; }
+    public string TokenBSymbol { get; set; }
+    public long AddedTime { get; set; }
+    public string SwapAddress { get; set; }
+    public string TokenAddress { get; set; }
+}

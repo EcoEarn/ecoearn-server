@@ -12,6 +12,7 @@ using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver.Linq;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
@@ -75,8 +76,10 @@ public class FarmService : IFarmService, ISingletonDependency
                 out var poolRate)
                 ? poolRate
                 : 0;
-            var lpPrice = await _priceProvider.GetLpPriceAsync("", liquidityInfoDto.Rate, liquidityInfoDto.TokenASymbol,
-                liquidityInfoDto.TokenBSymbol);
+            var (symbol0, symbol1) = LpSymbolHelper.GetLpSymbols(liquidityInfoDto.LpSymbol);
+
+            var lpPrice = await _priceProvider.GetLpPriceAsync("", liquidityInfoDto.Rate, symbol0,
+                symbol1);
             liquidityInfoDto.Value =
                 (double.Parse(liquidityInfoDto.Banlance) * lpPrice).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.TokenAAmount =
@@ -87,7 +90,8 @@ public class FarmService : IFarmService, ISingletonDependency
                     .InvariantCulture);
             liquidityInfoDto.LiquidityIds = entity.Value.Select(x => x.LiquidityId).ToList();
             liquidityInfoDto.LpAmount = entity.Value.Sum(x => x.LpAmount);
-            var rewardsAllList = await GetAllRewardsList(input.Address, PoolTypeEnums.All, liquidityInfoDto.LiquidityIds);
+            var rewardsAllList =
+                await GetAllRewardsList(input.Address, PoolTypeEnums.All, liquidityInfoDto.LiquidityIds);
             var longestReleaseTime = rewardsAllList.Select(x => x.ReleaseTime).Max();
             liquidityInfoDto.LongestReleaseTime = longestReleaseTime;
 
@@ -119,7 +123,7 @@ public class FarmService : IFarmService, ISingletonDependency
                 }
             }
         }
-        
+
         var result = new List<MarketLiquidityInfoDto>();
         foreach (var lpPriceItemDto in awakenLiquidityInfoList)
         {
@@ -140,6 +144,35 @@ public class FarmService : IFarmService, ISingletonDependency
         }
 
         return result;
+    }
+
+    public async Task<PagedResultDto<LiquidityInfoListDto>> GetLiquidityListAsync(GetLiquidityListInput input)
+    {
+        var listIndexerResult = await _farmProvider.GetLiquidityListAsync(new List<string>(), input.Address,
+            LpStatus.Added, input.SkipCount, input.MaxResultCount);
+        
+        var result = new List<LiquidityInfoListDto>();
+        foreach (var liquidityInfoListDto in listIndexerResult.Data.Select(liquidityInfoIndexerDto =>
+                     _objectMapper.Map<LiquidityInfoIndexerDto, LiquidityInfoListDto>(liquidityInfoIndexerDto)))
+        {
+            var rate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(
+                liquidityInfoListDto.TokenAddress,
+                out var poolRate)
+                ? poolRate
+                : 0;
+            var (symbol0, symbol1) = LpSymbolHelper.GetLpSymbols(liquidityInfoListDto.LpSymbol);
+            var lpPrice = await _priceProvider.GetLpPriceAsync("", rate, symbol0,
+                symbol1);
+            liquidityInfoListDto.LpUsdAmount =
+                (double.Parse(liquidityInfoListDto.LpAmount.ToString()) * lpPrice).ToString(CultureInfo.InvariantCulture);
+            result.Add(liquidityInfoListDto);
+        }
+
+        return new PagedResultDto<LiquidityInfoListDto>()
+        {
+            TotalCount = listIndexerResult.TotalCount,
+            Items = result
+        };
     }
 
     private async Task<List<LiquidityInfoIndexerDto>> GetAllLiquidityList(string address)
@@ -165,8 +198,9 @@ public class FarmService : IFarmService, ISingletonDependency
 
         return res;
     }
-    
-    private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType, List<string> liquidityIds = null)
+
+    private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType,
+        List<string> liquidityIds = null)
     {
         var res = new List<RewardsListIndexerDto>();
         var skipCount = 0;
