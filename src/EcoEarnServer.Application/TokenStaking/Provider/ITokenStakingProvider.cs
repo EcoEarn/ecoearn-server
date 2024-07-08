@@ -19,6 +19,9 @@ public interface ITokenStakingProvider
     Task<Dictionary<string, TokenStakedIndexerDto>> GetAddressStakedInPoolDicAsync(List<string> pools, string address);
     Task<List<TokenPoolsIndexerDto>> GetTokenPoolByTokenAsync(string tokenName);
     Task<List<TokenPoolStakedInfoDto>> GetTokenPoolStakedInfoListAsync(List<string> poolIds);
+
+    Task<List<TokenStakedIndexerDto>> GetStakedInfoListAsync(string tokenName, string address,
+        List<string> pools, int skipCount = 0, int maxResultCount = 5000);
 }
 
 public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
@@ -87,55 +90,8 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
 
     public async Task<TokenStakedIndexerDto> GetStakedInfoAsync(string tokenName, string address)
     {
-        try
-        {
-            var indexerResult = await _graphQlHelper.QueryAsync<TokenStakedListQuery>(new GraphQLRequest
-            {
-                Query =
-                    @"query($tokenName:String!, $address:String!, $poolIds:[String!]!, $lockState:LockState!, $skipCount:Int!,$maxResultCount:Int!){
-                    getStakedInfoList(input: {tokenName:$tokenName,address:$address,poolIds:$poolIds,lockState:$lockState,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        totalCount,
-                        data{
-                        stakeId,
-                        poolId,
-                        account,
-                        stakingToken,
-                        unlockTime,
-                        lastOperationTime,
-                        stakingPeriod,
-                        createTime,
-    					updateTime,
-    					poolType,
-    					lockState,
-                        subStakeInfos{
-                            subStakeId,
-                            stakedAmount,
-                            stakedBlockNumber,
-                            stakedTime,
-                            period,
-                            boostedAmount,
-                            rewardDebt,
-                            rewardAmount,
-                            earlyStakedAmount,
-                        }
-                    }
-                }
-            }",
-                Variables = new
-                {
-                    tokenName = tokenName, address = address, poolIds = new List<string>(),
-                    lockState = LockState.Locking, skipCount = 0, maxResultCount = 5000,
-                }
-            });
-
-            var list = indexerResult.GetStakedInfoList;
-            return list.Data.Count > 0 ? list.Data[0] : new TokenStakedIndexerDto();
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "GetPointsPools Indexer error");
-            return new TokenStakedIndexerDto();
-        }
+        var list = await GetStakedInfoListAsync(tokenName, address, new List<string>());
+        return list.Count > 0 ? list[0] : new TokenStakedIndexerDto();
     }
 
     public async Task<Dictionary<string, TokenStakedIndexerDto>> GetAddressStakedInPoolDicAsync(List<string> poolIds,
@@ -146,54 +102,9 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             return new Dictionary<string, TokenStakedIndexerDto>();
         }
 
-        try
-        {
-            var indexerResult = await _graphQlHelper.QueryAsync<TokenStakedListQuery>(new GraphQLRequest
-            {
-                Query =
-                    @"query($tokenName:String!, $address:String!, $poolIds:[String!]!, $lockState:LockState!, $skipCount:Int!,$maxResultCount:Int!){
-                    getStakedInfoList(input: {tokenName:$tokenName,address:$address,poolIds:$poolIds,lockState:$lockState,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        totalCount,
-                        data{
-                        stakeId,
-                        poolId,
-                        account,
-                        stakingToken,
-                        unlockTime,
-                        lastOperationTime,
-                        stakingPeriod,
-                        createTime,
-    					updateTime,
-    					poolType,
-    					lockState,
-                        subStakeInfos{
-                            subStakeId,
-                            stakedAmount,
-                            stakedBlockNumber,
-                            stakedTime,
-                            period,
-                            boostedAmount,
-                            rewardDebt,
-                            rewardAmount,
-                            earlyStakedAmount,
-                        }
-                    }
-                }
-            }",
-                Variables = new
-                {
-                    address = address, tokenName = "", poolIds = poolIds, lockState = LockState.Locking, skipCount = 0,
-                    maxResultCount = 5000,
-                }
-            });
-            return indexerResult.GetStakedInfoList.Data.GroupBy(x => x.PoolId)
-                .ToDictionary(g => g.Key, g => g.First());
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "getStakedInfoList Indexer error");
-            return new Dictionary<string, TokenStakedIndexerDto>();
-        }
+        var list = await GetStakedInfoListAsync("", address, poolIds);
+        return list.GroupBy(x => x.PoolId)
+            .ToDictionary(g => g.Key, g => g.First());
     }
 
     public async Task<List<TokenPoolsIndexerDto>> GetTokenPoolByTokenAsync(string tokenName)
@@ -251,11 +162,6 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
 
     public async Task<List<TokenPoolStakedInfoDto>> GetTokenPoolStakedInfoListAsync(List<string> poolIds)
     {
-        if (poolIds.IsNullOrEmpty())
-        {
-            return new List<TokenPoolStakedInfoDto>();
-        }
-
         try
         {
             var indexerResult = await _graphQlHelper.QueryAsync<TokenPoolStakedInfoDtoListQuery>(new GraphQLRequest
@@ -284,6 +190,62 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
         {
             _logger.LogError(e, "GetTokenPoolStakedInfoListAsync Indexer error");
             return new List<TokenPoolStakedInfoDto>();
+        }
+    }
+
+    public async Task<List<TokenStakedIndexerDto>> GetStakedInfoListAsync(string tokenName, string address,
+        List<string> pools, int skipCount = 0, int maxResultCount = 5000)
+    {
+        try
+        {
+            var indexerResult = await _graphQlHelper.QueryAsync<TokenStakedListQuery>(new GraphQLRequest
+            {
+                Query =
+                    @"query($tokenName:String!, $address:String!, $poolIds:[String!]!, $lockState:LockState!, $skipCount:Int!,$maxResultCount:Int!){
+                    getStakedInfoList(input: {tokenName:$tokenName,address:$address,poolIds:$poolIds,lockState:$lockState,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        totalCount,
+                        data{
+                        stakeId,
+                        poolId,
+                        account,
+                        stakingToken,
+                        unlockTime,
+                        lastOperationTime,
+                        stakingPeriod,
+                        createTime,
+    					updateTime,
+    					poolType,
+    					lockState,
+                        subStakeInfos{
+                            subStakeId,
+                            stakedAmount,
+                            stakedBlockNumber,
+                            stakedTime,
+                            period,
+                            boostedAmount,
+                            rewardDebt,
+                            rewardAmount,
+                            earlyStakedAmount,
+                        }
+                    }
+                }
+            }",
+                Variables = new
+                {
+                    tokenName = string.IsNullOrEmpty(tokenName) ? "" : tokenName,
+                    address = string.IsNullOrEmpty(address) ? "" : address,
+                    poolIds = pools ?? new List<string>(),
+                    lockState = LockState.Locking,
+                    skipCount = skipCount, maxResultCount = maxResultCount,
+                }
+            });
+
+            return indexerResult.GetStakedInfoList.Data;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "getStakedInfoList Indexer error");
+            return new List<TokenStakedIndexerDto>();
         }
     }
 }

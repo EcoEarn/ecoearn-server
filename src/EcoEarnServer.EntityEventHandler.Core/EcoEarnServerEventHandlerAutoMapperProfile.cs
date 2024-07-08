@@ -1,5 +1,6 @@
 using AutoMapper;
 using EcoEarnServer.Entities;
+using EcoEarnServer.Metrics;
 using EcoEarnServer.PointsPool;
 using EcoEarnServer.PointsSnapshot;
 using EcoEarnServer.PointsStakeRewards;
@@ -21,5 +22,6 @@ public class EcoEarnServerEventHandlerAutoMapperProfile : Profile
         CreateMap<PointsPoolClaimRecordEto, PointsPoolClaimRecordIndex>();
         CreateMap<RewardOperationRecordEto, RewardOperationRecordIndex>();
         CreateMap<ClaimInfoDto, ClaimInfo>();
+        CreateMap<BizMetricsEto, BizMetricsIndex>();
     }
 }
