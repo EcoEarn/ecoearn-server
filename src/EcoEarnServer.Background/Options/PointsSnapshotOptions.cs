@@ -7,7 +7,7 @@ public class PointsSnapshotOptions
     public string CreateSnapshotCorn { get; set; } = "0 0 0 * * ?";
     public int CheckSnapshotPeriod { get; set; } = 1;
     public int SettlePointsRewardsPeriod { get; set; } = 20;
-    public int UpdatePoolStakeSumPeriod { get; set; } = 20;
+    public int GenerateMetricsPeriod { get; set; } = 20;
 
     public int BatchSnapshotCount { get; set; } = 100;
     public int TaskDelayMilliseconds { get; set; } = 1000;

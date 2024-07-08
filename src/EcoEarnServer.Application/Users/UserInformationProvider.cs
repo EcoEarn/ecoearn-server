@@ -22,6 +22,7 @@ public interface IUserInformationProvider
     Task<UserGrainDto> SaveUserSourceAsync(UserGrainDto userSourceInput);
 
     Task<UserIndex> GetByUserAddressAsync(string inputAddress);
+    Task<long> GetUserCount();
 }
 
 public class UserInformationProvider : IUserInformationProvider, ISingletonDependency
@@ -93,5 +94,13 @@ public class UserInformationProvider : IUserInformationProvider, ISingletonDepen
         QueryContainer Filter(QueryContainerDescriptor<UserIndex> f) => f.Bool(b => b.Should(shouldQuery));
 
         return await _userIndexRepository.GetAsync(Filter);
+    }
+
+    public async Task<long> GetUserCount()
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<UserIndex>, QueryContainer>>();
+        QueryContainer Filter(QueryContainerDescriptor<UserIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var countResponse = await _userIndexRepository.CountAsync(Filter);
+        return countResponse.Count;
     }
 }
