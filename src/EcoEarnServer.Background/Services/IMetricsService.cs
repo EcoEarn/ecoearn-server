@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using EcoEarnServer.Background.Options;
 using EcoEarnServer.Background.Provider;
 using EcoEarnServer.Background.Services.Dtos;
 using EcoEarnServer.Common;
@@ -28,7 +29,7 @@ public interface IMetricsService
 public class MetricsService : IMetricsService, ISingletonDependency
 {
     private const string LockKeyPrefix = "EcoEarnServer:MetricsGenerate:Lock:";
-    
+
     private readonly ITokenStakingProvider _tokenStakingProvider;
     private readonly IPriceProvider _priceProvider;
     private readonly LpPoolRateOptions _lpPoolRateOptions;
@@ -37,11 +38,14 @@ public class MetricsService : IMetricsService, ISingletonDependency
     private readonly ILogger<MetricsService> _logger;
     private readonly IAbpDistributedLock _distributedLock;
     private readonly IStateProvider _stateProvider;
+    private readonly IMetricsProvider _metricsProvider;
+    private readonly MetricsGenerateOptions _metricsGenerateOptions;
 
     public MetricsService(ITokenStakingProvider tokenStakingProvider, IPriceProvider priceProvider,
         IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions, IDistributedEventBus distributedEventBus,
         IUserInformationProvider userInformationProvider, ILogger<MetricsService> logger,
-        IAbpDistributedLock distributedLock, IStateProvider stateProvider)
+        IAbpDistributedLock distributedLock, IStateProvider stateProvider, IMetricsProvider metricsProvider,
+        IOptionsSnapshot<MetricsGenerateOptions> metricsGenerateOptions)
     {
         _tokenStakingProvider = tokenStakingProvider;
         _priceProvider = priceProvider;
@@ -50,6 +54,8 @@ public class MetricsService : IMetricsService, ISingletonDependency
         _logger = logger;
         _distributedLock = distributedLock;
         _stateProvider = stateProvider;
+        _metricsProvider = metricsProvider;
+        _metricsGenerateOptions = metricsGenerateOptions.Value;
         _lpPoolRateOptions = lpPoolRateOptions.Value;
     }
 
@@ -68,18 +74,20 @@ public class MetricsService : IMetricsService, ISingletonDependency
         //     _logger.LogInformation("today has already generate metrics.");
         //     return;
         // }
-        
+
         var rateDic = new Dictionary<string, double>();
         var evenDataList = new List<BizMetricsEto>();
         var nowDateTime = DateTime.UtcNow;
         var now = nowDateTime.ToUtcMilliSeconds();
         var nowDate = nowDateTime.ToString("yyyy-MM-dd");
         var allTokenStakedList = await _tokenStakingProvider.GetTokenPoolStakedInfoListAsync(new List<string>());
+        var rewardsToken = "";
 
         var allPools = await _tokenStakingProvider.GetTokenPoolsAsync(new GetTokenPoolsInput
         {
             PoolType = PoolTypeEnums.All
         });
+        rewardsToken = allPools.First().TokenPoolConfig.RewardToken;
         var poolIdDic = allPools.GroupBy(x => x.PoolId).ToDictionary(g => g.Key, g => g.First());
         var stakePriceDtoList = new List<StakePriceDto>();
         foreach (var tokenPoolStakedInfoDto in allTokenStakedList)
@@ -121,11 +129,12 @@ public class MetricsService : IMetricsService, ISingletonDependency
             stakePriceDtoList.Add(dto);
         }
 
-        var usdAmount = (stakePriceDtoList.Sum(x => double.Parse(x.UsdAmount)) / 100000000).ToString(CultureInfo.InvariantCulture);
+        var usdAmount =
+            (stakePriceDtoList.Sum(x => double.Parse(x.UsdAmount)) / 100000000).ToString(CultureInfo.InvariantCulture);
 
         var platformStakedUsdAmount = new BizMetricsEto()
         {
-            Id = GuidHelper.GenerateId(nowDate,BizType.PlatformStakedUsdAmount.ToString()),
+            Id = GuidHelper.GenerateId(nowDate, BizType.PlatformStakedUsdAmount.ToString()),
             BizNumber = usdAmount,
             CreateTime = now,
             BizType = BizType.PlatformStakedUsdAmount
@@ -135,7 +144,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
         var userCount = await _userInformationProvider.GetUserCount();
         var registerCount = new BizMetricsEto()
         {
-            Id = GuidHelper.GenerateId(nowDate,BizType.RegisterCount.ToString()),
+            Id = GuidHelper.GenerateId(nowDate, BizType.RegisterCount.ToString()),
             BizNumber = userCount.ToString(),
             CreateTime = now,
             BizType = BizType.RegisterCount
@@ -161,7 +170,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
 
             var tokenStakedAddressCount = new BizMetricsEto()
             {
-                Id = GuidHelper.GenerateId(nowDate,BizType.TokenStakedAddressCount.ToString()),
+                Id = GuidHelper.GenerateId(nowDate, BizType.TokenStakedAddressCount.ToString()),
                 BizNumber = tokenStakeAddressCount.ToString(),
                 CreateTime = now,
                 BizType = BizType.TokenStakedAddressCount
@@ -169,7 +178,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
 
             var tokenStakedAmount = new BizMetricsEto()
             {
-                Id = GuidHelper.GenerateId(nowDate,BizType.TokenStakedAmount.ToString()),
+                Id = GuidHelper.GenerateId(nowDate, BizType.TokenStakedAmount.ToString()),
                 BizNumber = tokenStakeAmount.ToString(),
                 CreateTime = now,
                 BizType = BizType.TokenStakedAmount
@@ -177,7 +186,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
 
             var tokenStakedUsdAmount = new BizMetricsEto()
             {
-                Id = GuidHelper.GenerateId(nowDate,BizType.TokenStakedUsdAmount.ToString()),
+                Id = GuidHelper.GenerateId(nowDate, BizType.TokenStakedUsdAmount.ToString()),
                 BizNumber = tokenStakeUsdAmount,
                 CreateTime = now,
                 BizType = BizType.TokenStakedUsdAmount
@@ -209,13 +218,14 @@ public class MetricsService : IMetricsService, ISingletonDependency
                     continue;
                 }
 
-                var sum = tokenStakedIndexerDto.SubStakeInfos.Sum(x => x.StakedAmount + x.EarlyStakedAmount) / 100000000;
+                var sum = tokenStakedIndexerDto.SubStakeInfos.Sum(x => x.StakedAmount + x.EarlyStakedAmount) /
+                          100000000;
                 lpStakeUsdAmount += sum * rate;
             }
 
             var lpStakedAddressCount = new BizMetricsEto()
             {
-                Id = GuidHelper.GenerateId(nowDate,BizType.LpStakedAddressCount.ToString()),
+                Id = GuidHelper.GenerateId(nowDate, BizType.LpStakedAddressCount.ToString()),
                 BizNumber = lpStakeAddressCount.ToString(),
                 CreateTime = now,
                 BizType = BizType.LpStakedAddressCount
@@ -223,7 +233,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
 
             var lpStakedAmount = new BizMetricsEto()
             {
-                Id = GuidHelper.GenerateId(nowDate,BizType.LpStakedAmount.ToString()),
+                Id = GuidHelper.GenerateId(nowDate, BizType.LpStakedAmount.ToString()),
                 BizNumber = lpStakeAmount.ToString(),
                 CreateTime = now,
                 BizType = BizType.LpStakedAmount
@@ -231,7 +241,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
 
             var lpStakedUsdAmount = new BizMetricsEto()
             {
-                Id = GuidHelper.GenerateId(nowDate,BizType.LpStakedUsdAmount.ToString()),
+                Id = GuidHelper.GenerateId(nowDate, BizType.LpStakedUsdAmount.ToString()),
                 BizNumber = lpStakeUsdAmount.ToString(CultureInfo.InvariantCulture),
                 CreateTime = now,
                 BizType = BizType.LpStakedUsdAmount
@@ -244,12 +254,22 @@ public class MetricsService : IMetricsService, ISingletonDependency
 
         evenDataList.Add(platformStakedUsdAmount);
         evenDataList.Add(registerCount);
-
+        var addressBalance =
+            await _metricsProvider.GetBalanceAsync(_metricsGenerateOptions.Address, rewardsToken,
+                _metricsGenerateOptions.ChainId);
+        var platformEarning = new BizMetricsEto()
+        {
+            Id = GuidHelper.GenerateId(nowDate, BizType.PlatformEarning.ToString()),
+            BizNumber = (double.Parse(addressBalance) / 100000000).ToString(CultureInfo.InvariantCulture),
+            CreateTime = now,
+            BizType = BizType.LpStakedAmount
+        };
+        evenDataList.Add(platformEarning);
         await _distributedEventBus.PublishAsync(new BizMetricsListEto
         {
             EventDataList = evenDataList
         });
-        
+
         //await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateMetricsKey(), true);
     }
 
