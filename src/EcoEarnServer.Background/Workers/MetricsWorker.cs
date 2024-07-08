@@ -24,7 +24,7 @@ public class MetricsWorker : AsyncPeriodicBackgroundWorkerBase
         _logger = logger;
         _metricsService = metricsService;
         _options = options.Value;
-        timer.Period =  1000;
+        timer.Period = options.Value.GenerateMetricsPeriod * 60 * 1000;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
