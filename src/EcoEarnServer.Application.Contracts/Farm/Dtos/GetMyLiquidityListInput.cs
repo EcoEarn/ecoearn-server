@@ -9,5 +9,5 @@ public class GetMyLiquidityListInput
 
 public class GetLiquidityListInput : PagedResultRequestDto
 {
-    public string Address { get; set; }
+    public string Address { get; set; } = "";
 }

@@ -126,11 +126,6 @@ public class FarmProvider : IFarmProvider, ISingletonDependency
     public async Task<LiquidityInfoListIndexerResult> GetLiquidityListAsync(List<string> liquidityIds, string address, LpStatus lpStatus, int skipCount, int maxResultCount)
     
     {
-        if (string.IsNullOrEmpty(address))
-        {
-            return new LiquidityInfoListIndexerResult();
-        }
-
         try
         {
             var indexerResult = await _graphQlHelper.QueryAsync<LiquidityInfoListIndexerQuery>(new GraphQLRequest
