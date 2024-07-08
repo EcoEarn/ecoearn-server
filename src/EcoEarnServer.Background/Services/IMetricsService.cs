@@ -63,11 +63,11 @@ public class MetricsService : IMetricsService, ISingletonDependency
             return;
         }
 
-        if (await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateMetricsKey()))
-        {
-            _logger.LogInformation("today has already generate metrics.");
-            return;
-        }
+        // if (await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateMetricsKey()))
+        // {
+        //     _logger.LogInformation("today has already generate metrics.");
+        //     return;
+        // }
         
         var rateDic = new Dictionary<string, double>();
         var evenDataList = new List<BizMetricsEto>();
@@ -250,7 +250,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
             EventDataList = evenDataList
         });
         
-        await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateMetricsKey(), true);
+        //await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateMetricsKey(), true);
     }
 
 
