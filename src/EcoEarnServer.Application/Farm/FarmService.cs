@@ -48,14 +48,8 @@ public class FarmService : IFarmService, ISingletonDependency
             .ToList();
         var unLockedStakeIds = await _rewardsProvider.GetUnLockedStakeIdsAsync(stakeIds, input.Address);
 
-        if (unLockedStakeIds.IsNullOrEmpty())
-        {
-            return new List<LiquidityInfoDto>();
-        }
-
-
         var tokenAddressDic = liquidityInfoIndexerDtos
-            .Where(x => unLockedStakeIds.Contains(x.StakeId))
+            //.Where(x => unLockedStakeIds.Contains(x.StakeId))
             .GroupBy(x => x.TokenAddress)
             .ToDictionary(g => g.Key, g => g.ToList());
 
@@ -67,8 +61,8 @@ public class FarmService : IFarmService, ISingletonDependency
             liquidityInfoDto.TokenASymbol = entity.Value.First()?.TokenASymbol;
             liquidityInfoDto.TokenBSymbol = entity.Value.First()?.TokenBSymbol;
             liquidityInfoDto.Banlance =
-                (decimal.Parse(entity.Value.Sum(x => x.LpAmount).ToString()) / 100000000).ToString(CultureInfo
-                    .InvariantCulture);
+                (decimal.Parse(entity.Value.Where(x => unLockedStakeIds.Contains(x.StakeId)).Sum(x => x.LpAmount)
+                    .ToString()) / 100000000).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.RewardSymbol = entity.Value.First()?.RewardSymbol;
             liquidityInfoDto.Rate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(
                 entity.Key,
@@ -79,6 +73,9 @@ public class FarmService : IFarmService, ISingletonDependency
                 liquidityInfoDto.TokenBSymbol);
             liquidityInfoDto.Value =
                 (double.Parse(liquidityInfoDto.Banlance) * lpPrice).ToString(CultureInfo.InvariantCulture);
+            liquidityInfoDto.StakingAmount =
+                (double.Parse(entity.Value.Where(x => !unLockedStakeIds.Contains(x.StakeId)).Sum(x => x.LpAmount)
+                    .ToString()) / 100000000 * lpPrice).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.TokenAAmount =
                 (decimal.Parse(entity.Value.Sum(x => x.TokenAAmount).ToString()) / 100000000).ToString(CultureInfo
                     .InvariantCulture);
@@ -87,7 +84,8 @@ public class FarmService : IFarmService, ISingletonDependency
                     .InvariantCulture);
             liquidityInfoDto.LiquidityIds = entity.Value.Select(x => x.LiquidityId).ToList();
             liquidityInfoDto.LpAmount = entity.Value.Sum(x => x.LpAmount);
-            var rewardsAllList = await GetAllRewardsList(input.Address, PoolTypeEnums.All, liquidityInfoDto.LiquidityIds);
+            var rewardsAllList =
+                await GetAllRewardsList(input.Address, PoolTypeEnums.All, liquidityInfoDto.LiquidityIds);
             var longestReleaseTime = rewardsAllList.Select(x => x.ReleaseTime).Max();
             liquidityInfoDto.LongestReleaseTime = longestReleaseTime;
 
@@ -119,7 +117,7 @@ public class FarmService : IFarmService, ISingletonDependency
                 }
             }
         }
-        
+
         var result = new List<MarketLiquidityInfoDto>();
         foreach (var lpPriceItemDto in awakenLiquidityInfoList)
         {
@@ -134,6 +132,7 @@ public class FarmService : IFarmService, ISingletonDependency
                 liquidityInfoDto.EcoEarnTokenAAmount = myLiquidity.TokenAAmount;
                 liquidityInfoDto.EcoEarnTokenBAmount = myLiquidity.TokenBAmount;
                 liquidityInfoDto.EcoEarnBanlance = myLiquidity.Banlance;
+                liquidityInfoDto.EcoEarnBanlance = myLiquidity.StakingAmount;
             }
 
             result.Add(liquidityInfoDto);
@@ -165,8 +164,9 @@ public class FarmService : IFarmService, ISingletonDependency
 
         return res;
     }
-    
-    private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType, List<string> liquidityIds = null)
+
+    private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType,
+        List<string> liquidityIds = null)
     {
         var res = new List<RewardsListIndexerDto>();
         var skipCount = 0;

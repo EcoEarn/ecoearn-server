@@ -9,6 +9,7 @@ public class LiquidityInfoDto
     public List<string> Icons { get; set; } = new() { "", "" };
     public double Rate { get; set; }
     public string Banlance { get; set; }
+    public string StakingAmount { get; set; }
     public string Value { get; set; }
     public string TokenAAmount { get; set; }
     public string TokenASymbol { get; set; }
@@ -34,6 +35,7 @@ public class MarketLiquidityInfoDto
     public List<string> Icons { get; set; } = new() { "", "" };
     public double Rate { get; set; }
     public string Banlance { get; set; }
+    public string StakingAmount { get; set; }
     public string Value { get; set; }
     public string TokenAAmount { get; set; }
     public string TokenASymbol { get; set; }
