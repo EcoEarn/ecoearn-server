@@ -365,9 +365,9 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         var transactionOutput = await _contractProvider.SendTransactionAsync(input.ChainId, transaction);
         var transactionResult =
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
-        if (!transactionResult)
+        if (!transactionResult.Result)
         {
-            throw new UserFriendlyException("transaction fail.");
+            throw new UserFriendlyException(transactionResult.Error);
         }
 
         var poolId = claimInput.PoolId.ToHex();
