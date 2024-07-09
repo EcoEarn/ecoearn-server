@@ -71,11 +71,11 @@ public class FarmService : IFarmService, ISingletonDependency
                 : 0;
             var lpPrice = await _priceProvider.GetLpPriceAsync("", liquidityInfoDto.Rate, liquidityInfoDto.TokenASymbol,
                 liquidityInfoDto.TokenBSymbol);
-            liquidityInfoDto.Value =
-                (double.Parse(liquidityInfoDto.Banlance) * lpPrice).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.StakingAmount =
                 (double.Parse(entity.Value.Where(x => !unLockedStakeIds.Contains(x.StakeId)).Sum(x => x.LpAmount)
                     .ToString()) / 100000000 * lpPrice).ToString(CultureInfo.InvariantCulture);
+            liquidityInfoDto.Value =
+                ((double.Parse(liquidityInfoDto.Banlance) + double.Parse(liquidityInfoDto.StakingAmount)) * lpPrice).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.TokenAAmount =
                 (decimal.Parse(entity.Value.Sum(x => x.TokenAAmount).ToString()) / 100000000).ToString(CultureInfo
                     .InvariantCulture);
