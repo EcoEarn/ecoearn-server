@@ -251,9 +251,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var transactionResult =
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
-        if (!transactionResult)
+        if (!transactionResult.Result)
         {
-            throw new UserFriendlyException("transaction fail.");
+            throw new UserFriendlyException(transactionResult.Error);
         }
 
         await UpdateOperationStatusAsync(withdrawInput.Account.ToBase58(), withdrawInput.ClaimIds);
@@ -321,9 +321,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var transactionResult =
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
-        if (!transactionResult)
+        if (!transactionResult.Result)
         {
-            throw new UserFriendlyException("transaction fail.");
+            throw new UserFriendlyException(transactionResult.Error);
         }
 
         await UpdateOperationStatusAsync(earlyStakeInput.StakeInput.Account.ToBase58(),
@@ -394,9 +394,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var transactionResult =
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
-        if (!transactionResult)
+        if (!transactionResult.Result)
         {
-            throw new UserFriendlyException("transaction fail.");
+            throw new UserFriendlyException(transactionResult.Error);
         }
 
         await UpdateOperationStatusAsync(addLiquidityAndStakeInput.StakeInput.Account.ToBase58(),
@@ -501,9 +501,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var transactionResult =
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
-        if (!transactionResult)
+        if (!transactionResult.Result)
         {
-            throw new UserFriendlyException("transaction fail.");
+            throw new UserFriendlyException(transactionResult.Error);
         }
 
         await UpdateOperationStatusAsync(ExecuteType.LiquidityStake.ToString(),
@@ -574,9 +574,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var transactionResult =
             await _contractProvider.CheckTransactionStatusAsync(transactionOutput.TransactionId, input.ChainId);
-        if (!transactionResult)
+        if (!transactionResult.Result)
         {
-            throw new UserFriendlyException("transaction fail.");
+            throw new UserFriendlyException(transactionResult.Error);
         }
 
         await UpdateOperationStatusAsync(ExecuteType.LiquidityRemove.ToString(),
