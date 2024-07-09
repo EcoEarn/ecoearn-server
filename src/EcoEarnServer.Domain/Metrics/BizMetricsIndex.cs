@@ -6,7 +6,7 @@ namespace EcoEarnServer.Metrics;
 
 public class BizMetricsIndex : AbstractEntity<string>, IIndexBuild
 {
-    [Keyword] public string BizNumber { get; set; }
+    public double BizNumber { get; set; }
     public long CreateTime { get; set; }
     public BizType BizType { get; set; }
 }

@@ -13,7 +13,7 @@ public class BizMetricsListEto
 public class BizMetricsEto
 {
     public string Id { get; set; }
-    public string BizNumber { get; set; }
+    public double BizNumber { get; set; }
     public long CreateTime { get; set; }
     public BizType BizType { get; set; }
 }

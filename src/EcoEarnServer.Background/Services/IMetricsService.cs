@@ -121,16 +121,13 @@ public class MetricsService : IMetricsService, ISingletonDependency
             {
                 PoolId = tokenPoolStakedInfoDto.PoolId,
                 Amount = tokenPoolStakedInfoDto.TotalStakedAmount,
-                UsdAmount =
-                    (double.Parse(tokenPoolStakedInfoDto.TotalStakedAmount) * rate).ToString(CultureInfo
-                        .InvariantCulture),
+                UsdAmount = long.Parse(tokenPoolStakedInfoDto.TotalStakedAmount) * rate,
                 Rate = rate.ToString(CultureInfo.InvariantCulture)
             };
             stakePriceDtoList.Add(dto);
         }
 
-        var usdAmount =
-            (stakePriceDtoList.Sum(x => double.Parse(x.UsdAmount)) / 100000000).ToString(CultureInfo.InvariantCulture);
+        var usdAmount = stakePriceDtoList.Sum(x => x.UsdAmount) / 100000000;
 
         var platformStakedUsdAmount = new BizMetricsEto()
         {
@@ -145,7 +142,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
         var registerCount = new BizMetricsEto()
         {
             Id = GuidHelper.GenerateId(nowDate, BizType.RegisterCount.ToString()),
-            BizNumber = userCount.ToString(),
+            BizNumber = userCount,
             CreateTime = now,
             BizType = BizType.RegisterCount
         };
@@ -159,19 +156,18 @@ public class MetricsService : IMetricsService, ISingletonDependency
             var tokenStakeAddressCount = tokenStakedInfo.Select(x => x.Account).Distinct().Count();
             var tokenStakeAmount = tokenStakedInfo.SelectMany(x => x.SubStakeInfos)
                 .Sum(x => x.StakedAmount + x.EarlyStakedAmount) / 100000000;
-            var tokenStakeUsdAmount = "0";
+            var tokenStakeUsdAmount = 0d;
             var key = GuidHelper.GenerateId(PoolTypeEnums.Token.ToString(),
                 $"{tokenStakedInfo.First().StakingToken.ToUpper()}_USDT");
             if (rateDic.TryGetValue(key, out var rate))
             {
-                tokenStakeUsdAmount =
-                    (double.Parse(tokenStakeAmount.ToString()) * rate).ToString(CultureInfo.InvariantCulture);
+                tokenStakeUsdAmount = double.Parse(tokenStakeAmount.ToString()) * rate;
             }
 
             var tokenStakedAddressCount = new BizMetricsEto()
             {
                 Id = GuidHelper.GenerateId(nowDate, BizType.TokenStakedAddressCount.ToString()),
-                BizNumber = tokenStakeAddressCount.ToString(),
+                BizNumber = tokenStakeAddressCount,
                 CreateTime = now,
                 BizType = BizType.TokenStakedAddressCount
             };
@@ -179,7 +175,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
             var tokenStakedAmount = new BizMetricsEto()
             {
                 Id = GuidHelper.GenerateId(nowDate, BizType.TokenStakedAmount.ToString()),
-                BizNumber = tokenStakeAmount.ToString(),
+                BizNumber = tokenStakeAmount,
                 CreateTime = now,
                 BizType = BizType.TokenStakedAmount
             };
@@ -226,7 +222,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
             var lpStakedAddressCount = new BizMetricsEto()
             {
                 Id = GuidHelper.GenerateId(nowDate, BizType.LpStakedAddressCount.ToString()),
-                BizNumber = lpStakeAddressCount.ToString(),
+                BizNumber = lpStakeAddressCount,
                 CreateTime = now,
                 BizType = BizType.LpStakedAddressCount
             };
@@ -234,7 +230,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
             var lpStakedAmount = new BizMetricsEto()
             {
                 Id = GuidHelper.GenerateId(nowDate, BizType.LpStakedAmount.ToString()),
-                BizNumber = lpStakeAmount.ToString(),
+                BizNumber = lpStakeAmount,
                 CreateTime = now,
                 BizType = BizType.LpStakedAmount
             };
@@ -242,7 +238,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
             var lpStakedUsdAmount = new BizMetricsEto()
             {
                 Id = GuidHelper.GenerateId(nowDate, BizType.LpStakedUsdAmount.ToString()),
-                BizNumber = lpStakeUsdAmount.ToString(CultureInfo.InvariantCulture),
+                BizNumber = lpStakeUsdAmount,
                 CreateTime = now,
                 BizType = BizType.LpStakedUsdAmount
             };
@@ -260,7 +256,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
         var platformEarning = new BizMetricsEto()
         {
             Id = GuidHelper.GenerateId(nowDate, BizType.PlatformEarning.ToString()),
-            BizNumber = (double.Parse(addressBalance) / 100000000).ToString(CultureInfo.InvariantCulture),
+            BizNumber = double.Parse(addressBalance) / 100000000,
             CreateTime = now,
             BizType = BizType.LpStakedAmount
         };
