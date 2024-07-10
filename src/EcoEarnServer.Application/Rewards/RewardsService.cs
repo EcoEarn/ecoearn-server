@@ -1186,7 +1186,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
             await _farmProvider.GetLiquidityInfoAsync(liquidityIds, "", LpStatus.Removed, 0, 5000);
         var liquidityRemovedSeeds = liquidityRemovedList.Select(x => x.Seed).ToList();
         var shouldRemoveClaimIds = operationClaimList
-            .Where(x => !unLockedStakeIds.Contains(x.StakeId) && !liquidityRemovedSeeds.Contains(x.LiquidityAddedSeed))
+            .Where(x => (earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId)) ||
+                        (liquidityIds.Contains(x.LiquidityId) && !liquidityRemovedSeeds.Contains(x.LiquidityAddedSeed)))
             .Select(x => x.ClaimId)
             .ToList();
 
