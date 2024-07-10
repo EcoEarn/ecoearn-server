@@ -73,7 +73,7 @@ public class FarmService : IFarmService, ISingletonDependency
                 liquidityInfoDto.TokenBSymbol);
             liquidityInfoDto.StakingAmount =
                 (double.Parse(entity.Value.Where(x => !unLockedStakeIds.Contains(x.StakeId)).Sum(x => x.LpAmount)
-                    .ToString()) / 100000000 * lpPrice).ToString(CultureInfo.InvariantCulture);
+                    .ToString()) / 100000000).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.Value =
                 ((double.Parse(liquidityInfoDto.Banlance) + double.Parse(liquidityInfoDto.StakingAmount)) * lpPrice).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.TokenAAmount =
