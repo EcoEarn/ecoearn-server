@@ -30,7 +30,7 @@ public interface IContractProvider
 
     Task<TransactionResultDto> QueryTransactionResult(string transactionId, string chainId);
 
-    Task<bool> CheckTransactionStatusAsync(string transactionId, string chainId);
+    Task<CheckTransactionDto> CheckTransactionStatusAsync(string transactionId, string chainId);
 }
 
 public class ContractProvider : IContractProvider, ISingletonDependency
@@ -113,7 +113,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         return Client(chainId).GetTransactionResultAsync(transactionId);
     }
 
-    public async Task<bool> CheckTransactionStatusAsync(string transactionId, string chainId)
+    public async Task<CheckTransactionDto> CheckTransactionStatusAsync(string transactionId, string chainId)
     {
         var retryTimes = 0;
         var delayMilliseconds = 1000;
@@ -126,7 +126,11 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
             if (retryTimes > 20)
             {
-                return false;
+                return new CheckTransactionDto()
+                {
+                    Result = false,
+                    Error = "transaction timeout"
+                };
             }
 
             var txResult = await QueryTransactionResult(transactionId, chainId);
@@ -141,16 +145,28 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             if (!string.IsNullOrEmpty(txResult.Error))
             {
                 _logger.LogWarning("transactionId {transactionId} is fail.", transactionId);
-                return false;
+                return new CheckTransactionDto()
+                {
+                    Result = false,
+                    Error = txResult.Error
+                };
             }
 
             if (txResult.Status != TransactionState.Mined)
             {
                 _logger.LogWarning("transactionId {transactionId} is not Mined", transactionId);
-                return false;
+                return new CheckTransactionDto()
+                {
+                    Result = false,
+                    Error = txResult.Error
+                };
             }
 
-            return true;
+            return new CheckTransactionDto()
+            {
+                Result = true,
+                Error = ""
+            };
         }
     }
 
