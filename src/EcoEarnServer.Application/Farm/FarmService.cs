@@ -82,9 +82,15 @@ public class FarmService : IFarmService, ISingletonDependency
             liquidityInfoDto.TokenAAmount =
                 (decimal.Parse(entity.Value.Sum(x => x.TokenAAmount).ToString()) / 100000000).ToString(CultureInfo
                     .InvariantCulture);
+            liquidityInfoDto.TokenAUnStakingAmount =
+                (decimal.Parse(entity.Value.Where(x => unLockedStakeIds.Contains(x.StakeId)).Sum(x => x.TokenAAmount)
+                    .ToString()) / 100000000).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.TokenBAmount =
                 (decimal.Parse(entity.Value.Sum(x => x.TokenBAmount).ToString()) / 100000000).ToString(CultureInfo
                     .InvariantCulture);
+            liquidityInfoDto.TokenBUnStakingAmount =
+                (decimal.Parse(entity.Value.Where(x => unLockedStakeIds.Contains(x.StakeId)).Sum(x => x.TokenBAmount)
+                    .ToString()) / 100000000).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.LiquidityIds = entity.Value.Select(x => x.LiquidityId).ToList();
             liquidityInfoDto.LpAmount = entity.Value.Sum(x => x.LpAmount);
             var rewardsAllList =
@@ -135,7 +141,9 @@ public class FarmService : IFarmService, ISingletonDependency
                 liquidityInfoDto.EcoEarnTokenAAmount = myLiquidity.TokenAAmount;
                 liquidityInfoDto.EcoEarnTokenBAmount = myLiquidity.TokenBAmount;
                 liquidityInfoDto.EcoEarnBanlance = myLiquidity.Banlance;
-                liquidityInfoDto.EcoEarnBanlance = myLiquidity.StakingAmount;
+                liquidityInfoDto.StakingAmount = myLiquidity.StakingAmount;
+                liquidityInfoDto.EcoEarnTokenAUnStakingAmount = myLiquidity.TokenAUnStakingAmount;
+                liquidityInfoDto.EcoEarnTokenBUnStakingAmount = myLiquidity.TokenBUnStakingAmount;
             }
 
             result.Add(liquidityInfoDto);
