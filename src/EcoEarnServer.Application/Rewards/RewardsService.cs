@@ -1080,8 +1080,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
             .ToString();
         var realWithdrawAmount = long.Parse(withdrawAmount) - long.Parse(lossAmount.ToString());
-        var checkResult = resultList.Count == withdrawClaimIds.Count && !includeClaimIds.Any() &&
-                          amount.ToString() == realWithdrawAmount.ToString();
+        var subAmount = realWithdrawAmount - amount;
+        var checkResult = resultList.Count == withdrawClaimIds.Count && !includeClaimIds.Any() && subAmount < 3;
 
         if (!checkResult)
         {
@@ -1229,12 +1229,18 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
             if (pointsPoolAggDto.RewardsTokenName == liquidityInfoIndexerDto.TokenASymbol)
             {
-                var loosA = Math.Round(double.Parse(liquidityInfoIndexerDto.TokenALossAmount) * rate).ToString(CultureInfo.InvariantCulture);
+                var lossAAmount = double.Parse(liquidityInfoIndexerDto.TokenALossAmount);
+                var loosA = (lossAAmount >= 0
+                    ? Math.Ceiling(lossAAmount * rate)
+                    : Math.Floor(lossAAmount * rate)).ToString(CultureInfo.InvariantCulture);
                 lossAmount += BigInteger.Parse(loosA);
             }
             else
             {
-                var loosB = Math.Round(double.Parse(liquidityInfoIndexerDto.TokenBLossAmount) * rate).ToString(CultureInfo.InvariantCulture);
+                var lossBAmount = double.Parse(liquidityInfoIndexerDto.TokenBLossAmount);
+                var loosB = (lossBAmount >= 0
+                    ? Math.Ceiling(lossBAmount * rate)
+                    : Math.Floor(lossBAmount * rate)).ToString(CultureInfo.InvariantCulture);
                 lossAmount += BigInteger.Parse(loosB);
             }
         }
