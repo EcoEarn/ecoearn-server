@@ -12,8 +12,10 @@ public class LiquidityInfoDto
     public string StakingAmount { get; set; }
     public string Value { get; set; }
     public string TokenAAmount { get; set; }
+    public string TokenAUnStakingAmount { get; set; }
     public string TokenASymbol { get; set; }
     public string TokenBAmount { get; set; }
+    public string TokenBUnStakingAmount { get; set; }
     public string TokenBSymbol { get; set; }
     public int Decimal { get; set; } = 8;
     public int UsdDecimal { get; set; } = 6;
@@ -38,8 +40,10 @@ public class MarketLiquidityInfoDto
     public string StakingAmount { get; set; }
     public string Value { get; set; }
     public string TokenAAmount { get; set; }
+    public string EcoEarnTokenAUnStakingAmount { get; set; }
     public string TokenASymbol { get; set; }
     public string TokenBAmount { get; set; }
+    public string EcoEarnTokenBUnStakingAmount { get; set; }
     public string TokenBSymbol { get; set; }
     public int Decimal { get; set; } = 8;
     public int UsdDecimal { get; set; } = 6;
