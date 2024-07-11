@@ -74,10 +74,10 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Banlance, m => m.MapFrom(f => f.TotalSupply))
             .ForPath(t => t.Value, m => m.MapFrom(f => f.Tvl.ToString(CultureInfo.InvariantCulture)))
             .ForPath(t => t.Rate, m => m.MapFrom(f => f.FeeRate))
-            .ForPath(t => t.TokenAAmount, m => m.MapFrom(f => f.ValueLocked0.ToString(CultureInfo.InvariantCulture)))
-            .ForPath(t => t.TokenBAmount, m => m.MapFrom(f => f.ValueLocked1.ToString(CultureInfo.InvariantCulture)))
-            .ForPath(t => t.TokenASymbol, m => m.MapFrom(f => f.Token0.Symbol))
-            .ForPath(t => t.TokenBSymbol, m => m.MapFrom(f => f.Token1.Symbol))
+            .ForPath(t => t.TokenAAmount, m => m.MapFrom(f => f.ValueLocked1.ToString(CultureInfo.InvariantCulture)))
+            .ForPath(t => t.TokenBAmount, m => m.MapFrom(f => f.ValueLocked0.ToString(CultureInfo.InvariantCulture)))
+            .ForPath(t => t.TokenASymbol, m => m.MapFrom(f => f.Token1.Symbol))
+            .ForPath(t => t.TokenBSymbol, m => m.MapFrom(f => f.Token0.Symbol))
             .ReverseMap();
     }
 }
