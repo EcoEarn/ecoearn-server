@@ -1231,16 +1231,16 @@ public class RewardsService : IRewardsService, ISingletonDependency
             {
                 var lossAAmount = double.Parse(liquidityInfoIndexerDto.TokenALossAmount);
                 var loosA = (lossAAmount >= 0
-                    ? Math.Ceiling(lossAAmount * rate)
-                    : Math.Floor(lossAAmount * rate)).ToString(CultureInfo.InvariantCulture);
+                    ? Math.Floor(lossAAmount * rate)
+                    : Math.Ceiling(lossAAmount * rate)).ToString(CultureInfo.InvariantCulture);
                 lossAmount += BigInteger.Parse(loosA);
             }
             else
             {
                 var lossBAmount = double.Parse(liquidityInfoIndexerDto.TokenBLossAmount);
                 var loosB = (lossBAmount >= 0
-                    ? Math.Ceiling(lossBAmount * rate)
-                    : Math.Floor(lossBAmount * rate)).ToString(CultureInfo.InvariantCulture);
+                    ? Math.Floor(lossBAmount * rate)
+                    : Math.Ceiling(lossBAmount * rate)).ToString(CultureInfo.InvariantCulture);
                 lossAmount += BigInteger.Parse(loosB);
             }
         }
