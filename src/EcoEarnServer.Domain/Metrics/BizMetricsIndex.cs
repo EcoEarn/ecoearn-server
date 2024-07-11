@@ -22,4 +22,5 @@ public enum BizType
     LpStakedAddressCount,
     LpStakedAmount,
     LpStakedUsdAmount,
+    PlatformStakedAmount,
 }

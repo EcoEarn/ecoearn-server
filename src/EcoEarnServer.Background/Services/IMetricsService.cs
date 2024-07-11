@@ -78,7 +78,8 @@ public class MetricsService : IMetricsService, ISingletonDependency
         var rateDic = new Dictionary<string, double>();
         var evenDataList = new List<BizMetricsEto>();
         var nowDateTime = DateTime.UtcNow;
-        var now = nowDateTime.ToUtcMilliSeconds();
+        var today = new DateTime(nowDateTime.Year, nowDateTime.Month, nowDateTime.Day, 13, 0, 0, DateTimeKind.Utc);
+        var now = today.ToUtcMilliSeconds();
         var nowDate = nowDateTime.ToString("yyyy-MM-dd");
         var allTokenStakedList = await _tokenStakingProvider.GetTokenPoolStakedInfoListAsync(new List<string>());
         var rewardsToken = "";
@@ -128,6 +129,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
         }
 
         var usdAmount = stakePriceDtoList.Sum(x => x.UsdAmount) / 100000000;
+        var amount = stakePriceDtoList.Sum(x => double.Parse(x.Amount)) / 100000000;
 
         var platformStakedUsdAmount = new BizMetricsEto()
         {
@@ -136,8 +138,15 @@ public class MetricsService : IMetricsService, ISingletonDependency
             CreateTime = now,
             BizType = BizType.PlatformStakedUsdAmount
         };
+        var platformStakeAmount = new BizMetricsEto()
+        {
+            Id = GuidHelper.GenerateId(nowDate, BizType.PlatformStakedAmount.ToString()),
+            BizNumber = amount,
+            CreateTime = now,
+            BizType = BizType.PlatformStakedAmount
+        };
 
-
+        
         var userCount = await _userInformationProvider.GetUserCount();
         var registerCount = new BizMetricsEto()
         {
@@ -249,6 +258,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
         }
 
         evenDataList.Add(platformStakedUsdAmount);
+        evenDataList.Add(platformStakeAmount);
         evenDataList.Add(registerCount);
         var addressBalance =
             await _metricsProvider.GetBalanceAsync(_metricsGenerateOptions.Address, rewardsToken,
@@ -258,7 +268,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
             Id = GuidHelper.GenerateId(nowDate, BizType.PlatformEarning.ToString()),
             BizNumber = double.Parse(addressBalance) / 100000000,
             CreateTime = now,
-            BizType = BizType.LpStakedAmount
+            BizType = BizType.PlatformEarning
         };
         evenDataList.Add(platformEarning);
         await _distributedEventBus.PublishAsync(new BizMetricsListEto
