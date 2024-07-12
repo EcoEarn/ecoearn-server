@@ -655,9 +655,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var seed = Guid.NewGuid().ToString();
         var repeatedField = new RepeatedField<Hash>();
         repeatedField.AddRange(liquidityIds.Select(Hash.LoadFromHex).ToList());
-        var rewardsAllList = await GetAllRewardsList(address, PoolTypeEnums.All);
-        var longestReleaseTime = rewardsAllList.Select(x => x.ReleaseTime).Max() / 1000;
-        _logger.LogInformation("longestReleaseTime: {longestReleaseTime}", longestReleaseTime);
         IMessage data = executeType switch
         {
             ExecuteType.LiquidityRemove => new RemoveLiquidityInput()
@@ -685,7 +682,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 },
                 PoolId = Hash.LoadFromHex(poolId),
                 Period = period,
-                LongestReleaseTime = longestReleaseTime,
+                LongestReleaseTime = 0,
             },
             _ => null
         };
