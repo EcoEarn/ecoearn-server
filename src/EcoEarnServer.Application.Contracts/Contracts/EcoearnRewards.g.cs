@@ -74,78 +74,77 @@ namespace EcoEarn.Contracts.Rewards {
             "cXVpZGl0eUlucHV0EigKD2xpcXVpZGl0eV9pbnB1dBgBIAEoCzIPLkxpcXVp",
             "ZGl0eUlucHV0EhMKC3Rva2VuX2FfbWluGAIgASgDEhMKC3Rva2VuX2JfbWlu",
             "GAMgASgDEiwKCGRlYWRsaW5lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRp",
-            "bWVzdGFtcBISCglzaWduYXR1cmUYkE4gASgMIp4BChNTdGFrZUxpcXVpZGl0",
+            "bWVzdGFtcBISCglzaWduYXR1cmUYkE4gASgMIoABChNTdGFrZUxpcXVpZGl0",
             "eUlucHV0EigKD2xpcXVpZGl0eV9pbnB1dBgBIAEoCzIPLkxpcXVpZGl0eUlu",
             "cHV0EhsKB3Bvb2xfaWQYAiABKAsyCi5hZWxmLkhhc2gSDgoGcGVyaW9kGAMg",
-            "ASgDEhwKFGxvbmdlc3RfcmVsZWFzZV90aW1lGAQgASgDEhIKCXNpZ25hdHVy",
-            "ZRiQTiABKAwilgEKDkxpcXVpZGl0eUlucHV0EiEKDWxpcXVpZGl0eV9pZHMY",
-            "ASADKAsyCi5hZWxmLkhhc2gSEQoJbHBfYW1vdW50GAIgASgDEhsKB2RhcHBf",
-            "aWQYAyABKAsyCi5hZWxmLkhhc2gSGAoEc2VlZBgEIAEoCzIKLmFlbGYuSGFz",
-            "aBIXCg9leHBpcmF0aW9uX3RpbWUYBSABKAMioAMKDUxpcXVpZGl0eUluZm8S",
-            "IAoMbGlxdWlkaXR5X2lkGAEgASgLMgouYWVsZi5IYXNoEhgKBHNlZWQYAiAB",
-            "KAsyCi5hZWxmLkhhc2gSEQoJbHBfYW1vdW50GAMgASgDEhEKCWxwX3N5bWJv",
-            "bBgEIAEoCRIVCg1yZXdhcmRfc3ltYm9sGAUgASgJEhYKDnRva2VuX2FfYW1v",
-            "dW50GAYgASgDEhYKDnRva2VuX2Ffc3ltYm9sGAcgASgJEhYKDnRva2VuX2Jf",
-            "YW1vdW50GAggASgDEhYKDnRva2VuX2Jfc3ltYm9sGAkgASgJEi4KCmFkZGVk",
-            "X3RpbWUYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhsKB2Rh",
-            "cHBfaWQYCyABKAsyCi5hZWxmLkhhc2gSIwoMc3dhcF9hZGRyZXNzGAwgASgL",
-            "Mg0uYWVsZi5BZGRyZXNzEiQKDXRva2VuX2FkZHJlc3MYDSABKAsyDS5hZWxm",
-            "LkFkZHJlc3MSHgoHYWNjb3VudBgOIAEoCzINLmFlbGYuQWRkcmVzcyIuCg5M",
-            "aXF1aWRpdHlJbmZvcxIcCgRkYXRhGAEgAygLMg4uTGlxdWlkaXR5SW5mbyIu",
-            "CghBZG1pblNldBIcCgVhZG1pbhgBIAEoCzINLmFlbGYuQWRkcmVzczoEoLsY",
-            "ASJqCgpSZWdpc3RlcmVkEhsKB2RhcHBfaWQYASABKAsyCi5hZWxmLkhhc2gS",
-            "HAoFYWRtaW4YAiABKAsyDS5hZWxmLkFkZHJlc3MSGwoGY29uZmlnGAMgASgL",
-            "MgsuRGFwcENvbmZpZzoEoLsYASJPCg1EYXBwQ29uZmlnU2V0EhsKB2RhcHBf",
-            "aWQYASABKAsyCi5hZWxmLkhhc2gSGwoGY29uZmlnGAIgASgLMgsuRGFwcENv",
-            "bmZpZzoEoLsYASIxCgdDbGFpbWVkEiAKC2NsYWltX2luZm9zGAEgASgLMgsu",
-            "Q2xhaW1JbmZvczoEoLsYASJPCgxEYXBwQWRtaW5TZXQSGwoHZGFwcF9pZBgB",
-            "IAEoCzIKLmFlbGYuSGFzaBIcCgVhZG1pbhgCIAEoCzINLmFlbGYuQWRkcmVz",
-            "czoEoLsYASKWAQoJV2l0aGRyYXduEhwKCWNsYWltX2lkcxgBIAEoCzIJLkhh",
-            "c2hMaXN0Eh4KB2FjY291bnQYAiABKAsyDS5hZWxmLkFkZHJlc3MSDgoGYW1v",
-            "dW50GAMgASgDEhgKBHNlZWQYBCABKAsyCi5hZWxmLkhhc2gSGwoHZGFwcF9p",
-            "ZBgFIAEoCzIKLmFlbGYuSGFzaDoEoLsYASLjAQoLRWFybHlTdGFrZWQSHAoJ",
-            "Y2xhaW1faWRzGAEgASgLMgkuSGFzaExpc3QSHgoHYWNjb3VudBgCIAEoCzIN",
-            "LmFlbGYuQWRkcmVzcxIOCgZhbW91bnQYAyABKAMSGAoEc2VlZBgEIAEoCzIK",
-            "LmFlbGYuSGFzaBIbCgdwb29sX2lkGAUgASgLMgouYWVsZi5IYXNoEg4KBnBl",
-            "cmlvZBgGIAEoAxIbCgdkYXBwX2lkGAcgASgLMgouYWVsZi5IYXNoEhwKCHN0",
-            "YWtlX2lkGAggASgLMgouYWVsZi5IYXNoOgSguxgBItcBCg5MaXF1aWRpdHlB",
-            "ZGRlZBIcCgljbGFpbV9pZHMYASABKAsyCS5IYXNoTGlzdBIeCgdhY2NvdW50",
-            "GAIgASgLMg0uYWVsZi5BZGRyZXNzEg4KBmFtb3VudBgDIAEoAxIbCgdwb29s",
-            "X2lkGAQgASgLMgouYWVsZi5IYXNoEg4KBnBlcmlvZBgFIAEoAxIcCghzdGFr",
-            "ZV9pZBgGIAEoCzIKLmFlbGYuSGFzaBImCg5saXF1aWRpdHlfaW5mbxgHIAEo",
-            "CzIOLkxpcXVpZGl0eUluZm86BKC7GAEitAEKEExpcXVpZGl0eVJlbW92ZWQS",
-            "IAoNbGlxdWlkaXR5X2lkcxgBIAEoCzIJLkhhc2hMaXN0EhEKCWxwX2Ftb3Vu",
-            "dBgCIAEoAxIWCg50b2tlbl9hX2Ftb3VudBgDIAEoAxIWCg50b2tlbl9iX2Ft",
-            "b3VudBgEIAEoAxIbCgdkYXBwX2lkGAUgASgLMgouYWVsZi5IYXNoEhgKBHNl",
-            "ZWQYBiABKAsyCi5hZWxmLkhhc2g6BKC7GAEisQEKD0xpcXVpZGl0eVN0YWtl",
-            "ZBIgCg1saXF1aWRpdHlfaWRzGAEgASgLMgkuSGFzaExpc3QSGwoHcG9vbF9p",
-            "ZBgCIAEoCzIKLmFlbGYuSGFzaBIRCglscF9hbW91bnQYAyABKAMSDgoGcGVy",
-            "aW9kGAQgASgDEhwKCHN0YWtlX2lkGAUgASgLMgouYWVsZi5IYXNoEhgKBHNl",
-            "ZWQYBiABKAsyCi5hZWxmLkhhc2g6BKC7GAEyiggKFkVjb0Vhcm5SZXdhcmRz",
-            "Q29udHJhY3QSOAoKSW5pdGlhbGl6ZRIQLkluaXRpYWxpemVJbnB1dBoWLmdv",
-            "b2dsZS5wcm90b2J1Zi5FbXB0eSIAEjMKCFNldEFkbWluEg0uYWVsZi5BZGRy",
-            "ZXNzGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASOAoIR2V0QWRtaW4SFi5n",
-            "b29nbGUucHJvdG9idWYuRW1wdHkaDS5hZWxmLkFkZHJlc3MiBYiJ9wEBEjQK",
-            "CFJlZ2lzdGVyEg4uUmVnaXN0ZXJJbnB1dBoWLmdvb2dsZS5wcm90b2J1Zi5F",
-            "bXB0eSIAEjwKDFNldERhcHBBZG1pbhISLlNldERhcHBBZG1pbklucHV0GhYu",
-            "Z29vZ2xlLnByb3RvYnVmLkVtcHR5IgASPgoNU2V0RGFwcENvbmZpZxITLlNl",
-            "dERhcHBDb25maWdJbnB1dBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEisK",
-            "C0dldERhcHBJbmZvEgouYWVsZi5IYXNoGgkuRGFwcEluZm8iBYiJ9wEBEkAK",
-            "EEdldFJld2FyZEFkZHJlc3MSFi5HZXRSZXdhcmRBZGRyZXNzSW5wdXQaDS5h",
-            "ZWxmLkFkZHJlc3MiBYiJ9wEBEi4KBUNsYWltEgsuQ2xhaW1JbnB1dBoWLmdv",
-            "b2dsZS5wcm90b2J1Zi5FbXB0eSIAEi0KDEdldENsYWltSW5mbxIKLmFlbGYu",
-            "SGFzaBoKLkNsYWltSW5mbyIFiIn3AQESNAoIV2l0aGRyYXcSDi5XaXRoZHJh",
-            "d0lucHV0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASOAoKRWFybHlTdGFr",
-            "ZRIQLkVhcmx5U3Rha2VJbnB1dBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIA",
-            "EkwKFEFkZExpcXVpZGl0eUFuZFN0YWtlEhouQWRkTGlxdWlkaXR5QW5kU3Rh",
-            "a2VJbnB1dBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEkIKD1JlbW92ZUxp",
-            "cXVpZGl0eRIVLlJlbW92ZUxpcXVpZGl0eUlucHV0GhYuZ29vZ2xlLnByb3Rv",
-            "YnVmLkVtcHR5IgASQAoOU3Rha2VMaXF1aWRpdHkSFC5TdGFrZUxpcXVpZGl0",
-            "eUlucHV0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASNQoQR2V0TGlxdWlk",
-            "aXR5SW5mbxIKLmFlbGYuSGFzaBoOLkxpcXVpZGl0eUluZm8iBYiJ9wEBGkrK",
-            "yvYBC2FjczEyLnByb3Rvssz2ATVFY29FYXJuLkNvbnRyYWN0cy5SZXdhcmRz",
-            "LkVjb0Vhcm5SZXdhcmRzQ29udHJhY3RTdGF0ZUIcqgIZRWNvRWFybi5Db250",
-            "cmFjdHMuUmV3YXJkc2IGcHJvdG8z"));
+            "ASgDEhIKCXNpZ25hdHVyZRiQTiABKAwilgEKDkxpcXVpZGl0eUlucHV0EiEK",
+            "DWxpcXVpZGl0eV9pZHMYASADKAsyCi5hZWxmLkhhc2gSEQoJbHBfYW1vdW50",
+            "GAIgASgDEhsKB2RhcHBfaWQYAyABKAsyCi5hZWxmLkhhc2gSGAoEc2VlZBgE",
+            "IAEoCzIKLmFlbGYuSGFzaBIXCg9leHBpcmF0aW9uX3RpbWUYBSABKAMioAMK",
+            "DUxpcXVpZGl0eUluZm8SIAoMbGlxdWlkaXR5X2lkGAEgASgLMgouYWVsZi5I",
+            "YXNoEhgKBHNlZWQYAiABKAsyCi5hZWxmLkhhc2gSEQoJbHBfYW1vdW50GAMg",
+            "ASgDEhEKCWxwX3N5bWJvbBgEIAEoCRIVCg1yZXdhcmRfc3ltYm9sGAUgASgJ",
+            "EhYKDnRva2VuX2FfYW1vdW50GAYgASgDEhYKDnRva2VuX2Ffc3ltYm9sGAcg",
+            "ASgJEhYKDnRva2VuX2JfYW1vdW50GAggASgDEhYKDnRva2VuX2Jfc3ltYm9s",
+            "GAkgASgJEi4KCmFkZGVkX3RpbWUYCiABKAsyGi5nb29nbGUucHJvdG9idWYu",
+            "VGltZXN0YW1wEhsKB2RhcHBfaWQYCyABKAsyCi5hZWxmLkhhc2gSIwoMc3dh",
+            "cF9hZGRyZXNzGAwgASgLMg0uYWVsZi5BZGRyZXNzEiQKDXRva2VuX2FkZHJl",
+            "c3MYDSABKAsyDS5hZWxmLkFkZHJlc3MSHgoHYWNjb3VudBgOIAEoCzINLmFl",
+            "bGYuQWRkcmVzcyIuCg5MaXF1aWRpdHlJbmZvcxIcCgRkYXRhGAEgAygLMg4u",
+            "TGlxdWlkaXR5SW5mbyIuCghBZG1pblNldBIcCgVhZG1pbhgBIAEoCzINLmFl",
+            "bGYuQWRkcmVzczoEoLsYASJqCgpSZWdpc3RlcmVkEhsKB2RhcHBfaWQYASAB",
+            "KAsyCi5hZWxmLkhhc2gSHAoFYWRtaW4YAiABKAsyDS5hZWxmLkFkZHJlc3MS",
+            "GwoGY29uZmlnGAMgASgLMgsuRGFwcENvbmZpZzoEoLsYASJPCg1EYXBwQ29u",
+            "ZmlnU2V0EhsKB2RhcHBfaWQYASABKAsyCi5hZWxmLkhhc2gSGwoGY29uZmln",
+            "GAIgASgLMgsuRGFwcENvbmZpZzoEoLsYASIxCgdDbGFpbWVkEiAKC2NsYWlt",
+            "X2luZm9zGAEgASgLMgsuQ2xhaW1JbmZvczoEoLsYASJPCgxEYXBwQWRtaW5T",
+            "ZXQSGwoHZGFwcF9pZBgBIAEoCzIKLmFlbGYuSGFzaBIcCgVhZG1pbhgCIAEo",
+            "CzINLmFlbGYuQWRkcmVzczoEoLsYASKWAQoJV2l0aGRyYXduEhwKCWNsYWlt",
+            "X2lkcxgBIAEoCzIJLkhhc2hMaXN0Eh4KB2FjY291bnQYAiABKAsyDS5hZWxm",
+            "LkFkZHJlc3MSDgoGYW1vdW50GAMgASgDEhgKBHNlZWQYBCABKAsyCi5hZWxm",
+            "Lkhhc2gSGwoHZGFwcF9pZBgFIAEoCzIKLmFlbGYuSGFzaDoEoLsYASLjAQoL",
+            "RWFybHlTdGFrZWQSHAoJY2xhaW1faWRzGAEgASgLMgkuSGFzaExpc3QSHgoH",
+            "YWNjb3VudBgCIAEoCzINLmFlbGYuQWRkcmVzcxIOCgZhbW91bnQYAyABKAMS",
+            "GAoEc2VlZBgEIAEoCzIKLmFlbGYuSGFzaBIbCgdwb29sX2lkGAUgASgLMgou",
+            "YWVsZi5IYXNoEg4KBnBlcmlvZBgGIAEoAxIbCgdkYXBwX2lkGAcgASgLMgou",
+            "YWVsZi5IYXNoEhwKCHN0YWtlX2lkGAggASgLMgouYWVsZi5IYXNoOgSguxgB",
+            "ItcBCg5MaXF1aWRpdHlBZGRlZBIcCgljbGFpbV9pZHMYASABKAsyCS5IYXNo",
+            "TGlzdBIeCgdhY2NvdW50GAIgASgLMg0uYWVsZi5BZGRyZXNzEg4KBmFtb3Vu",
+            "dBgDIAEoAxIbCgdwb29sX2lkGAQgASgLMgouYWVsZi5IYXNoEg4KBnBlcmlv",
+            "ZBgFIAEoAxIcCghzdGFrZV9pZBgGIAEoCzIKLmFlbGYuSGFzaBImCg5saXF1",
+            "aWRpdHlfaW5mbxgHIAEoCzIOLkxpcXVpZGl0eUluZm86BKC7GAEitAEKEExp",
+            "cXVpZGl0eVJlbW92ZWQSIAoNbGlxdWlkaXR5X2lkcxgBIAEoCzIJLkhhc2hM",
+            "aXN0EhEKCWxwX2Ftb3VudBgCIAEoAxIWCg50b2tlbl9hX2Ftb3VudBgDIAEo",
+            "AxIWCg50b2tlbl9iX2Ftb3VudBgEIAEoAxIbCgdkYXBwX2lkGAUgASgLMgou",
+            "YWVsZi5IYXNoEhgKBHNlZWQYBiABKAsyCi5hZWxmLkhhc2g6BKC7GAEisQEK",
+            "D0xpcXVpZGl0eVN0YWtlZBIgCg1saXF1aWRpdHlfaWRzGAEgASgLMgkuSGFz",
+            "aExpc3QSGwoHcG9vbF9pZBgCIAEoCzIKLmFlbGYuSGFzaBIRCglscF9hbW91",
+            "bnQYAyABKAMSDgoGcGVyaW9kGAQgASgDEhwKCHN0YWtlX2lkGAUgASgLMgou",
+            "YWVsZi5IYXNoEhgKBHNlZWQYBiABKAsyCi5hZWxmLkhhc2g6BKC7GAEyiggK",
+            "FkVjb0Vhcm5SZXdhcmRzQ29udHJhY3QSOAoKSW5pdGlhbGl6ZRIQLkluaXRp",
+            "YWxpemVJbnB1dBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEjMKCFNldEFk",
+            "bWluEg0uYWVsZi5BZGRyZXNzGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgAS",
+            "OAoIR2V0QWRtaW4SFi5nb29nbGUucHJvdG9idWYuRW1wdHkaDS5hZWxmLkFk",
+            "ZHJlc3MiBYiJ9wEBEjQKCFJlZ2lzdGVyEg4uUmVnaXN0ZXJJbnB1dBoWLmdv",
+            "b2dsZS5wcm90b2J1Zi5FbXB0eSIAEjwKDFNldERhcHBBZG1pbhISLlNldERh",
+            "cHBBZG1pbklucHV0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASPgoNU2V0",
+            "RGFwcENvbmZpZxITLlNldERhcHBDb25maWdJbnB1dBoWLmdvb2dsZS5wcm90",
+            "b2J1Zi5FbXB0eSIAEisKC0dldERhcHBJbmZvEgouYWVsZi5IYXNoGgkuRGFw",
+            "cEluZm8iBYiJ9wEBEkAKEEdldFJld2FyZEFkZHJlc3MSFi5HZXRSZXdhcmRB",
+            "ZGRyZXNzSW5wdXQaDS5hZWxmLkFkZHJlc3MiBYiJ9wEBEi4KBUNsYWltEgsu",
+            "Q2xhaW1JbnB1dBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEi0KDEdldENs",
+            "YWltSW5mbxIKLmFlbGYuSGFzaBoKLkNsYWltSW5mbyIFiIn3AQESNAoIV2l0",
+            "aGRyYXcSDi5XaXRoZHJhd0lucHV0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5",
+            "IgASOAoKRWFybHlTdGFrZRIQLkVhcmx5U3Rha2VJbnB1dBoWLmdvb2dsZS5w",
+            "cm90b2J1Zi5FbXB0eSIAEkwKFEFkZExpcXVpZGl0eUFuZFN0YWtlEhouQWRk",
+            "TGlxdWlkaXR5QW5kU3Rha2VJbnB1dBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0",
+            "eSIAEkIKD1JlbW92ZUxpcXVpZGl0eRIVLlJlbW92ZUxpcXVpZGl0eUlucHV0",
+            "GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASQAoOU3Rha2VMaXF1aWRpdHkS",
+            "FC5TdGFrZUxpcXVpZGl0eUlucHV0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5",
+            "IgASNQoQR2V0TGlxdWlkaXR5SW5mbxIKLmFlbGYuSGFzaBoOLkxpcXVpZGl0",
+            "eUluZm8iBYiJ9wEBGkrKyvYBC2FjczEyLnByb3Rvssz2ATVFY29FYXJuLkNv",
+            "bnRyYWN0cy5SZXdhcmRzLkVjb0Vhcm5SZXdhcmRzQ29udHJhY3RTdGF0ZUIc",
+            "qgIZRWNvRWFybi5Db250cmFjdHMuUmV3YXJkc2IGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::AElf.Types.CoreReflection.Descriptor, global::AElf.OptionsReflection.Descriptor, global::AElf.Standards.ACS12.Acs12Reflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.TimestampReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
@@ -165,7 +164,7 @@ namespace EcoEarn.Contracts.Rewards {
             new pbr::GeneratedClrTypeInfo(typeof(global::EcoEarn.Contracts.Rewards.HashList), global::EcoEarn.Contracts.Rewards.HashList.Parser, new[]{ "Data" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::EcoEarn.Contracts.Rewards.AddLiquidityAndStakeInput), global::EcoEarn.Contracts.Rewards.AddLiquidityAndStakeInput.Parser, new[]{ "StakeInput", "TokenAMin", "TokenBMin", "Deadline", "Signature" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::EcoEarn.Contracts.Rewards.RemoveLiquidityInput), global::EcoEarn.Contracts.Rewards.RemoveLiquidityInput.Parser, new[]{ "LiquidityInput", "TokenAMin", "TokenBMin", "Deadline", "Signature" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::EcoEarn.Contracts.Rewards.StakeLiquidityInput), global::EcoEarn.Contracts.Rewards.StakeLiquidityInput.Parser, new[]{ "LiquidityInput", "PoolId", "Period", "LongestReleaseTime", "Signature" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::EcoEarn.Contracts.Rewards.StakeLiquidityInput), global::EcoEarn.Contracts.Rewards.StakeLiquidityInput.Parser, new[]{ "LiquidityInput", "PoolId", "Period", "Signature" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::EcoEarn.Contracts.Rewards.LiquidityInput), global::EcoEarn.Contracts.Rewards.LiquidityInput.Parser, new[]{ "LiquidityIds", "LpAmount", "DappId", "Seed", "ExpirationTime" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::EcoEarn.Contracts.Rewards.LiquidityInfo), global::EcoEarn.Contracts.Rewards.LiquidityInfo.Parser, new[]{ "LiquidityId", "Seed", "LpAmount", "LpSymbol", "RewardSymbol", "TokenAAmount", "TokenASymbol", "TokenBAmount", "TokenBSymbol", "AddedTime", "DappId", "SwapAddress", "TokenAddress", "Account" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::EcoEarn.Contracts.Rewards.LiquidityInfos), global::EcoEarn.Contracts.Rewards.LiquidityInfos.Parser, new[]{ "Data" }, null, null, null, null),
@@ -5283,7 +5282,6 @@ namespace EcoEarn.Contracts.Rewards {
       liquidityInput_ = other.liquidityInput_ != null ? other.liquidityInput_.Clone() : null;
       poolId_ = other.poolId_ != null ? other.poolId_.Clone() : null;
       period_ = other.period_;
-      longestReleaseTime_ = other.longestReleaseTime_;
       signature_ = other.signature_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
@@ -5330,18 +5328,6 @@ namespace EcoEarn.Contracts.Rewards {
       }
     }
 
-    /// <summary>Field number for the "longest_release_time" field.</summary>
-    public const int LongestReleaseTimeFieldNumber = 4;
-    private long longestReleaseTime_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public long LongestReleaseTime {
-      get { return longestReleaseTime_; }
-      set {
-        longestReleaseTime_ = value;
-      }
-    }
-
     /// <summary>Field number for the "signature" field.</summary>
     public const int SignatureFieldNumber = 10000;
     private pb::ByteString signature_ = pb::ByteString.Empty;
@@ -5372,7 +5358,6 @@ namespace EcoEarn.Contracts.Rewards {
       if (!object.Equals(LiquidityInput, other.LiquidityInput)) return false;
       if (!object.Equals(PoolId, other.PoolId)) return false;
       if (Period != other.Period) return false;
-      if (LongestReleaseTime != other.LongestReleaseTime) return false;
       if (Signature != other.Signature) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
@@ -5384,7 +5369,6 @@ namespace EcoEarn.Contracts.Rewards {
       if (liquidityInput_ != null) hash ^= LiquidityInput.GetHashCode();
       if (poolId_ != null) hash ^= PoolId.GetHashCode();
       if (Period != 0L) hash ^= Period.GetHashCode();
-      if (LongestReleaseTime != 0L) hash ^= LongestReleaseTime.GetHashCode();
       if (Signature.Length != 0) hash ^= Signature.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
@@ -5416,10 +5400,6 @@ namespace EcoEarn.Contracts.Rewards {
         output.WriteRawTag(24);
         output.WriteInt64(Period);
       }
-      if (LongestReleaseTime != 0L) {
-        output.WriteRawTag(32);
-        output.WriteInt64(LongestReleaseTime);
-      }
       if (Signature.Length != 0) {
         output.WriteRawTag(130, 241, 4);
         output.WriteBytes(Signature);
@@ -5446,10 +5426,6 @@ namespace EcoEarn.Contracts.Rewards {
         output.WriteRawTag(24);
         output.WriteInt64(Period);
       }
-      if (LongestReleaseTime != 0L) {
-        output.WriteRawTag(32);
-        output.WriteInt64(LongestReleaseTime);
-      }
       if (Signature.Length != 0) {
         output.WriteRawTag(130, 241, 4);
         output.WriteBytes(Signature);
@@ -5472,9 +5448,6 @@ namespace EcoEarn.Contracts.Rewards {
       }
       if (Period != 0L) {
         size += 1 + pb::CodedOutputStream.ComputeInt64Size(Period);
-      }
-      if (LongestReleaseTime != 0L) {
-        size += 1 + pb::CodedOutputStream.ComputeInt64Size(LongestReleaseTime);
       }
       if (Signature.Length != 0) {
         size += 3 + pb::CodedOutputStream.ComputeBytesSize(Signature);
@@ -5505,9 +5478,6 @@ namespace EcoEarn.Contracts.Rewards {
       }
       if (other.Period != 0L) {
         Period = other.Period;
-      }
-      if (other.LongestReleaseTime != 0L) {
-        LongestReleaseTime = other.LongestReleaseTime;
       }
       if (other.Signature.Length != 0) {
         Signature = other.Signature;
@@ -5545,10 +5515,6 @@ namespace EcoEarn.Contracts.Rewards {
             Period = input.ReadInt64();
             break;
           }
-          case 32: {
-            LongestReleaseTime = input.ReadInt64();
-            break;
-          }
           case 80002: {
             Signature = input.ReadBytes();
             break;
@@ -5584,10 +5550,6 @@ namespace EcoEarn.Contracts.Rewards {
           }
           case 24: {
             Period = input.ReadInt64();
-            break;
-          }
-          case 32: {
-            LongestReleaseTime = input.ReadInt64();
             break;
           }
           case 80002: {

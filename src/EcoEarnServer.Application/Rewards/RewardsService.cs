@@ -476,7 +476,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
             LiquidityInput = stakeLiquidityInput.LiquidityInput,
             PoolId = stakeLiquidityInput.PoolId,
             Period = stakeLiquidityInput.Period,
-            LongestReleaseTime = stakeLiquidityInput.LongestReleaseTime,
         }.ToByteArray());
         if (!CryptoHelper.RecoverPublicKey(stakeLiquidityInput.Signature.ToByteArray(),
                 computedHash.ToByteArray(),
@@ -682,7 +681,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 },
                 PoolId = Hash.LoadFromHex(poolId),
                 Period = period,
-                LongestReleaseTime = 0,
             },
             _ => null
         };
