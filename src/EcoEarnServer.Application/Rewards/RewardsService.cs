@@ -139,10 +139,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
     {
         var address = input.Address;
         var rewardsList = await GetAllRewardsList(address, PoolTypeEnums.All);
-        var totalRewards = rewardsList
-            .Select(x => BigInteger.Parse(x.ClaimedAmount))
-            .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
-            .ToString();
         var poolTypeRewardDic = rewardsList
             .GroupBy(x => x.PoolType)
             .ToDictionary(g => g.Key, g => g.ToList());

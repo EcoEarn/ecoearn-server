@@ -20,11 +20,14 @@ using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.TokenStaking;
 using Google.Protobuf;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
+using Volo.Abp.Caching;
+using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
@@ -32,9 +35,11 @@ using Volo.Abp.ObjectMapping;
 
 namespace EcoEarnServer.PointsStaking;
 
-public class PointsStakingService : IPointsStakingService, ISingletonDependency
+public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingletonDependency
 {
     private const string LockKeyPrefix = "EcoEarnServer:PointsRewardsClaim:Lock:";
+    private const string PointsPoolNowSnapshotRedisKeyPrefix = "EcoEarnServer:PointsPoolNowSnapshot:";
+
 
     private readonly ProjectItemOptions _projectItemOptions;
     private readonly IObjectMapper _objectMapper;
@@ -50,6 +55,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
     private readonly ISecretProvider _secretProvider;
     private readonly IAbpDistributedLock _distributedLock;
     private readonly PoolTextWordOptions _poolTextWordOptions;
+    private readonly IDistributedCacheSerializer _serializer;
 
     public PointsStakingService(IOptionsSnapshot<ProjectItemOptions> projectItemOptions, IObjectMapper objectMapper,
         IPointsStakingProvider pointsStakingProvider, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
@@ -57,7 +63,8 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         IClusterClient clusterClient, IDistributedEventBus distributedEventBus, ILogger<PointsStakingService> logger,
         ITokenStakingService tokenStakingService, IOptionsSnapshot<ChainOption> chainOption,
         ISecretProvider secretProvider, IAbpDistributedLock distributedLock,
-        IOptionsSnapshot<PoolTextWordOptions> poolTextWordOptions)
+        IOptionsSnapshot<PoolTextWordOptions> poolTextWordOptions,
+        IOptions<RedisCacheOptions> optionsAccessor, IDistributedCacheSerializer serializer) : base(optionsAccessor)
     {
         _objectMapper = objectMapper;
         _pointsStakingProvider = pointsStakingProvider;
@@ -68,6 +75,7 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
         _tokenStakingService = tokenStakingService;
         _secretProvider = secretProvider;
         _distributedLock = distributedLock;
+        _serializer = serializer;
         _poolTextWordOptions = poolTextWordOptions.Value;
         _chainOption = chainOption.Value;
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
@@ -97,6 +105,13 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
     private async Task<Dictionary<string, ProjectItemAggDto>> GetProjectItemAggDataDic()
     {
         var snapshotDate = DateTime.UtcNow.ToString("yyyyMMdd");
+        await ConnectAsync();
+        var redisValue = await RedisDatabase.StringGetAsync(PointsPoolNowSnapshotRedisKeyPrefix + snapshotDate);
+        if (redisValue.HasValue)
+        {
+            return _serializer.Deserialize<Dictionary<string, ProjectItemAggDto>>(redisValue);
+        }
+        
         var res = new List<PointsSnapshotIndex>();
         var skipCount = 0;
         var maxResultCount = 5000;
@@ -155,6 +170,9 @@ public class PointsStakingService : IPointsStakingService, ISingletonDependency
             _logger.LogInformation("dic info key: {key}, value:{valaue}", projectItemAggDto.Key,
                 projectItemAggDto.Value.StakingAddress);
         }
+        
+        await RedisDatabase.StringSetAsync(PointsPoolNowSnapshotRedisKeyPrefix + snapshotDate,
+            _serializer.Serialize(projectItemAggDataDic), TimeSpan.FromHours(25));
 
         return projectItemAggDataDic;
     }
