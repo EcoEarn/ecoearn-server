@@ -5,8 +5,10 @@ public class ContractConstants
     public const string StakedSumMethodName = "GetPoolData";
     public const string StakedRewardsMethodName = "GetReward";
     public const string ContractName = "EcoEarnTokens";
+    public const string TokenContractName = "AElfTokenContractAddress";
     public const string SenderName = "QueryTokenPoolStakedSumAccount";
     public const string UpdateStakeInfoSenderName = "UpdateStakeInfo";
+    public const string GetBalance = "GetBalance";
 }
 
 public static class TransactionState
