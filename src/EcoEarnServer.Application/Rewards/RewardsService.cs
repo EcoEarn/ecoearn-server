@@ -1225,17 +1225,13 @@ public class RewardsService : IRewardsService, ISingletonDependency
             if (pointsPoolAggDto.RewardsTokenName == liquidityInfoIndexerDto.TokenASymbol)
             {
                 var lossAAmount = double.Parse(liquidityInfoIndexerDto.TokenALossAmount);
-                var loosA = (lossAAmount >= 0
-                    ? Math.Floor(lossAAmount * rate)
-                    : Math.Ceiling(lossAAmount * rate)).ToString(CultureInfo.InvariantCulture);
+                var loosA = Math.Ceiling(lossAAmount * rate).ToString(CultureInfo.InvariantCulture);
                 lossAmount += BigInteger.Parse(loosA);
             }
             else
             {
                 var lossBAmount = double.Parse(liquidityInfoIndexerDto.TokenBLossAmount);
-                var loosB = (lossBAmount >= 0
-                    ? Math.Floor(lossBAmount * rate)
-                    : Math.Ceiling(lossBAmount * rate)).ToString(CultureInfo.InvariantCulture);
+                var loosB = Math.Ceiling(lossBAmount * rate).ToString(CultureInfo.InvariantCulture);
                 lossAmount += BigInteger.Parse(loosB);
             }
         }
