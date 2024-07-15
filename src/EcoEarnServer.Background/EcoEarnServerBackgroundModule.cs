@@ -62,12 +62,16 @@ public class EcoEarnServerBackgroundModule : AbpModule
         Configure<PointsPoolOptions>(configuration.GetSection("PointsPool"));
         Configure<ChainOption>(configuration.GetSection("ChainOption"));
         Configure<LarkAlertOptions>(configuration.GetSection("LarkAlert"));
+        Configure<LpPoolRateOptions>(configuration.GetSection("LpPoolRate"));
+        Configure<MetricsGenerateOptions>(configuration.GetSection("MetricsGenerate"));
         context.Services.AddSingleton<IPointsSnapshotService, PointsSnapshotService>();
         context.Services.AddSingleton<IPointsSnapshotProvider, PointsSnapshotProvider>();
         context.Services.AddSingleton<IStateProvider, StateProvider>();
         context.Services.AddSingleton<ISettlePointsRewardsService, SettlePointsRewardsService>();
         context.Services.AddSingleton<ISettlePointsRewardsProvider, SettlePointsRewardsProvider>();
         context.Services.AddSingleton<ILarkAlertProvider, LarkAlertProvider>();
+        context.Services.AddSingleton<IMetricsService, MetricsService>();
+        context.Services.AddSingleton<IMetricsProvider, MetricsProvider>();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
         ConfigureRedis(context, configuration, hostingEnvironment);
         ConfigureCache(configuration);
@@ -164,6 +168,7 @@ public class EcoEarnServerBackgroundModule : AbpModule
     {
         context.AddBackgroundWorkerAsync<PointsSnapshotWorker>();
         context.AddBackgroundWorkerAsync<SettlePointsRewardsWorker>();
+        context.AddBackgroundWorkerAsync<MetricsWorker>();
         InitRecurringJob(context.ServiceProvider);
         StartOrleans(context.ServiceProvider);
     }
