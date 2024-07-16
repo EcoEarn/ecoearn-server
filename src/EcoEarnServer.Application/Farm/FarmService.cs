@@ -92,7 +92,9 @@ public class FarmService : IFarmService, ISingletonDependency
                 (decimal.Parse(entity.Value.Where(x => unLockedStakeIds.Contains(x.StakeId)).Sum(x => x.TokenBAmount)
                     .ToString()) / 100000000).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.LiquidityIds = entity.Value.Select(x => x.LiquidityId).ToList();
-            liquidityInfoDto.LpAmount = entity.Value.Sum(x => x.LpAmount);
+            liquidityInfoDto.LpAmount = entity.Value
+                .Where(x => unLockedStakeIds.Contains(x.StakeId))
+                .Sum(x => x.LpAmount);
             var rewardsAllList =
                 await GetAllRewardsList(input.Address, PoolTypeEnums.All, liquidityInfoDto.LiquidityIds);
             var longestReleaseTime = rewardsAllList.Select(x => x.ReleaseTime).Max();
