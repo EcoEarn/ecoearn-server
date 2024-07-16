@@ -97,11 +97,6 @@ public class FarmService : IFarmService, ISingletonDependency
             liquidityInfoDto.LpAmount = entity.Value
                 .Where(x => unLockedStakeIds.Contains(x.StakeId))
                 .Sum(x => x.LpAmount);
-            var rewardsAllList =
-                await GetAllRewardsList(input.Address, PoolTypeEnums.All, liquidityInfoDto.LiquidityIds);
-            var longestReleaseTime = rewardsAllList.Select(x => x.ReleaseTime).Max();
-            liquidityInfoDto.LongestReleaseTime = longestReleaseTime;
-
             result.Add(liquidityInfoDto);
         }
 
@@ -139,7 +134,6 @@ public class FarmService : IFarmService, ISingletonDependency
             if (rateDic.TryGetValue(liquidityInfoDto.Rate, out var myLiquidity))
             {
                 liquidityInfoDto.LiquidityIds = myLiquidity.LiquidityIds;
-                liquidityInfoDto.LongestReleaseTime = myLiquidity.LongestReleaseTime;
                 liquidityInfoDto.LpAmount = myLiquidity.LpAmount;
                 liquidityInfoDto.RewardSymbol = myLiquidity.RewardSymbol;
                 liquidityInfoDto.EcoEarnTokenAAmount = myLiquidity.TokenAAmount;
