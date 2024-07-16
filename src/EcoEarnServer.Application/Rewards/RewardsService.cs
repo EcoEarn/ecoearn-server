@@ -476,7 +476,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
             LiquidityInput = stakeLiquidityInput.LiquidityInput,
             PoolId = stakeLiquidityInput.PoolId,
             Period = stakeLiquidityInput.Period,
-            LongestReleaseTime = stakeLiquidityInput.LongestReleaseTime,
         }.ToByteArray());
         if (!CryptoHelper.RecoverPublicKey(stakeLiquidityInput.Signature.ToByteArray(),
                 computedHash.ToByteArray(),
@@ -655,9 +654,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var seed = Guid.NewGuid().ToString();
         var repeatedField = new RepeatedField<Hash>();
         repeatedField.AddRange(liquidityIds.Select(Hash.LoadFromHex).ToList());
-        var rewardsAllList = await GetAllRewardsList(address, PoolTypeEnums.All);
-        var longestReleaseTime = rewardsAllList.Select(x => x.ReleaseTime).Max() / 1000;
-        _logger.LogInformation("longestReleaseTime: {longestReleaseTime}", longestReleaseTime);
         IMessage data = executeType switch
         {
             ExecuteType.LiquidityRemove => new RemoveLiquidityInput()
@@ -685,7 +681,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 },
                 PoolId = Hash.LoadFromHex(poolId),
                 Period = period,
-                LongestReleaseTime = longestReleaseTime,
             },
             _ => null
         };
@@ -733,7 +728,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var address = input.Address;
         var amount = input.Amount;
         var executeClaimIds = input.ClaimInfos.Select(x => x.ClaimId).ToList();
-        var longestReleaseTime = input.ClaimInfos.Last().ReleaseTime / 1000;
+        var longestReleaseTime = input.ClaimInfos.Select(x => x.ReleaseTime).Max() / 1000;
         var dappId = input.DappId;
         var poolId = input.PoolId;
         var period = input.Period;
@@ -1230,17 +1225,13 @@ public class RewardsService : IRewardsService, ISingletonDependency
             if (pointsPoolAggDto.RewardsTokenName == liquidityInfoIndexerDto.TokenASymbol)
             {
                 var lossAAmount = double.Parse(liquidityInfoIndexerDto.TokenALossAmount);
-                var loosA = (lossAAmount >= 0
-                    ? Math.Floor(lossAAmount * rate)
-                    : Math.Ceiling(lossAAmount * rate)).ToString(CultureInfo.InvariantCulture);
+                var loosA = Math.Ceiling(lossAAmount * rate).ToString(CultureInfo.InvariantCulture);
                 lossAmount += BigInteger.Parse(loosA);
             }
             else
             {
                 var lossBAmount = double.Parse(liquidityInfoIndexerDto.TokenBLossAmount);
-                var loosB = (lossBAmount >= 0
-                    ? Math.Floor(lossBAmount * rate)
-                    : Math.Ceiling(lossBAmount * rate)).ToString(CultureInfo.InvariantCulture);
+                var loosB = Math.Ceiling(lossBAmount * rate).ToString(CultureInfo.InvariantCulture);
                 lossAmount += BigInteger.Parse(loosB);
             }
         }

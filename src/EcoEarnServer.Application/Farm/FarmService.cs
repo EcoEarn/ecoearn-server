@@ -12,6 +12,7 @@ using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver.Linq;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
@@ -69,8 +70,10 @@ public class FarmService : IFarmService, ISingletonDependency
                 out var poolRate)
                 ? poolRate
                 : 0;
-            var lpPrice = await _priceProvider.GetLpPriceAsync("", liquidityInfoDto.Rate, liquidityInfoDto.TokenASymbol,
-                liquidityInfoDto.TokenBSymbol);
+            var (symbol0, symbol1) = LpSymbolHelper.GetLpSymbols(liquidityInfoDto.LpSymbol);
+
+            var lpPrice = await _priceProvider.GetLpPriceAsync("", liquidityInfoDto.Rate, symbol0,
+                symbol1);
             liquidityInfoDto.StakingAmount =
                 (double.Parse(entity.Value.Where(x => !unLockedStakeIds.Contains(x.StakeId)).Sum(x => x.LpAmount)
                     .ToString()) / 100000000).ToString(CultureInfo.InvariantCulture);
@@ -88,13 +91,12 @@ public class FarmService : IFarmService, ISingletonDependency
             liquidityInfoDto.TokenBUnStakingAmount =
                 (decimal.Parse(entity.Value.Where(x => unLockedStakeIds.Contains(x.StakeId)).Sum(x => x.TokenBAmount)
                     .ToString()) / 100000000).ToString(CultureInfo.InvariantCulture);
-            liquidityInfoDto.LiquidityIds = entity.Value.Select(x => x.LiquidityId).ToList();
-            liquidityInfoDto.LpAmount = entity.Value.Sum(x => x.LpAmount);
-            var rewardsAllList =
-                await GetAllRewardsList(input.Address, PoolTypeEnums.All, liquidityInfoDto.LiquidityIds);
-            var longestReleaseTime = rewardsAllList.Select(x => x.ReleaseTime).Max();
-            liquidityInfoDto.LongestReleaseTime = longestReleaseTime;
-
+            liquidityInfoDto.LiquidityIds = entity.Value
+                .Where(x => unLockedStakeIds.Contains(x.StakeId))
+                .Select(x => x.LiquidityId).ToList();
+            liquidityInfoDto.LpAmount = entity.Value
+                .Where(x => unLockedStakeIds.Contains(x.StakeId))
+                .Sum(x => x.LpAmount);
             result.Add(liquidityInfoDto);
         }
 
@@ -132,7 +134,6 @@ public class FarmService : IFarmService, ISingletonDependency
             if (rateDic.TryGetValue(liquidityInfoDto.Rate, out var myLiquidity))
             {
                 liquidityInfoDto.LiquidityIds = myLiquidity.LiquidityIds;
-                liquidityInfoDto.LongestReleaseTime = myLiquidity.LongestReleaseTime;
                 liquidityInfoDto.LpAmount = myLiquidity.LpAmount;
                 liquidityInfoDto.RewardSymbol = myLiquidity.RewardSymbol;
                 liquidityInfoDto.EcoEarnTokenAAmount = myLiquidity.TokenAAmount;
@@ -147,6 +148,35 @@ public class FarmService : IFarmService, ISingletonDependency
         }
 
         return result;
+    }
+
+    public async Task<PagedResultDto<LiquidityInfoListDto>> GetLiquidityListAsync(GetLiquidityListInput input)
+    {
+        var listIndexerResult = await _farmProvider.GetLiquidityListAsync(new List<string>(), input.Address,
+            LpStatus.Added, input.SkipCount, input.MaxResultCount);
+        
+        var result = new List<LiquidityInfoListDto>();
+        foreach (var liquidityInfoListDto in listIndexerResult.Data.Select(liquidityInfoIndexerDto =>
+                     _objectMapper.Map<LiquidityInfoIndexerDto, LiquidityInfoListDto>(liquidityInfoIndexerDto)))
+        {
+            var rate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(
+                liquidityInfoListDto.TokenAddress,
+                out var poolRate)
+                ? poolRate
+                : 0;
+            var (symbol0, symbol1) = LpSymbolHelper.GetLpSymbols(liquidityInfoListDto.LpSymbol);
+            var lpPrice = await _priceProvider.GetLpPriceAsync("", rate, symbol0,
+                symbol1);
+            liquidityInfoListDto.LpUsdAmount =
+                (double.Parse(liquidityInfoListDto.LpAmount.ToString()) * lpPrice).ToString(CultureInfo.InvariantCulture);
+            result.Add(liquidityInfoListDto);
+        }
+
+        return new PagedResultDto<LiquidityInfoListDto>()
+        {
+            TotalCount = listIndexerResult.TotalCount,
+            Items = result
+        };
     }
 
     private async Task<List<LiquidityInfoIndexerDto>> GetAllLiquidityList(string address)

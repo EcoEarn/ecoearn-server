@@ -22,6 +22,8 @@ public interface IFarmProvider
         LpStatus lpStatus, int skipCount, int maxResultCount);
 
     Task<List<LpPriceItemDto>> GetAwakenLiquidityInfoAsync(string symbol0, string symbol1);
+    Task<LiquidityInfoListIndexerResult> GetLiquidityListAsync(List<string> liquidityIds, string address,
+        LpStatus lpStatus, int skipCount, int maxResultCount);
 }
 
 public class FarmProvider : IFarmProvider, ISingletonDependency
@@ -118,6 +120,55 @@ public class FarmProvider : IFarmProvider, ISingletonDependency
         {
             _logger.LogError(e, "[PriceDataProvider][GetLpPriceAsync] Parse response error.");
             return new List<LpPriceItemDto>();
+        }
+    }
+
+    public async Task<LiquidityInfoListIndexerResult> GetLiquidityListAsync(List<string> liquidityIds, string address, LpStatus lpStatus, int skipCount, int maxResultCount)
+    
+    {
+        try
+        {
+            var indexerResult = await _graphQlHelper.QueryAsync<LiquidityInfoListIndexerQuery>(new GraphQLRequest
+            {
+                Query =
+                    @"query($liquidityIds:[String!]!, $lpStatus:LpStatus!, $address:String!, $skipCount:Int!,$maxResultCount:Int!){
+                    getLiquidityInfoList(input: {liquidityIds:$liquidityIds,lpStatus:$lpStatus,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        totalCount,
+                        data{
+                        liquidityId,
+                        stakeId,
+                        seed,
+                        lpAmount,
+                        lpSymbol,
+                        rewardSymbol,
+                        tokenAAmount,
+    					tokenASymbol,
+    					tokenBAmount,
+    					tokenBSymbol,
+    					addedTime,
+    					dappId,
+    					address,
+    					swapAddress,
+    					tokenAddress,
+    					tokenALossAmount,
+    					tokenBLossAmount,
+    					lpStatus,
+                    }
+                }
+            }",
+                Variables = new
+                {
+                    liquidityIds = liquidityIds, lpStatus = lpStatus, skipCount = skipCount,
+                    maxResultCount = maxResultCount, address = address
+                }
+            });
+
+            return indexerResult.GetLiquidityInfoList;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "getClaimInfoList Indexer error");
+            return new LiquidityInfoListIndexerResult();
         }
     }
 }
