@@ -93,13 +93,14 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
                 return _serializer.Deserialize<double>(redisValue);
             }
 
+            var rate = feeRate.ToString(CultureInfo.InvariantCulture);
             var resp = await _httpProvider.InvokeAsync<CommonResponseDto<LpPriceDto>>(HttpMethod.Get,
                 _lpPoolRateOptions.LpPriceServer.LpPriceServerBaseUrl,
                 param: new Dictionary<string, string>
                 {
                     ["token0Symbol"] = symbol0,
                     ["token1Symbol"] = symbol1,
-                    ["feeRate"] = feeRate.ToString(CultureInfo.InvariantCulture),
+                    ["feeRate"] = rate,
                     ["chainId"] = _lpPoolRateOptions.LpPriceServer.ChainId,
                 }, header: null);
             double price = 0;

@@ -21,7 +21,6 @@ public class LiquidityInfoDto
     public int UsdDecimal { get; set; } = 6;
     public string RewardSymbol { get; set; }
     public long LpAmount { get; set; }
-    public long LongestReleaseTime { get; set; }
 }
 
 public enum LpStatus
@@ -52,5 +51,19 @@ public class MarketLiquidityInfoDto
     public string EcoEarnTokenBAmount { get; set; } = "0";
     public string EcoEarnBanlance { get; set; } = "0";
     public long LpAmount { get; set; }
-    public long LongestReleaseTime { get; set; }
+}
+
+public class LiquidityInfoListDto
+{
+    public long LpAmount { get; set; }
+    public string LpUsdAmount { get; set; }
+    public string LpSymbol { get; set; }
+    public string Address { get; set; }
+    public long TokenAAmount { get; set; }
+    public string TokenASymbol { get; set; }
+    public long TokenBAmount { get; set; }
+    public string TokenBSymbol { get; set; }
+    public long AddedTime { get; set; }
+    public string SwapAddress { get; set; }
+    public string TokenAddress { get; set; }
 }

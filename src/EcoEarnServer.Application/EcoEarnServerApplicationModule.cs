@@ -1,4 +1,5 @@
 using EcoEarnServer.Grains;
+using EcoEarnServer.PointsStaking;
 using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.TokenStaking;
 using EcoEarnServer.TokenStaking.Provider;
@@ -31,6 +32,7 @@ public class EcoEarnServerApplicationModule : AbpModule
     {
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<EcoEarnServerApplicationModule>(); });
         context.Services.AddSingleton<ITokenStakingService, TokenStakingService>();
+        context.Services.AddSingleton<IPointsStakingService, PointsStakingService>();
         context.Services.AddSingleton<ISecretProvider, SecretProvider>();
         context.Services.AddSingleton<IPriceProvider, PriceProvider>();
         context.Services.AddHttpClient();
