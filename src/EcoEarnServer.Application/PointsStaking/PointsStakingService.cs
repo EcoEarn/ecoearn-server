@@ -372,7 +372,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         }
 
         var result = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(address);
-        await RedisDatabase.StringSetAsync(PointsPoolStakeAmountRedisKeyPrefix + address,
+        await RedisDatabase.StringSetAsync(PointsPoolStakeRewardsRedisKeyPrefix + address,
             _serializer.Serialize(result), TimeSpan.FromMinutes(1));
         return result;
     }
@@ -468,7 +468,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
     private async Task SettleRewardsAsync(string address, string poolId, double claimAmount)
     {
         await ConnectAsync();
-        await RedisDatabase.KeyDeleteAsync(PointsPoolStakeAmountRedisKeyPrefix + address);
+        await RedisDatabase.KeyDeleteAsync(PointsPoolStakeRewardsRedisKeyPrefix + address);
         var id = GuidHelper.GenerateId(address, poolId);
         var rewardsSumDto = new PointsStakeRewardsSumDto()
         {
