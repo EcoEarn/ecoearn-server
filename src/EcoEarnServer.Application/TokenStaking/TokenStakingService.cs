@@ -31,6 +31,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 {
     private const string TokenPoolStakedSumRedisKeyPrefix = "EcoEarnServer:TokenPoolStakedSum:";
     private const string TokenPoolStakedRewardsRedisKeyPrefix = "EcoEarnServer:TokenPoolStakedRewards:";
+    private const string TokenPoolUnLoginListRedisKeyPrefix = "EcoEarnServer:TokenPoolUnLoginList:";
     private const long YearlyBlocks = 86400 * 360;
 
     private readonly ITokenStakingProvider _tokenStakingProvider;
@@ -67,6 +68,16 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 
     public async Task<TokenPoolsResult> GetTokenPoolsAsync(GetTokenPoolsInput input)
     {
+        if (string.IsNullOrEmpty(input.Address))
+        {
+            await ConnectAsync();
+            var redisValue = await RedisDatabase.StringGetAsync(TokenPoolUnLoginListRedisKeyPrefix + input.PoolType);
+            if (redisValue.HasValue)
+            {
+                return _serializer.Deserialize<TokenPoolsResult>(redisValue);
+            }
+        }
+        
         var tokenPoolsIndexerDtos = await _tokenStakingProvider.GetTokenPoolsAsync(input);
         var poolIds = tokenPoolsIndexerDtos.Select(x => x.PoolId).Distinct().ToList();
         var addressStakedInPoolDic = await _tokenStakingProvider.GetAddressStakedInPoolDicAsync(poolIds, input.Address);
@@ -154,11 +165,18 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             tokenPoolsList.Add(tokenPoolsDto);
         }
 
-        return new TokenPoolsResult()
+        var result = new TokenPoolsResult()
         {
             Pools = tokenPoolsList,
             TextNodes = JsonConvert.DeserializeObject<List<TextNodeDto>>(_poolTextWordOptions.PointsTextWord)
         };
+        
+        if (string.IsNullOrEmpty(input.Address))
+        {
+            await RedisDatabase.StringSetAsync(TokenPoolUnLoginListRedisKeyPrefix + input.PoolType, _serializer.Serialize(result),
+                TimeSpan.FromHours(2));
+        }
+        return result;
     }
 
     public async Task<long> GetTokenPoolStakedSumAsync(GetTokenPoolStakedSumInput input)

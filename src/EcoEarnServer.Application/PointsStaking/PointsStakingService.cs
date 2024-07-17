@@ -41,6 +41,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
     private const string PointsPoolNowSnapshotRedisKeyPrefix = "EcoEarnServer:PointsPoolNowSnapshot:";
     private const string PointsPoolStakeAmountRedisKeyPrefix = "EcoEarnServer:PointsPoolStakeAmount:";
     private const string PointsPoolStakeRewardsRedisKeyPrefix = "EcoEarnServer:PointsPoolStakeRewards:";
+    private const string PointsPoolUnLoginListRedisKeyPrefix = "EcoEarnServer:PointsPoolUnLoginList:";
 
 
     private readonly ProjectItemOptions _projectItemOptions;
@@ -181,6 +182,16 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
 
     public async Task<List<PointsPoolsDto>> GetPointsPoolsAsync(GetPointsPoolsInput input)
     {
+        if (string.IsNullOrEmpty(input.Address))
+        {
+            await ConnectAsync();
+            var redisValue = await RedisDatabase.StringGetAsync(PointsPoolUnLoginListRedisKeyPrefix + input.Type);
+            if (redisValue.HasValue)
+            {
+                return _serializer.Deserialize<List<PointsPoolsDto>>(redisValue);
+            }
+        }
+
         var pointsPoolsIndexerList = await _pointsStakingProvider.GetPointsPoolsAsync(input.Name);
         var poolIds = pointsPoolsIndexerList.Select(pool => pool.PoolId).ToList();
         var pointsPoolsDtos =
@@ -207,9 +218,16 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         });
         var sortedPointsPools = pointsPoolsDtos.OrderByDescending(dto => decimal.Parse(dto.DailyRewards)).ToList();
 
-        return input.Type == PoolQueryType.Staked
+        var result = input.Type == PoolQueryType.Staked
             ? sortedPointsPools.Where(x => x.Staked != "0").ToList()
             : sortedPointsPools;
+        if (string.IsNullOrEmpty(input.Address))
+        {
+            await RedisDatabase.StringSetAsync(PointsPoolUnLoginListRedisKeyPrefix + input.Type, _serializer.Serialize(result),
+                TimeSpan.FromHours(2));
+        }
+
+        return result;
     }
 
     public async Task<ClaimAmountSignatureDto> ClaimAmountSignatureAsync(ClaimAmountSignatureInput input)
@@ -352,6 +370,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         {
             return _serializer.Deserialize<Dictionary<string, string>>(redisValue);
         }
+
         var result = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(address);
         await RedisDatabase.StringSetAsync(PointsPoolStakeAmountRedisKeyPrefix + address,
             _serializer.Serialize(result), TimeSpan.FromMinutes(1));
