@@ -1076,6 +1076,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .ToString();
         var realWithdrawAmount = long.Parse(withdrawAmount) - long.Parse(lossAmount.ToString());
         var subAmount = realWithdrawAmount - amount;
+        _logger.LogInformation("realWithdrawAmount: {realWithdrawAmount}, amount: {amount}, withdrawAmount: {withdrawAmount}, lossAmount: {lossAmount}",realWithdrawAmount,
+            amount,withdrawAmount,lossAmount);
         var checkResult = resultList.Count == withdrawClaimIds.Count && !includeClaimIds.Any() && subAmount < 3;
 
         if (!checkResult)
