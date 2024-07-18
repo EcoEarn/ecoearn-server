@@ -41,8 +41,14 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
         _lpPoolRateOptions = lpPoolRateOptions.Value;
     }
 
-    public async Task<double> GetGateIoPriceAsync(string currencyPair)
+    public async Task<double> GetGateIoPriceAsync(string pair)
     {
+        var currencyPair = pair;
+        var split = pair.Split("_");
+        if (split.Length == 2 && _lpPoolRateOptions.SymbolMappingsDic.TryGetValue(split[0], out var mappingSymbol))
+        {
+            currencyPair = mappingSymbol + "_" + split[1];
+        }
         await ConnectAsync();
         var redisValue = await RedisDatabase.StringGetAsync(currencyPair);
         if (redisValue.HasValue)
