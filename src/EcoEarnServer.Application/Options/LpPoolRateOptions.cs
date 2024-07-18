@@ -6,6 +6,7 @@ public class LpPoolRateOptions
 {
     public Dictionary<string, double> LpPoolRateDic { get; set; }
     public LpPriceServer LpPriceServer { get; set; }
+    public Dictionary<string, string> SymbolMappingsDic { get; set; }
 }
 
 public class LpPriceServer
