@@ -58,6 +58,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
     private readonly EcoEarnContractOptions _earnContractOptions;
     private readonly ContractProvider _contractProvider;
     private readonly IFarmProvider _farmProvider;
+    private readonly IPriceProvider _priceProvider;
 
     public RewardsService(IRewardsProvider rewardsProvider, IObjectMapper objectMapper, ILogger<RewardsService> logger,
         IOptionsSnapshot<TokenPoolIconsOptions> tokenPoolIconsOptions, IPointsStakingProvider pointsStakingProvider,
@@ -65,7 +66,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         IAbpDistributedLock distributedLock, IClusterClient clusterClient, IOptionsSnapshot<ChainOption> chainOption,
         IOptionsSnapshot<ProjectKeyPairInfoOptions> projectKeyPairInfoOptions, ISecretProvider secretProvider,
         IDistributedEventBus distributedEventBus, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
-        ContractProvider contractProvider, IFarmProvider farmProvider)
+        ContractProvider contractProvider, IFarmProvider farmProvider, IPriceProvider priceProvider)
     {
         _rewardsProvider = rewardsProvider;
         _objectMapper = objectMapper;
@@ -78,6 +79,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         _distributedEventBus = distributedEventBus;
         _contractProvider = contractProvider;
         _farmProvider = farmProvider;
+        _priceProvider = priceProvider;
         _earnContractOptions = earnContractOptions.Value;
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
         _chainOption = chainOption.Value;
@@ -95,7 +97,11 @@ public class RewardsService : IRewardsService, ISingletonDependency
             input.SkipCount * releaseCount, input.MaxResultCount * releaseCount, filterUnlocked: input.FilterUnlocked);
         var result =
             _objectMapper.Map<List<RewardsListIndexerDto>, List<RewardsListDto>>(rewardsListIndexerResult.Data);
-
+        
+        var rewardsToken = result.First()?.RewardsToken;
+        var currencyPair = $"{rewardsToken}_USDT";
+        var rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
+        
         var poolsIdDic = await GetPoolIdDicAsync(result);
 
 
@@ -126,6 +132,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             var rewardsSum = g.Sum(x => double.Parse(x.Rewards));
             var rewardsListDto = g.First();
             rewardsListDto.Rewards = rewardsSum.ToString(CultureInfo.InvariantCulture);
+            rewardsListDto.RewardsInUsd = (rewardsSum * rate).ToString(CultureInfo.InvariantCulture);
             return rewardsListDto;
         });
         return new PagedResultDto<RewardsListDto>
@@ -142,6 +149,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var poolTypeRewardDic = rewardsList
             .GroupBy(x => x.PoolType)
             .ToDictionary(g => g.Key, g => g.ToList());
+        var claimedSymbol = rewardsList.First()?.ClaimedSymbol;
+        var currencyPair = $"{claimedSymbol}_USDT";
+        var usdRate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
         var rewardsAggregationDto = new RewardsAggregationDto();
         foreach (var keyValuePair in poolTypeRewardDic)
         {
@@ -149,13 +159,13 @@ public class RewardsService : IRewardsService, ISingletonDependency
             {
                 case PoolTypeEnums.Points:
                     rewardsAggregationDto.PointsPoolAgg =
-                        await GetRewardsAggAsync(keyValuePair.Value, address, 0);
+                        await GetRewardsAggAsync(keyValuePair.Value, address, usdRate);
                     break;
                 case PoolTypeEnums.Token:
-                    rewardsAggregationDto.TokenPoolAgg = await GetRewardsAggAsync(keyValuePair.Value, address, 0);
+                    rewardsAggregationDto.TokenPoolAgg = await GetRewardsAggAsync(keyValuePair.Value, address, usdRate);
                     break;
                 case PoolTypeEnums.Lp:
-                    rewardsAggregationDto.LpPoolAgg = await GetRewardsAggAsync(keyValuePair.Value, address, 0);
+                    rewardsAggregationDto.LpPoolAgg = await GetRewardsAggAsync(keyValuePair.Value, address, usdRate);
                     break;
             }
         }
