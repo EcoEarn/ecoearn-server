@@ -1126,10 +1126,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var nextReward = operationRewardsInfo.NextRewards;
         var operationClaimInfos = operationRewardsInfo.OperationClaimInfos;
         var rewardOperationRecordList = operationRewardsInfo.RewardOperationRecordList;
-        
+
         var operationAmount =
             long.Parse(executeType == ExecuteType.Withdrawn ? nowRewards.ClaimedAmount : nextReward.Frozen);
-        var resultList = operationClaimInfos.Select(x => x.ClaimId).ToList();
+        var resultList = executeType == ExecuteType.Withdrawn
+            ? nowRewards.ClaimIds
+            : operationClaimInfos.Select(x => x.ClaimId).ToList();
         var includeClaimIds = resultList.Except(withdrawClaimIds).ToList();
 
         if (includeClaimIds.Any())
