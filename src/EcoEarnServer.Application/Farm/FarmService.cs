@@ -117,12 +117,11 @@ public class FarmService : IFarmService, ISingletonDependency
         {
             var (symbol0, symbol1) = LpSymbolHelper.GetLpSymbols(tokenPoolsIndexerDto.TokenPoolConfig.StakingToken);
             var awakenLiquidityInfos = await _farmProvider.GetAwakenLiquidityInfoAsync(symbol0, symbol1);
-            foreach (var lpPriceItemDto in awakenLiquidityInfos)
+            foreach (var lpPriceItemDto in awakenLiquidityInfos.Where(lpPriceItemDto => rates.Contains(lpPriceItemDto.FeeRate)))
             {
-                if (rates.Contains(lpPriceItemDto.FeeRate))
-                {
-                    awakenLiquidityInfoList.Add(lpPriceItemDto);
-                }
+                lpPriceItemDto.LpSymbol = tokenPoolsIndexerDto.TokenPoolConfig.StakingToken;
+                lpPriceItemDto.RewardToken = tokenPoolsIndexerDto.TokenPoolConfig.RewardToken;
+                awakenLiquidityInfoList.Add(lpPriceItemDto);
             }
         }
 
@@ -130,6 +129,21 @@ public class FarmService : IFarmService, ISingletonDependency
         foreach (var lpPriceItemDto in awakenLiquidityInfoList)
         {
             var liquidityInfoDto = _objectMapper.Map<LpPriceItemDto, MarketLiquidityInfoDto>(lpPriceItemDto);
+            if (lpPriceItemDto.RewardToken == lpPriceItemDto.Token0.Symbol)
+            {
+                liquidityInfoDto.TokenASymbol = lpPriceItemDto.Token0.Symbol;
+                liquidityInfoDto.TokenAAmount = lpPriceItemDto.ValueLocked0.ToString(CultureInfo.InvariantCulture);
+                liquidityInfoDto.TokenBSymbol = lpPriceItemDto.Token1.Symbol;
+                liquidityInfoDto.TokenBAmount = lpPriceItemDto.ValueLocked1.ToString(CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                liquidityInfoDto.TokenASymbol = lpPriceItemDto.Token1.Symbol;
+                liquidityInfoDto.TokenAAmount = lpPriceItemDto.ValueLocked1.ToString(CultureInfo.InvariantCulture);
+                liquidityInfoDto.TokenBSymbol = lpPriceItemDto.Token0.Symbol;
+                liquidityInfoDto.TokenBAmount = lpPriceItemDto.ValueLocked0.ToString(CultureInfo.InvariantCulture);
+            }
+
             liquidityInfoDto.Icons = new List<string>();
             if (rateDic.TryGetValue(liquidityInfoDto.Rate, out var myLiquidity))
             {
