@@ -97,11 +97,11 @@ public class RewardsService : IRewardsService, ISingletonDependency
             input.SkipCount * releaseCount, input.MaxResultCount * releaseCount, filterUnlocked: input.FilterUnlocked);
         var result =
             _objectMapper.Map<List<RewardsListIndexerDto>, List<RewardsListDto>>(rewardsListIndexerResult.Data);
-        
+
         var rewardsToken = result.First()?.RewardsToken;
         var currencyPair = $"{rewardsToken}_USDT";
         var rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
-        
+
         var poolsIdDic = await GetPoolIdDicAsync(result);
 
 
@@ -159,13 +159,15 @@ public class RewardsService : IRewardsService, ISingletonDependency
             {
                 case PoolTypeEnums.Points:
                     rewardsAggregationDto.PointsPoolAgg =
-                        await GetRewardsAggAsync(keyValuePair.Value, address, usdRate);
+                        await GetRewardsAggAsync(keyValuePair.Value, address, usdRate, PoolTypeEnums.Points);
                     break;
                 case PoolTypeEnums.Token:
-                    rewardsAggregationDto.TokenPoolAgg = await GetRewardsAggAsync(keyValuePair.Value, address, usdRate);
+                    rewardsAggregationDto.TokenPoolAgg =
+                        await GetRewardsAggAsync(keyValuePair.Value, address, usdRate, PoolTypeEnums.Token);
                     break;
                 case PoolTypeEnums.Lp:
-                    rewardsAggregationDto.LpPoolAgg = await GetRewardsAggAsync(keyValuePair.Value, address, usdRate);
+                    rewardsAggregationDto.LpPoolAgg =
+                        await GetRewardsAggAsync(keyValuePair.Value, address, usdRate, PoolTypeEnums.Lp);
                     break;
             }
         }
@@ -967,14 +969,35 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 lossAmount += BigInteger.Parse(liquidityInfoIndexerDto.TokenBLossAmount);
             }
         }
+        
+        var realClaimIds = unWithdrawList.Select(x => x.ClaimId).ToList();
+        var rewardsMergedList = await GetAllMergedRewardsList(address, poolType);
 
-        var rewardsDtos = unWithdrawList.Select(x => new RewardsDto
+        var rewardsMergeDtos = new List<RewardsMergeDto>();
+        foreach (var rewardsMergedListIndexerDto in rewardsMergedList)
         {
-            ClaimedAmount = x.ClaimedAmount,
-            ClaimId = x.ClaimId,
-            ReleaseTime = x.ReleaseTime,
-        }).ToList();
-        var rewardsMergeDtos = MergeRewards(rewardsDtos, _earnContractOptions.MergeMilliseconds);
+            var mergeDto = new RewardsMergeDto()
+            {
+                ReleaseTime = rewardsMergedListIndexerDto.ReleaseTime
+            };
+            var claimedAmount = BigInteger.Parse(rewardsMergedListIndexerDto.Amount);
+            var claimIds = new List<string>();
+            foreach (var mergedClaimInfoIndexerDto in rewardsMergedListIndexerDto.MergeClaimInfos)
+            {
+                if (!realClaimIds.Contains(mergedClaimInfoIndexerDto.ClaimId))
+                {
+                    claimedAmount -= BigInteger.Parse(mergedClaimInfoIndexerDto.ClaimedAmount);
+                }
+                else
+                {
+                    claimIds.Add(mergedClaimInfoIndexerDto.ClaimId);
+                }
+            }
+
+            mergeDto.ClaimedAmount = claimedAmount.ToString();
+            mergeDto.ClaimIds = claimIds;
+            rewardsMergeDtos.Add(mergeDto);
+        }
         var (nowRewards, nextReward) = GetNextReward(rewardsMergeDtos, DateTime.UtcNow.ToUtcMilliSeconds(),
             long.Parse(lossAmount.ToString()));
         if (executeType == ExecuteType.Withdrawn)
@@ -1100,40 +1123,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         return checkResult;
     }
 
-    private async Task UpdateOperationStatusByIdAsync(string id)
-    {
-        var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
-
-        var saveResult = await rewardOperationRecordGrain.EndedAsync();
-
-        if (!saveResult.Success)
-        {
-            _logger.LogError(
-                "update operation statue fail, message:{message}, id: {id}", saveResult.Message, id);
-            throw new UserFriendlyException(saveResult.Message);
-        }
-
-        await _distributedEventBus.PublishAsync(
-            _objectMapper.Map<RewardOperationRecordDto, RewardOperationRecordEto>(saveResult.Data));
-    }
-
-    private async Task UpdateOperationStatusAsync(string address, IEnumerable<Hash> claimIds)
-    {
-        var claimIdsArray = claimIds.SelectMany(claimId => Encoding.UTF8.GetBytes(claimId.ToHex())).ToArray();
-        string claimIdsHex;
-        using (var md5 = MD5.Create())
-        {
-            var hashBytes = md5.ComputeHash(claimIdsArray);
-            claimIdsHex = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-        }
-
-        var id = GuidHelper.GenerateId(address, claimIdsHex);
-
-        await UpdateOperationStatusByIdAsync(id);
-    }
-
     private async Task<RewardsAggDto> GetRewardsAggAsync(List<RewardsListIndexerDto> list, string address,
-        double usdRate)
+        double usdRate, PoolTypeEnums poolType)
     {
         var pointsPoolAggDto = new RewardsAggDto();
         if (list.IsNullOrEmpty())
@@ -1148,13 +1139,14 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
             .ToString();
 
-
+        //withdrawn rewards
         var withdrawn = list.Where(x => x.WithdrawTime != 0)
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
             .ToString();
         pointsPoolAggDto.Withdrawn = withdrawn;
         pointsPoolAggDto.WithdrawnInUsd = (double.Parse(withdrawn) * usdRate).ToString(CultureInfo.InvariantCulture);
+
 
         var unWithdrawList = list
             .Where(x => x.WithdrawTime == 0)
@@ -1163,21 +1155,16 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var rewardOperationRecordList =
             await _rewardsProvider.GetRewardOperationRecordListAsync(address,
                 new List<ExecuteStatus> { ExecuteStatus.Ended });
-        _logger.LogInformation("rewardOperationRecordList: {rewardOperationRecordList}",
-            JsonConvert.SerializeObject(rewardOperationRecordList));
 
         var rewardOperationRecordClaimIds = rewardOperationRecordList
             .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId).ToList())
+            .Distinct()
             .ToList();
-        _logger.LogInformation("rewardOperationRecordClaimIds: {rewardOperationRecordList}",
-            JsonConvert.SerializeObject(rewardOperationRecordClaimIds));
+
 
         var operationClaimList = unWithdrawList
             .Where(x => rewardOperationRecordClaimIds.Contains(x.ClaimId))
             .ToList();
-
-        _logger.LogInformation("operationClaimList: {operationClaimList}",
-            JsonConvert.SerializeObject(operationClaimList));
 
         var earlyStakedIds = operationClaimList
             .Where(x => !string.IsNullOrEmpty(x.EarlyStakeSeed))
@@ -1194,20 +1181,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var liquidityRemovedList =
             await _farmProvider.GetLiquidityInfoAsync(liquidityIds, "", LpStatus.Removed, 0, 5000);
 
-        var liquidityRewardsList = await GetAllRewardsList(address, PoolTypeEnums.All, liquidityIds);
-        var liquidityIdSumDic = liquidityRewardsList
-            .GroupBy(x => x.LiquidityId)
-            .ToDictionary(g => g.Key,
-                g => g.Select(x => BigInteger.Parse(x.ClaimedAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString());
-
-        var liquidityIdRateDic = operationClaimList
-            .Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
-            .GroupBy(x => x.LiquidityId)
-            .ToDictionary(g => g.Key,
-                g => g.Select(x => BigInteger.Parse(x.ClaimedAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString());
-
         var liquidityRemovedSeeds = liquidityRemovedList.Select(x => x.Seed).ToList();
         var shouldRemoveClaimIds = operationClaimList
             .Where(x => (earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId)) ||
@@ -1221,8 +1194,19 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var now = DateTime.UtcNow.ToUtcMilliSeconds();
         var lossAmount = BigInteger.Zero;
-        _logger.LogInformation("liquidityRemovedList: {liquidityRemovedList}",
-            JsonConvert.SerializeObject(liquidityRemovedList));
+        var liquidityRewardsList = await GetAllRewardsList(address, PoolTypeEnums.All, liquidityIds);
+        var liquidityIdSumDic = liquidityRewardsList
+            .GroupBy(x => x.LiquidityId)
+            .ToDictionary(g => g.Key,
+                g => g.Select(x => BigInteger.Parse(x.ClaimedAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString());
+
+        var liquidityIdRateDic = operationClaimList
+            .Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
+            .GroupBy(x => x.LiquidityId)
+            .ToDictionary(g => g.Key,
+                g => g.Select(x => BigInteger.Parse(x.ClaimedAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString());
         foreach (var liquidityInfoIndexerDto in liquidityRemovedList)
         {
             var rate = 1d;
@@ -1246,17 +1230,39 @@ public class RewardsService : IRewardsService, ISingletonDependency
             }
         }
 
-        var rewardsDtos = realList.Select(x => new RewardsDto
+        var realClaimIds = realList.Select(x => x.ClaimId).ToList();
+        var rewardsMergedList = await GetAllMergedRewardsList(address, poolType);
+
+        var rewardsMergeDtos = new List<RewardsMergeDto>();
+        foreach (var rewardsMergedListIndexerDto in rewardsMergedList)
         {
-            ClaimedAmount = x.ClaimedAmount,
-            ClaimId = x.ClaimId,
-            ReleaseTime = x.ReleaseTime,
-        }).ToList();
-        var rewardsMergeDtos = MergeRewards(rewardsDtos, _earnContractOptions.MergeMilliseconds);
+            var mergeDto = new RewardsMergeDto()
+            {
+                ClaimedAmount = rewardsMergedListIndexerDto.Amount,
+                ReleaseTime = rewardsMergedListIndexerDto.ReleaseTime
+            };
+            var amount = BigInteger.Parse(rewardsMergedListIndexerDto.Amount);
+            var claimIds = new List<string>();
+            foreach (var mergedClaimInfoIndexerDto in rewardsMergedListIndexerDto.MergeClaimInfos)
+            {
+                if (!realClaimIds.Contains(mergedClaimInfoIndexerDto.ClaimId))
+                {
+                    amount -= BigInteger.Parse(mergedClaimInfoIndexerDto.ClaimedAmount);
+                }
+                else
+                {
+                    claimIds.Add(mergedClaimInfoIndexerDto.ClaimId);
+                }
+            }
+
+            mergeDto.ClaimIds = claimIds;
+            mergeDto.ClaimedAmount = amount.ToString();
+            rewardsMergeDtos.Add(mergeDto);
+        }
+
         var (nowRewards, nextReward) = GetNextReward(rewardsMergeDtos, now, long.Parse(lossAmount.ToString()));
 
         var frozen = nextReward.Frozen;
-        _logger.LogInformation("totalRewards: {totalRewards}, lossAmount: {lossAmount}", totalRewards, lossAmount);
         pointsPoolAggDto.TotalRewards = (BigInteger.Parse(totalRewards) - lossAmount).ToString();
         pointsPoolAggDto.TotalRewardsInUsd =
             (double.Parse(pointsPoolAggDto.TotalRewards) * usdRate).ToString(CultureInfo.InvariantCulture);
@@ -1289,6 +1295,38 @@ public class RewardsService : IRewardsService, ISingletonDependency
             unWithdrawList.Any() &&
             unWithdrawList.Select(x => x.ReleaseTime).Max() < DateTime.UtcNow.ToUtcMilliSeconds() && earlyStaked == "0";
         return pointsPoolAggDto;
+    }
+
+    private async Task UpdateOperationStatusByIdAsync(string id)
+    {
+        var rewardOperationRecordGrain = _clusterClient.GetGrain<IRewardOperationRecordGrain>(id);
+
+        var saveResult = await rewardOperationRecordGrain.EndedAsync();
+
+        if (!saveResult.Success)
+        {
+            _logger.LogError(
+                "update operation statue fail, message:{message}, id: {id}", saveResult.Message, id);
+            throw new UserFriendlyException(saveResult.Message);
+        }
+
+        await _distributedEventBus.PublishAsync(
+            _objectMapper.Map<RewardOperationRecordDto, RewardOperationRecordEto>(saveResult.Data));
+    }
+
+    private async Task UpdateOperationStatusAsync(string address, IEnumerable<Hash> claimIds)
+    {
+        var claimIdsArray = claimIds.SelectMany(claimId => Encoding.UTF8.GetBytes(claimId.ToHex())).ToArray();
+        string claimIdsHex;
+        using (var md5 = MD5.Create())
+        {
+            var hashBytes = md5.ComputeHash(claimIdsArray);
+            claimIdsHex = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        }
+
+        var id = GuidHelper.GenerateId(address, claimIdsHex);
+
+        await UpdateOperationStatusByIdAsync(id);
     }
 
     public static List<RewardsMergeDto> MergeRewards(List<RewardsDto> rewards, double mergeDays)
@@ -1414,7 +1452,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
         return (now, next);
     }
 
-
     private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType,
         List<string> liquidityIds = null)
     {
@@ -1426,6 +1463,31 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(poolType, address,
                 skipCount, maxResultCount, liquidityIds: liquidityIds);
+            list = rewardsListIndexerResult.Data;
+            var count = list.Count;
+            res.AddRange(list);
+            if (list.IsNullOrEmpty() || count < maxResultCount)
+            {
+                break;
+            }
+
+            skipCount += count;
+        } while (!list.IsNullOrEmpty());
+
+        return res;
+    }
+
+    private async Task<List<RewardsMergedListIndexerDto>> GetAllMergedRewardsList(string address,
+        PoolTypeEnums poolType)
+    {
+        var res = new List<RewardsMergedListIndexerDto>();
+        var skipCount = 0;
+        var maxResultCount = 5000;
+        List<RewardsMergedListIndexerDto> list;
+        do
+        {
+            var rewardsListIndexerResult = await _rewardsProvider.GetMergedRewardsListAsync(address, poolType,
+                skipCount, maxResultCount);
             list = rewardsListIndexerResult.Data;
             var count = list.Count;
             res.AddRange(list);

@@ -44,10 +44,37 @@ public class RealRewardsListQuery
     public RewardsListIndexerResult GetRealClaimInfoList { get; set; }
 }
 
-
 public class RewardsListIndexerResult
 {
     public List<RewardsListIndexerDto> Data { get; set; }
+    public long TotalCount { get; set; }
+}
+
+public class RewardsMergedListIndexerDto
+{
+    public string Id { get; set; }
+    public string Amount { get; set; }
+    public string Account { get; set; }
+    public PoolTypeEnums PoolType { get; set; }
+    public long ReleaseTime { get; set; }
+    public long CreateTime { get; set; }
+    public List<MergedClaimInfoIndexerDto> MergeClaimInfos { get; set; }
+}
+
+public class MergedClaimInfoIndexerDto
+{
+    public string ClaimId { get; set; }
+    public string ClaimedAmount { get; set; }
+}
+
+public class MergedRewardsListQuery
+{
+    public MergedRewardsListIndexerResult GetMergedRewardsList { get; set; }
+}
+
+public class MergedRewardsListIndexerResult
+{
+    public List<RewardsMergedListIndexerDto> Data { get; set; }
     public long TotalCount { get; set; }
 }
 
