@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Numerics;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
 
@@ -91,4 +92,14 @@ public class RewardsMergeDto
     public long ReleaseTime { get; set; }
     public List<string> ClaimIds { get; set; } = new();
     public string Frozen { get; set; } = "0";
+}
+
+public class OperationRewardsDto
+{
+    public RewardsMergeDto NowRewards { get; set; }
+    public RewardsMergeDto NextRewards { get; set; }
+    public List<ClaimInfoDto> OperationClaimInfos { get; set; }
+    public List<RewardOperationRecordIndex> RewardOperationRecordList { get; set; }
+    public BigInteger LossAmount { get; set; }
+    public string EarlyStaked { get; set; }
 }
