@@ -25,7 +25,6 @@ using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
@@ -930,189 +929,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
         return await _secretProvider.GetSignatureFromHashAsync(pubKey, dataHash);
     }
 
-    private async Task<bool> CheckAmountValidityAsync(string address, long amount, List<string> withdrawClaimIds,
-        PoolTypeEnums poolType, ExecuteType executeType)
-    {
-        var rewardsAllList = await GetAllRewardsList(address, poolType);
-        var rewardsTokenName = rewardsAllList.FirstOrDefault()?.ClaimedSymbol;
-
-        var unWithdrawList = rewardsAllList
-            .Where(x => x.WithdrawTime == 0)
-            .ToList();
-        var rewardOperationRecordAllList = await _rewardsProvider.GetRewardOperationRecordListAsync(address,
-            new List<ExecuteStatus> { ExecuteStatus.Executing, ExecuteStatus.Ended });
-
-        List<RewardsListIndexerDto> pastReleaseTimeClaimInfoList;
-        var endedOperationClaimIds = rewardOperationRecordAllList.Where(x => x.ExecuteStatus == ExecuteStatus.Ended)
-            .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
-            .ToList();
-        var operationClaimList = unWithdrawList
-            .Where(x => endedOperationClaimIds.Contains(x.ClaimId))
-            .ToList();
-        var liquidityIds = operationClaimList
-            .Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
-            .Select(x => x.LiquidityId)
-            .ToList();
-        var liquidityRemovedList = await GetAllLiquidityInfoAsync(liquidityIds, "", LpStatus.Removed);
-
-        var lossAmount = BigInteger.Zero;
-        foreach (var liquidityInfoIndexerDto in liquidityRemovedList)
-        {
-            if (rewardsTokenName == liquidityInfoIndexerDto.TokenASymbol)
-            {
-                lossAmount += BigInteger.Parse(liquidityInfoIndexerDto.TokenALossAmount);
-            }
-            else
-            {
-                lossAmount += BigInteger.Parse(liquidityInfoIndexerDto.TokenBLossAmount);
-            }
-        }
-
-        var realClaimIds = unWithdrawList.Select(x => x.ClaimId).ToList();
-        var rewardsMergedList = await GetAllMergedRewardsList(address, poolType);
-
-        var rewardsMergeDtos = new List<RewardsMergeDto>();
-        foreach (var rewardsMergedListIndexerDto in rewardsMergedList)
-        {
-            var mergeDto = new RewardsMergeDto()
-            {
-                ReleaseTime = rewardsMergedListIndexerDto.ReleaseTime
-            };
-            var claimedAmount = BigInteger.Parse(rewardsMergedListIndexerDto.Amount);
-            var claimIds = new List<string>();
-            foreach (var mergedClaimInfoIndexerDto in rewardsMergedListIndexerDto.MergeClaimInfos)
-            {
-                if (!realClaimIds.Contains(mergedClaimInfoIndexerDto.ClaimId))
-                {
-                    claimedAmount -= BigInteger.Parse(mergedClaimInfoIndexerDto.ClaimedAmount);
-                }
-                else
-                {
-                    claimIds.Add(mergedClaimInfoIndexerDto.ClaimId);
-                }
-            }
-
-            mergeDto.ClaimedAmount = claimedAmount.ToString();
-            mergeDto.ClaimIds = claimIds;
-            rewardsMergeDtos.Add(mergeDto);
-        }
-
-        var (nowRewards, nextReward) = GetNextReward(rewardsMergeDtos, DateTime.UtcNow.ToUtcMilliSeconds(),
-            long.Parse(lossAmount.ToString()));
-        if (executeType == ExecuteType.Withdrawn)
-        {
-            pastReleaseTimeClaimInfoList = unWithdrawList
-                .Where(x => nowRewards.ClaimIds.Contains(x.ClaimId))
-                .ToList();
-        }
-        else
-        {
-            pastReleaseTimeClaimInfoList = unWithdrawList;
-        }
-
-        var pastReleaseTimeClaimIds = pastReleaseTimeClaimInfoList
-            .Select(x => x.ClaimId)
-            .Distinct()
-            .ToList();
-
-        var rewardOperationRecordList = rewardOperationRecordAllList
-            .Where(x => x.ExecuteStatus == ExecuteStatus.Ended || (x.ExecuteStatus == ExecuteStatus.Executing &&
-                                                                   x.ExpiredTime > DateTime.UtcNow.ToUtcMilliSeconds()))
-            .ToList();
-        //withdrawn
-        var withdrawnOperationList = rewardOperationRecordList
-            .Where(x => x.ExecuteType == ExecuteType.Withdrawn)
-            .ToList();
-        var withdrawnClaimIds = withdrawnOperationList
-            .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
-            .ToList();
-
-        //Early Staked
-        var earlyStakedOperationList = rewardOperationRecordList
-            .Where(x => x.ExecuteType == ExecuteType.EarlyStake)
-            .ToList();
-        var earlySeeds = earlyStakedOperationList.Select(x => HashHelper.ComputeFrom(x.Seed).ToHex()).ToList();
-        var earlyStakedClaimInfoList = await _pointsStakingProvider.GetRealClaimInfoListAsync(earlySeeds, address, "");
-        var earlyStakedIds = earlyStakedClaimInfoList
-            .Where(x => !string.IsNullOrEmpty(x.EarlyStakeSeed))
-            .Select(x => x.StakeId)
-            .Distinct().ToList();
-        var unLockedStakeIds = await _rewardsProvider.GetUnLockedStakeIdsAsync(earlyStakedIds, address);
-        var unlockedClaimInfos = earlyStakedClaimInfoList.Where(x => unLockedStakeIds.Contains(x.StakeId)).ToList();
-        var unlockedClaimIds = unlockedClaimInfos.Select(x => x.ClaimId).ToList();
-
-        var earlyStakedClaimIds = earlyStakedOperationList
-            .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
-            .Where(claimId => !unlockedClaimIds.Contains(claimId))
-            .ToList();
-
-        //Liquidity Added
-        var liquidityAddedOperationList = rewardOperationRecordList
-            .Where(x => x.ExecuteType == ExecuteType.LiquidityAdded)
-            .ToList();
-        var liquidityAddedSeeds =
-            liquidityAddedOperationList.Select(x => HashHelper.ComputeFrom(x.Seed).ToHex()).ToList();
-        var liquidityAddedClaimInfoList =
-            await _pointsStakingProvider.GetRealClaimInfoListAsync(liquidityAddedSeeds, address, "");
-        var liquidityAddedIds = liquidityAddedClaimInfoList
-            .Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
-            .Select(x => x.LiquidityId)
-            .ToList();
-        var liquidityRemovedInfoList =
-            await _farmProvider.GetLiquidityInfoAsync(liquidityAddedIds, "", LpStatus.Removed, 0, 5000);
-        var removedIds = liquidityRemovedInfoList.Select(x => x.LiquidityId).ToList();
-        var removedClaimIds = liquidityAddedClaimInfoList.Where(x => removedIds.Contains(x.LiquidityId))
-            .Select(x => x.ClaimId);
-        var liquidityAddedClaimIds = liquidityAddedOperationList
-            .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId))
-            .Where(claimId => !removedClaimIds.Contains(claimId))
-            .ToList();
-
-        // Combine all excluded claim ids
-        var excludedClaimIds = withdrawnClaimIds
-            .Union(earlyStakedClaimIds)
-            .Union(liquidityAddedClaimIds)
-            .ToList();
-
-        // Remove excluded claim ids from pastReleaseTimeClaimIds
-        var resultList = pastReleaseTimeClaimIds
-            .Except(excludedClaimIds)
-            .ToList();
-        var includeClaimIds = resultList.Except(withdrawClaimIds).ToList();
-        if (includeClaimIds.Any())
-        {
-            var seeds = rewardOperationRecordList
-                .Where(x => x.ExecuteStatus == ExecuteStatus.Executing)
-                .Select(x => HashHelper.ComputeFrom(x.Seed).ToHex()).ToList();
-            var realClaimInfoList = await _pointsStakingProvider.GetRealClaimInfoListAsync(seeds, address, "");
-            var realClaimSeeds = realClaimInfoList.Select(x => x.Seed).ToList();
-            foreach (var operationRecord in rewardOperationRecordList.Where(operationRecord =>
-                         realClaimSeeds.Contains(HashHelper.ComputeFrom(operationRecord.Seed).ToHex())))
-            {
-                await UpdateOperationStatusByIdAsync(operationRecord.Id);
-            }
-        }
-
-        var withdrawAmount = pastReleaseTimeClaimInfoList
-            .Where(x => resultList.Contains(x.ClaimId))
-            .Select(x => BigInteger.Parse(x.ClaimedAmount))
-            .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
-            .ToString();
-        var realWithdrawAmount = long.Parse(withdrawAmount) - long.Parse(lossAmount.ToString());
-        var subAmount = realWithdrawAmount - amount;
-        var checkResult = resultList.Count == withdrawClaimIds.Count && !includeClaimIds.Any() && subAmount < 3;
-        if (!checkResult)
-        {
-            _logger.LogWarning(
-                "check amount false. resultList: {resultList}, includeClaimIds: {resultList}, " +
-                "withdrawAmount: {withdrawAmount}, rewardOperationRecordAllList: {rewardOperationRecordAllList}, rewardOperationRecordList: {rewardOperationRecordList}, excludedClaimIds: {excludedClaimIds}",
-                resultList, includeClaimIds, withdrawAmount, rewardOperationRecordAllList, rewardOperationRecordList,
-                excludedClaimIds);
-        }
-
-        return checkResult;
-    }
-
     private async Task<bool> CheckAmountValidityV2Async(string address, long amount, List<string> withdrawClaimIds,
         PoolTypeEnums poolType, ExecuteType executeType)
     {
@@ -1135,7 +951,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             operationAmount = long.Parse(nowRewards.ClaimedAmount) + long.Parse(nextReward.Frozen);
         }
-        
+
         var resultList = executeType == ExecuteType.Withdrawn
             ? nowRewards.ClaimIds
             : operationClaimInfos.Select(x => x.ClaimId).ToList();
@@ -1242,62 +1058,38 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Where(x => rewardOperationRecordClaimIds.Contains(x.ClaimId))
             .ToList();
         var earlyStakedIds = operationClaimList
-            .Where(x => !string.IsNullOrEmpty(x.EarlyStakeSeed))
-            .Select(x => x.StakeId)
-            .Distinct().ToList();
+            .Where(x => !x.EarlyStakeInfos.IsNullOrEmpty())
+            .SelectMany(x => x.EarlyStakeInfos.Select(l => l.StakeId))
+            .Distinct()
+            .ToList();
         var unLockedStakeIds = await _rewardsProvider.GetUnLockedStakeIdsAsync(earlyStakedIds, address);
         var liquidityIds = operationClaimList
-            .Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
-            .Select(x => x.LiquidityId)
+            .Where(x => !x.LiquidityAddedInfos.IsNullOrEmpty())
+            .SelectMany(x => x.LiquidityAddedInfos.Select(l => l.LiquidityId))
             .Distinct()
             .ToList();
         var liquidityRemovedList = await GetAllLiquidityInfoAsync(liquidityIds, "", LpStatus.Removed);
         var liquidityRemovedSeeds = liquidityRemovedList.Select(x => x.Seed).ToList();
-        var shouldRemoveClaimIds = operationClaimList
-            .Where(x => (earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId)) ||
-                        (liquidityIds.Contains(x.LiquidityId) && !liquidityRemovedSeeds.Contains(x.LiquidityAddedSeed)))
-            .Select(x => x.ClaimId)
-            .ToList();
+        var filterClaimList = operationClaimList
+            .Where(x =>
+            {
+                var stakeIds = x.EarlyStakeInfos.Select(e => e.StakeId).ToList();
+                var allLiquidityIds = x.LiquidityAddedInfos.Select(e => e.LiquidityId).ToList();
+                var allLiquidityAddedSeeds = x.LiquidityAddedInfos.Select(e => e.LiquidityAddedSeed).ToList();
+                return (stakeIds.All(i => earlyStakedIds.Contains(i)) &&
+                        !stakeIds.All(i => unLockedStakeIds.Contains(i))) ||
+                       (allLiquidityIds.All(i => liquidityIds.Contains(i)) &&
+                        !allLiquidityAddedSeeds.All(i => liquidityRemovedSeeds.Contains(i)));
+            }).ToList();
+        var shouldRemoveClaimIds = filterClaimList.Select(x => x.ClaimId).ToList();
         var realList = unWithdrawList.Where(x => !shouldRemoveClaimIds.Contains(x.ClaimId))
             .OrderBy(x => x.ReleaseTime)
             .ToList();
         var now = DateTime.UtcNow.ToUtcMilliSeconds();
-        var lossAmount = BigInteger.Zero;
-        var liquidityRewardsList = await GetAllRewardsList(address, PoolTypeEnums.All, liquidityIds);
-        var liquidityIdSumDic = liquidityRewardsList
-            .GroupBy(x => x.LiquidityId)
-            .ToDictionary(g => g.Key,
-                g => g.Select(x => BigInteger.Parse(x.ClaimedAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString());
-
-        var liquidityIdRateDic = operationClaimList
-            .Where(x => !string.IsNullOrEmpty(x.LiquidityAddedSeed))
-            .GroupBy(x => x.LiquidityId)
-            .ToDictionary(g => g.Key,
-                g => g.Select(x => BigInteger.Parse(x.ClaimedAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num).ToString());
-        foreach (var liquidityInfoIndexerDto in liquidityRemovedList)
-        {
-            var rate = 1d;
-            if (liquidityIdSumDic.TryGetValue(liquidityInfoIndexerDto.LiquidityId, out var sumAmount) &&
-                liquidityIdRateDic.TryGetValue(liquidityInfoIndexerDto.LiquidityId, out var rateAmount))
-            {
-                rate = double.Parse(rateAmount) / double.Parse(sumAmount);
-            }
-
-            if (rewardsTokenName == liquidityInfoIndexerDto.TokenASymbol)
-            {
-                var lossAAmount = double.Parse(liquidityInfoIndexerDto.TokenALossAmount);
-                var loosA = Math.Ceiling(lossAAmount * rate).ToString(CultureInfo.InvariantCulture);
-                lossAmount += BigInteger.Parse(loosA);
-            }
-            else
-            {
-                var lossBAmount = double.Parse(liquidityInfoIndexerDto.TokenBLossAmount);
-                var loosB = Math.Ceiling(lossBAmount * rate).ToString(CultureInfo.InvariantCulture);
-                lossAmount += BigInteger.Parse(loosB);
-            }
-        }
+        var liquidityAddedInfoDtos = realList.SelectMany(x => x.LiquidityAddedInfos);
+        var lossAmount = rewardsTokenName == liquidityRemovedList.First().TokenASymbol
+            ? liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenALossAmount))
+            : liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenBLossAmount));
 
         var realClaimIds = realList.Select(x => x.ClaimId).ToList();
         var rewardsMergedList = await GetAllMergedRewardsList(address, poolType);
@@ -1329,11 +1121,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
             rewardsMergeDtos.Add(mergeDto);
         }
 
-        var (nowRewards, nextReward) = GetNextReward(rewardsMergeDtos, now, long.Parse(lossAmount.ToString()));
+        var (nowRewards, nextReward) = GetNextReward(rewardsMergeDtos, now, lossAmount);
 
-        var earlyStaked = operationClaimList
-            .Where(x => (earlyStakedIds.Contains(x.StakeId) && !unLockedStakeIds.Contains(x.StakeId)) ||
-                        (liquidityIds.Contains(x.LiquidityId) && !liquidityRemovedSeeds.Contains(x.LiquidityAddedSeed)))
+        var earlyStaked = filterClaimList
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
             .ToString();
@@ -1342,7 +1132,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             NowRewards = nowRewards,
             NextRewards = nextReward,
-            LossAmount = lossAmount,
+            LossAmount = BigInteger.Parse(lossAmount.ToString()),
             EarlyStaked = earlyStaked,
             RewardOperationRecordList = rewardOperationRecordList,
             OperationClaimInfos = realList.Select(x => new ClaimInfoDto
