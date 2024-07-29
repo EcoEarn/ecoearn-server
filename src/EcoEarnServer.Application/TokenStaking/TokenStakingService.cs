@@ -86,6 +86,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         foreach (var tokenPoolsIndexerDto in tokenPoolsIndexerDtos)
         {
             var currencyPair = $"{tokenPoolsIndexerDto.TokenPoolConfig.StakingToken.ToUpper()}_USDT";
+            var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{tokenPoolsIndexerDto.TokenPoolConfig.RewardToken.ToUpper()}_USDT");
+
             var feeRate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(
                 tokenPoolsIndexerDto.TokenPoolConfig.StakeTokenContract,
                 out var poolRate)
@@ -115,6 +117,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                     ? icons
                     : new List<string>();
             tokenPoolsDto.Rate = feeRate;
+            tokenPoolsDto.UsdRate = usdtRate;
 
             if (addressStakedInPoolDic.TryGetValue(tokenPoolsDto.PoolId, out var stakedInfos))
             {
@@ -131,9 +134,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 
                 if (rewardDataDic.TryGetValue(stakedInfos.StakeId, out var rewardData) && rewardData.Amount != 0)
                 {
-                    var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{rewardData.Symbol.ToUpper()}_USDT");
                     tokenPoolsDto.Earned = rewardData.Amount.ToString();
-                    tokenPoolsDto.UsdRate = usdtRate;
                     tokenPoolsDto.EarnedInUsd =
                         (rewardData.Amount * usdtRate).ToString(CultureInfo.InvariantCulture);
                 }
