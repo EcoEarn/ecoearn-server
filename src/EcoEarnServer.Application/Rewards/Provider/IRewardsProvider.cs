@@ -29,6 +29,9 @@ public interface IRewardsProvider
 
     Task<MergedRewardsListIndexerResult> GetMergedRewardsListAsync(string address, PoolTypeEnums poolType,
         int skipCount, int maxResultCount);
+
+    Task<RewardsInfoListIndexerDto> GetRewardsInfoListAsync(PoolTypeEnums poolType, string address, int skipCount,
+        int maxResultCount);
 }
 
 public class RewardsProvider : IRewardsProvider, ISingletonDependency
@@ -234,6 +237,50 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         {
             _logger.LogError(e, "GetMergedRewardsList Indexer error");
             return new MergedRewardsListIndexerResult();
+        }
+    }
+
+    public async Task<RewardsInfoListIndexerDto> GetRewardsInfoListAsync(PoolTypeEnums poolType, string address,
+        int skipCount, int maxResultCount)
+    {
+        if (string.IsNullOrEmpty(address))
+        {
+            return new RewardsInfoListIndexerDto();
+        }
+
+        try
+        {
+            var indexerResult = await _graphQlHelper.QueryAsync<RewardsInfoListQuery>(new GraphQLRequest
+            {
+                Query =
+                    @"query($poolType:PoolType!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
+                    getRewardsInfoList(input: {poolType:$poolType,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        totalCount,
+                        data{
+                        account
+                        claimId
+                        stakeId
+                        seed
+                        poolId
+                        claimedAmount
+                        claimedSymbol
+                        claimedTime
+                        poolType
+                    }
+                }
+            }",
+                Variables = new
+                {
+                    poolType = poolType, address = address, skipCount = skipCount, maxResultCount = maxResultCount
+                }
+            });
+
+            return indexerResult.GetRewardsInfoList;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "getClaimInfoList Indexer error");
+            return new RewardsInfoListIndexerDto();
         }
     }
 }
