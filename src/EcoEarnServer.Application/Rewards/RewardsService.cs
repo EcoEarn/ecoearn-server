@@ -89,13 +89,15 @@ public class RewardsService : IRewardsService, ISingletonDependency
     public async Task<PagedResultDto<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input)
     {
         var releaseCount = _earnContractOptions.ReleaseCount;
-        var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(input.PoolType, input.Address,
-            input.SkipCount * releaseCount, input.MaxResultCount * releaseCount, filterUnlocked: input.FilterUnlocked);
-
-        var rewardsCount = await _rewardsProvider.GetRewardsCountAsync(input.PoolType, input.Address,
-            input.SkipCount * releaseCount, input.MaxResultCount * releaseCount, filterUnlocked: input.FilterUnlocked);
+        var rewardsListIndexerResult = await _rewardsProvider.GetRewardsInfoListAsync(input.PoolType, input.Address,
+            input.SkipCount, input.MaxResultCount);
         var result =
-            _objectMapper.Map<List<RewardsListIndexerDto>, List<RewardsListDto>>(rewardsListIndexerResult.Data);
+            _objectMapper.Map<List<RewardsInfoIndexerDto>, List<RewardsListDto>>(rewardsListIndexerResult.Data);
+
+        if (result.IsNullOrEmpty())
+        {
+            return new PagedResultDto<RewardsListDto>();
+        }
 
         var rewardsToken = result.First()?.RewardsToken;
         var currencyPair = $"{rewardsToken}_USDT";
@@ -136,8 +138,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         });
         return new PagedResultDto<RewardsListDto>
         {
-            Items = claimedTimeDic.Values.ToList(),
-            TotalCount = rewardsCount / releaseCount,
+            Items = result,
+            TotalCount = rewardsListIndexerResult.TotalCount,
         };
     }
 

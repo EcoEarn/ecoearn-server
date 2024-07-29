@@ -42,7 +42,9 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.EarnedSymbol, m => m.MapFrom(f => f.TokenPoolConfig.RewardToken))
             .ForPath(t => t.StakeSymbol, m => m.MapFrom(f => f.TokenPoolConfig.StakingToken))
             .ForPath(t => t.ProjectOwner,
-                m => m.MapFrom(f => f.PoolType == PoolTypeEnums.Lp ? "AwakenSwap" : f.PoolType == PoolTypeEnums.Token ? "Schrödinger" : "AI-powered 404 NFT dApp"))
+                m => m.MapFrom(f =>
+                    f.PoolType == PoolTypeEnums.Lp ? "AwakenSwap" :
+                    f.PoolType == PoolTypeEnums.Token ? "Schrödinger" : "AI-powered 404 NFT dApp"))
             .ForPath(t => t.FixedBoostFactor, m => m.MapFrom(f => f.TokenPoolConfig.FixedBoostFactor))
             .ForPath(t => t.UnlockWindowDuration, m => m.MapFrom(f => f.TokenPoolConfig.UnlockWindowDuration))
             .ForPath(t => t.MinimumClaimAmount, m => m.MapFrom(f => f.TokenPoolConfig.MinimumClaimAmount))
@@ -50,7 +52,8 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ReverseMap();
 
         CreateMap<RewardsListIndexerDto, RewardsListDto>()
-            .ForPath(t => t.ProjectOwner, m => m.MapFrom(f => f.PoolType == PoolTypeEnums.Lp ? "AwakenSwap" : "Schrödinger"))
+            .ForPath(t => t.ProjectOwner,
+                m => m.MapFrom(f => f.PoolType == PoolTypeEnums.Lp ? "AwakenSwap" : "Schrödinger"))
             .ForPath(t => t.RewardsToken, m => m.MapFrom(f => f.ClaimedSymbol))
             .ForPath(t => t.Rewards, m => m.MapFrom(f => f.ClaimedAmount))
             .ForPath(t => t.ClaimedId, m => m.MapFrom(f => f.ClaimId))
@@ -62,7 +65,6 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
         CreateMap<RewardOperationRecordDto, RewardOperationRecordEto>().ReverseMap();
         CreateMap<SubStakeInfoIndexerDto, SubStakeInfoDto>()
             .ForPath(t => t.StakedAmount, m => m.MapFrom(f => f.StakedAmount + f.EarlyStakedAmount))
-
             .ReverseMap();
         CreateMap<LiquidityInfoIndexerDto, LiquidityInfoDto>()
             .ForMember(t => t.Banlance, m => m.MapFrom(f => f.LpAmount.ToString()))
@@ -79,6 +81,9 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.TokenAAmount, m => m.MapFrom(f => f.TokenAAmount.ToString()))
             .ForMember(t => t.TokenBAmount, m => m.MapFrom(f => f.TokenBAmount.ToString()))
             .ReverseMap();
-            
+        CreateMap<RewardsInfoIndexerDto, RewardsListDto>()
+            .ForMember(t => t.Rewards, m => m.MapFrom(f => f.ClaimedAmount))
+            .ForMember(t => t.Date, m => m.MapFrom(f => f.ClaimedTime))
+            .ReverseMap();
     }
 }
