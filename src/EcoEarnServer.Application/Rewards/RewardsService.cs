@@ -1089,9 +1089,13 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .ToList();
         var now = DateTime.UtcNow.ToUtcMilliSeconds();
         var liquidityAddedInfoDtos = realList.SelectMany(x => x.LiquidityAddedInfos);
-        var lossAmount = rewardsTokenName == liquidityRemovedList.First().TokenASymbol
-            ? liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenALossAmount))
-            : liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenBLossAmount));
+        var lossAmount = 0L;
+        if (!liquidityRemovedList.IsNullOrEmpty())
+        {
+            lossAmount = rewardsTokenName == liquidityRemovedList.First().TokenASymbol
+                ? liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenALossAmount))
+                : liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenBLossAmount));
+        }
 
         var realClaimIds = realList.Select(x => x.ClaimId).ToList();
         var rewardsMergedList = await GetAllMergedRewardsList(address, poolType);
