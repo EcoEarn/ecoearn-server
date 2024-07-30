@@ -43,6 +43,8 @@ public class LpPriceItemDto
     public LpTokenDto Token0 { get; set; }
     public LpTokenDto Token1 { get; set; }
     public string Id { get; set; }
+    public string LpSymbol { get; set; }
+    public string RewardToken { get; set; }
 }
 
 public class LpTokenDto
