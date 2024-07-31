@@ -1089,13 +1089,22 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .ToList();
         var now = DateTime.UtcNow.ToUtcMilliSeconds();
         var liquidityAddedInfoDtos = realList.SelectMany(x => x.LiquidityAddedInfos);
+        var unWithdrawLiquidityAddedInfoDtos = unWithdrawList.SelectMany(x => x.LiquidityAddedInfos);
+        var filterClaimLiquidityAddedInfoDtos = filterClaimList.SelectMany(x => x.LiquidityAddedInfos);
         var lossAmount = 0L;
-        var checkTokenSymbolFlag = rewardsTokenName == liquidityRemovedList.First().TokenASymbol;
+        var lossAmountSum = 0L;
+        var earlyStakedLossAmount = 0L;
         if (!liquidityRemovedList.IsNullOrEmpty())
         {
-            lossAmount = checkTokenSymbolFlag
+            lossAmount = rewardsTokenName == liquidityRemovedList.First().TokenASymbol
                 ? liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenALossAmount))
                 : liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenBLossAmount));
+            lossAmountSum = rewardsTokenName == liquidityRemovedList.First().TokenASymbol
+                ? unWithdrawLiquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenALossAmount))
+                : unWithdrawLiquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenBLossAmount));
+            earlyStakedLossAmount = rewardsTokenName == liquidityRemovedList.First().TokenASymbol
+                ? filterClaimLiquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenALossAmount))
+                : filterClaimLiquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenBLossAmount));
         }
 
         var realClaimIds = realList.Select(x => x.ClaimId).ToList();
@@ -1134,18 +1143,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
             .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
 
-        var earlyStakedLossAmount = filterClaimList
-            .SelectMany(x => x.LiquidityAddedInfos.Select(l =>
-                checkTokenSymbolFlag ? long.Parse(l.TokenALossAmount) : long.Parse(l.TokenBLossAmount)))
-            .Sum()
-            .ToString();
-
         return new OperationRewardsDto
         {
             NowRewards = nowRewards,
             NextRewards = nextReward,
-            LossAmount = BigInteger.Parse(lossAmount.ToString()),
-            EarlyStaked = (earlyStaked - BigInteger.Parse(earlyStakedLossAmount)).ToString(),
+            LossAmount = BigInteger.Parse(lossAmountSum.ToString()),
+            EarlyStaked = (earlyStaked - BigInteger.Parse(earlyStakedLossAmount.ToString())).ToString(),
             RewardOperationRecordList = rewardOperationRecordList,
             OperationClaimInfos = realList.Select(x => new ClaimInfoDto
             {
