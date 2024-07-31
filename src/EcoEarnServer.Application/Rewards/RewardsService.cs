@@ -1090,9 +1090,10 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var now = DateTime.UtcNow.ToUtcMilliSeconds();
         var liquidityAddedInfoDtos = realList.SelectMany(x => x.LiquidityAddedInfos);
         var lossAmount = 0L;
+        var checkTokenSymbolFlag = rewardsTokenName == liquidityRemovedList.First().TokenASymbol;
         if (!liquidityRemovedList.IsNullOrEmpty())
         {
-            lossAmount = rewardsTokenName == liquidityRemovedList.First().TokenASymbol
+            lossAmount = checkTokenSymbolFlag
                 ? liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenALossAmount))
                 : liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenBLossAmount));
         }
@@ -1131,7 +1132,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var earlyStaked = filterClaimList
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
-            .Aggregate(BigInteger.Zero, (acc, num) => acc + num)
+            .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+
+        var earlyStakedLossAmount = filterClaimList
+            .SelectMany(x => x.LiquidityAddedInfos.Select(l =>
+                checkTokenSymbolFlag ? long.Parse(l.TokenALossAmount) : long.Parse(l.TokenBLossAmount)))
+            .Sum()
             .ToString();
 
         return new OperationRewardsDto
@@ -1139,7 +1145,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             NowRewards = nowRewards,
             NextRewards = nextReward,
             LossAmount = BigInteger.Parse(lossAmount.ToString()),
-            EarlyStaked = earlyStaked,
+            EarlyStaked = (earlyStaked - BigInteger.Parse(earlyStakedLossAmount)).ToString(),
             RewardOperationRecordList = rewardOperationRecordList,
             OperationClaimInfos = realList.Select(x => new ClaimInfoDto
             {
