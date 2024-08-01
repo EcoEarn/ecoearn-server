@@ -18,11 +18,20 @@ public interface IRewardsProvider
         int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false, List<string> liquidityIds = null);
 
     Task<List<string>> GetUnLockedStakeIdsAsync(List<string> stakeIds, string address);
-    Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address, List<ExecuteStatus> executeStatus);
+
+    Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address,
+        List<ExecuteStatus> executeStatus);
+
     Task<List<RewardOperationRecordIndex>> GetExecutingListAsync(string address, ExecuteType executeType);
-    
+
     Task<long> GetRewardsCountAsync(PoolTypeEnums poolType, string address, int skipCount,
         int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false, List<string> liquidityIds = null);
+
+    Task<MergedRewardsListIndexerResult> GetMergedRewardsListAsync(string address, PoolTypeEnums poolType,
+        int skipCount, int maxResultCount);
+
+    Task<RewardsInfoListIndexerDto> GetRewardsInfoListAsync(PoolTypeEnums poolType, string address, int skipCount,
+        int maxResultCount);
 }
 
 public class RewardsProvider : IRewardsProvider, ISingletonDependency
@@ -40,7 +49,8 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
     }
 
     public async Task<RewardsListIndexerResult> GetRewardsListAsync(PoolTypeEnums poolType, string address,
-        int skipCount, int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false, List<string> liquidityIds = null)
+        int skipCount, int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false,
+        List<string> liquidityIds = null)
     {
         if (string.IsNullOrEmpty(address))
         {
@@ -57,7 +67,6 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
                         totalCount,
                         data{
                         claimId,
-                        stakeId,
                         poolId,
                         claimedAmount,
                         seed,
@@ -72,17 +81,17 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
     					poolType,
     					lockState,
     					withdrawSeed,
-    					liquidityId,
     					contractAddress,
-    					earlyStakeSeed,
-    					liquidityAddedSeed,
+                        liquidityAddedInfos{liquidityAddedSeed,liquidityId,tokenALossAmount,tokenBLossAmount,addedTime},
+                        earlyStakeInfos{earlyStakeSeed,stakeId,stakeTime},
                     }
                 }
             }",
                 Variables = new
                 {
                     poolType = poolType, filterUnlock = filterUnlocked, filterWithdraw = filterWithdraw,
-                    address = address, skipCount = skipCount, maxResultCount = maxResultCount, liquidityIds = liquidityIds ?? new List<string>()
+                    address = address, skipCount = skipCount, maxResultCount = maxResultCount,
+                    liquidityIds = liquidityIds ?? new List<string>()
                 }
             });
 
@@ -125,7 +134,8 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         }
     }
 
-    public async Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address, List<ExecuteStatus> executeStatus)
+    public async Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address,
+        List<ExecuteStatus> executeStatus)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<RewardOperationRecordIndex>, QueryContainer>>();
 
@@ -151,9 +161,10 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             skip: 0, limit: 5000);
         return list;
     }
-    
-     public async Task<long> GetRewardsCountAsync(PoolTypeEnums poolType, string address,
-        int skipCount, int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false, List<string> liquidityIds = null)
+
+    public async Task<long> GetRewardsCountAsync(PoolTypeEnums poolType, string address,
+        int skipCount, int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false,
+        List<string> liquidityIds = null)
     {
         if (string.IsNullOrEmpty(address))
         {
@@ -171,7 +182,8 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
                 Variables = new
                 {
                     poolType = poolType, filterUnlock = filterUnlocked, filterWithdraw = filterWithdraw,
-                    address = address, skipCount = skipCount, maxResultCount = maxResultCount, liquidityIds = liquidityIds ?? new List<string>()
+                    address = address, skipCount = skipCount, maxResultCount = maxResultCount,
+                    liquidityIds = liquidityIds ?? new List<string>()
                 }
             });
 
@@ -181,6 +193,94 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         {
             _logger.LogError(e, "getClaimInfoList Indexer error");
             return 0;
+        }
+    }
+
+    public async Task<MergedRewardsListIndexerResult> GetMergedRewardsListAsync(string address, PoolTypeEnums poolType,
+        int skipCount, int maxResultCount)
+    {
+        if (string.IsNullOrEmpty(address))
+        {
+            return new MergedRewardsListIndexerResult();
+        }
+
+        try
+        {
+            var indexerResult = await _graphQlHelper.QueryAsync<MergedRewardsListQuery>(new GraphQLRequest
+            {
+                Query =
+                    @"query($poolType:PoolType!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
+                    getMergedRewardsList(input: {poolType:$poolType,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        totalCount
+                        data{
+                          account
+                          amount
+                          poolType
+                          releaseTime
+                          createTime
+                          mergeClaimInfos{
+                            claimId
+                            claimedAmount
+                          }
+                    }
+                }
+            }",
+                Variables = new
+                {
+                    poolType = poolType, address = address, skipCount = skipCount, maxResultCount = maxResultCount
+                }
+            });
+
+            return indexerResult.GetMergedRewardsList;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetMergedRewardsList Indexer error");
+            return new MergedRewardsListIndexerResult();
+        }
+    }
+
+    public async Task<RewardsInfoListIndexerDto> GetRewardsInfoListAsync(PoolTypeEnums poolType, string address,
+        int skipCount, int maxResultCount)
+    {
+        if (string.IsNullOrEmpty(address))
+        {
+            return new RewardsInfoListIndexerDto();
+        }
+
+        try
+        {
+            var indexerResult = await _graphQlHelper.QueryAsync<RewardsInfoListQuery>(new GraphQLRequest
+            {
+                Query =
+                    @"query($poolType:PoolType!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
+                    getRewardsInfoList(input: {poolType:$poolType,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        totalCount,
+                        data{
+                        account
+                        claimId
+                        stakeId
+                        seed
+                        poolId
+                        claimedAmount
+                        claimedSymbol
+                        claimedTime
+                        poolType
+                    }
+                }
+            }",
+                Variables = new
+                {
+                    poolType = poolType, address = address, skipCount = skipCount, maxResultCount = maxResultCount
+                }
+            });
+
+            return indexerResult.GetRewardsInfoList;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "getClaimInfoList Indexer error");
+            return new RewardsInfoListIndexerDto();
         }
     }
 }

@@ -77,6 +77,7 @@ public class FarmProvider : IFarmProvider, ISingletonDependency
     					tokenALossAmount,
     					tokenBLossAmount,
     					lpStatus,
+    					removedTime,
                     }
                 }
             }",
@@ -153,6 +154,7 @@ public class FarmProvider : IFarmProvider, ISingletonDependency
     					tokenALossAmount,
     					tokenBLossAmount,
     					lpStatus,
+    					removedTime,
                     }
                 }
             }",

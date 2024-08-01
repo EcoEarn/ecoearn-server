@@ -20,6 +20,7 @@ public class PointsListDto
     public string ElevenSymbolAmount { get; set; }  = "0";
     public string TwelveSymbolAmount { get; set; }  = "0";
     public long UpdateTime { get; set; }
+    public OperatorRole Role { get; set; }
 }
 
 public enum OperatorRole

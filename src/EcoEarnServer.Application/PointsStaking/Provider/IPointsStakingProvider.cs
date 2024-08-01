@@ -179,7 +179,6 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
                         totalCount,
                         data{
                         claimId,
-                        stakeId,
                         poolId,
                         claimedAmount,
                         seed,
@@ -194,10 +193,9 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
     					poolType,
     					lockState,
     					withdrawSeed,
-    					liquidityId,
     					contractAddress,
-    					earlyStakeSeed,
-    					liquidityAddedSeed,
+                        liquidityAddedInfos{liquidityAddedSeed,liquidityId,tokenALossAmount,tokenBLossAmount,addedTime},
+                        earlyStakeInfos{earlyStakeSeed,stakeId,stakeTime},
                     }
                 }
             }",

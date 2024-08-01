@@ -34,4 +34,5 @@ public class LiquidityInfoIndexerDto
     public string TokenBLossAmount { get; set; }
     public LpStatus LpStatus { get; set; }
     public string Address { get; set; }
+    public long RemovedTime { get; set; }
 }
