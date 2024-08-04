@@ -88,7 +88,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
     public async Task<PagedResultDto<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input)
     {
-        var releaseCount = _earnContractOptions.ReleaseCount;
         var rewardsListIndexerResult = await _rewardsProvider.GetRewardsInfoListAsync(input.PoolType, input.Address,
             input.SkipCount, input.MaxResultCount);
         var result =
@@ -99,7 +98,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             return new PagedResultDto<RewardsListDto>();
         }
 
-        var rewardsToken = result.First()?.RewardsToken;
+        var rewardsToken = result.FirstOrDefault()?.RewardsToken ?? "";
         var currencyPair = $"{rewardsToken}_USDT";
         var rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
 
@@ -125,17 +124,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
                     ? poolRate
                     : 0;
             rewardsListDto.TokenName = poolData.PointsName;
+            rewardsListDto.RewardsInUsd = (double.Parse(rewardsListDto.Rewards) * rate).ToString(CultureInfo.InvariantCulture);
         }
-
-
-        var claimedTimeDic = result.GroupBy(x => x.ClaimedTime).ToDictionary(g => g.Key, g =>
-        {
-            var rewardsSum = g.Sum(x => double.Parse(x.Rewards));
-            var rewardsListDto = g.First();
-            rewardsListDto.Rewards = rewardsSum.ToString(CultureInfo.InvariantCulture);
-            rewardsListDto.RewardsInUsd = (rewardsSum * rate).ToString(CultureInfo.InvariantCulture);
-            return rewardsListDto;
-        });
+        
         return new PagedResultDto<RewardsListDto>
         {
             Items = result,
@@ -150,7 +141,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var poolTypeRewardDic = rewardsList
             .GroupBy(x => x.PoolType)
             .ToDictionary(g => g.Key, g => g.ToList());
-        var claimedSymbol = rewardsList.First()?.ClaimedSymbol;
+        var claimedSymbol = rewardsList.FirstOrDefault()?.ClaimedSymbol ?? "";
         var currencyPair = $"{claimedSymbol}_USDT";
         var usdRate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
         var rewardsAggregationDto = new RewardsAggregationDto();
@@ -174,16 +165,16 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }
 
         var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("");
-        var pointsPoolRewardsToken = pointsPoolsIndexerDtos.FirstOrDefault()?.PointsPoolConfig.RewardToken;
+        var pointsPoolRewardsToken = pointsPoolsIndexerDtos.FirstOrDefault()?.PointsPoolConfig.RewardToken ?? "";
         rewardsAggregationDto.PointsPoolAgg.RewardsTokenName = pointsPoolRewardsToken;
-        rewardsAggregationDto.DappId = pointsPoolsIndexerDtos.FirstOrDefault()?.DappId;
+        rewardsAggregationDto.DappId = pointsPoolsIndexerDtos.FirstOrDefault()?.DappId ?? "";
         if (string.IsNullOrEmpty(rewardsAggregationDto.TokenPoolAgg.RewardsTokenName))
         {
             var tokenPools = await _tokenStakingProvider.GetTokenPoolsAsync(new GetTokenPoolsInput()
             {
                 PoolType = PoolTypeEnums.Token
             });
-            var tokenPoolRewardsToken = tokenPools.FirstOrDefault()?.TokenPoolConfig.RewardToken;
+            var tokenPoolRewardsToken = tokenPools.FirstOrDefault()?.TokenPoolConfig.RewardToken ?? "";
             rewardsAggregationDto.TokenPoolAgg.RewardsTokenName = tokenPoolRewardsToken;
         }
 
@@ -193,7 +184,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             {
                 PoolType = PoolTypeEnums.Lp
             });
-            var lpPoolRewardsToken = lpPools.FirstOrDefault()?.TokenPoolConfig.RewardToken;
+            var lpPoolRewardsToken = lpPools.FirstOrDefault()?.TokenPoolConfig.RewardToken ?? "";
             rewardsAggregationDto.LpPoolAgg.RewardsTokenName = lpPoolRewardsToken;
         }
 
@@ -987,7 +978,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             return pointsPoolAggDto;
         }
 
-        pointsPoolAggDto.RewardsTokenName = list.FirstOrDefault()?.ClaimedSymbol;
+        pointsPoolAggDto.RewardsTokenName = list.FirstOrDefault()?.ClaimedSymbol ?? "";
 
         var totalRewards = list
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
@@ -1043,7 +1034,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
     private async Task<OperationRewardsDto> GetOperationRewardsAsync(List<RewardsListIndexerDto> unWithdrawList,
         string address, PoolTypeEnums poolType, bool isCheckAmount = false)
     {
-        var rewardsTokenName = unWithdrawList.FirstOrDefault()?.ClaimedSymbol;
+        var rewardsTokenName = unWithdrawList.FirstOrDefault()?.ClaimedSymbol ?? "";
         var executeStatusList = new List<ExecuteStatus> { ExecuteStatus.Ended };
         if (isCheckAmount)
         {
@@ -1096,13 +1087,13 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var earlyStakedLossAmount = 0L;
         if (!liquidityRemovedList.IsNullOrEmpty())
         {
-            lossAmount = rewardsTokenName == liquidityRemovedList.First().TokenASymbol
+            lossAmount = rewardsTokenName == liquidityRemovedList.FirstOrDefault()?.TokenASymbol 
                 ? liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenALossAmount))
                 : liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenBLossAmount));
-            lossAmountSum = rewardsTokenName == liquidityRemovedList.First().TokenASymbol
+            lossAmountSum = rewardsTokenName == liquidityRemovedList.FirstOrDefault()?.TokenASymbol
                 ? unWithdrawLiquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenALossAmount))
                 : unWithdrawLiquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenBLossAmount));
-            earlyStakedLossAmount = rewardsTokenName == liquidityRemovedList.First().TokenASymbol
+            earlyStakedLossAmount = rewardsTokenName == liquidityRemovedList.FirstOrDefault()?.TokenASymbol
                 ? filterClaimLiquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenALossAmount))
                 : filterClaimLiquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenBLossAmount));
         }
