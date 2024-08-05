@@ -55,7 +55,7 @@ public class PointsPoolClaimRecordGrain : Grain<PointsPoolClaimRecordState>, IPo
 
     public async Task<PointsPoolClaimRecordDto> GetAsync()
     {
-        _logger.LogInformation("get PointsPoolClaimRecord Id {}", State.Id);
+        _logger.LogInformation("get PointsPoolClaimRecord Id {id}", State.Id);
         return State.Id == null ? null : _objectMapper.Map<PointsPoolClaimRecordState, PointsPoolClaimRecordDto>(State);
     }
 

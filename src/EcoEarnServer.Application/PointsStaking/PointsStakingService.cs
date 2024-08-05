@@ -249,10 +249,10 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         var id = GuidHelper.GenerateId(address, poolId, today);
         var pointsPoolClaimRecordGrain = _clusterClient.GetGrain<IPointsPoolClaimRecordGrain>(id);
         var record = await pointsPoolClaimRecordGrain.GetAsync();
-        if (record.Id != null)
+        if (record != null)
         {
             _logger.LogWarning(
-                "already generated signature. id: {id}, record: {}", id, JsonConvert.SerializeObject(record));
+                "already generated signature. id: {id}, record: {record}", id, JsonConvert.SerializeObject(record));
             return new ClaimAmountSignatureDto
             {
                 Seed = HashHelper.ComputeFrom(record.Seed).ToHex(),
