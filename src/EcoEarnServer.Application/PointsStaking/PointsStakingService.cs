@@ -23,6 +23,7 @@ using Google.Protobuf;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -251,7 +252,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         if (record != null)
         {
             _logger.LogWarning(
-                "already generated signature. id: {id}", id);
+                "already generated signature. id: {id}, record: {}", id, JsonConvert.SerializeObject(record));
             return new ClaimAmountSignatureDto
             {
                 Seed = HashHelper.ComputeFrom(record.Seed).ToHex(),
