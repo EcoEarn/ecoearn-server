@@ -844,6 +844,10 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var signature = await GenerateSignatureByPubKeyAsync(projectInfo.PublicKey, data);
 
+        if (string.IsNullOrEmpty(signature))
+        {
+            throw new UserFriendlyException("generate signature fail.");
+        }
         //save signature
         var recordDto = new RewardOperationRecordDto()
         {
