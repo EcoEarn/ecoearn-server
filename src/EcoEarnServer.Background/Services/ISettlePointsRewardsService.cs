@@ -161,6 +161,12 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         {
             first.StakeAmount = firstSum.ToString();
         }
+        
+        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.SecondSymbolAmount)],
+                out var second))
+        {
+            second.StakeAmount = secondSum.ToString();
+        }
 
         if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.ThirdSymbolAmount)],
                 out var third))

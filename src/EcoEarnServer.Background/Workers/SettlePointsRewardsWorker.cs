@@ -24,7 +24,7 @@ public class SettlePointsRewardsWorker : AsyncPeriodicBackgroundWorkerBase
         _logger = logger;
         _settlePointsRewardsService = settlePointsRewardsService;
         _options = options.Value;
-        timer.Period = options.Value.SettlePointsRewardsPeriod * 60 * 1000;
+        timer.Period =  1000;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)

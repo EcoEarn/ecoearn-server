@@ -80,8 +80,29 @@ public class PointsSnapshotProvider : IPointsSnapshotProvider, ISingletonDepende
         return res;
     }
 
-    public Task<List<RelationshipDto>> GetRelationShipAsync(List<string> addressList)
+    public async Task<List<RelationshipDto>> GetRelationShipAsync(List<string> addressList)
     {
-        return null;
+        var res = new List<RelationshipDto>();
+        var apiInfo = new ApiInfo(HttpMethod.Post, "api/app/points/relationship");
+        var input = new GetRelationShipInput()
+        {
+            //EndTime = DateTime.UtcNow.Date,
+            AddressList = addressList,
+            ChainId = "tDVW"
+        };
+        try
+        {
+            var resp = await _httpProvider.InvokeAsync<CommonResponseDto<List<RelationshipDto>>>(
+                _pointsSnapshotOptions.PointsServerBaseUrl, apiInfo,
+                body: JsonConvert.SerializeObject(input, JsonSerializerSettings));
+            res = resp.Data;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "get points list from points server fail.");
+            throw;
+        }
+
+        return res;
     }
 }
