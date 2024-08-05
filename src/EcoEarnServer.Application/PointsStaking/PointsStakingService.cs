@@ -298,6 +298,11 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             Hash.LoadFromHex(poolId), amount, Address.FromBase58(address),
             HashHelper.ComputeFrom(seed), expiredTime / 1000);
 
+        if (string.IsNullOrEmpty(signature))
+        {
+            throw new UserFriendlyException("generate signature fail.");
+        }
+        
         //save signature
         var claimRecordDto = new PointsPoolClaimRecordDto()
         {
