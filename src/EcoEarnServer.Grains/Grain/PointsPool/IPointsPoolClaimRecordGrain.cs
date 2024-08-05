@@ -1,6 +1,8 @@
 using EcoEarnServer.Common;
 using EcoEarnServer.Grains.State;
 using EcoEarnServer.PointsPool;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp.ObjectMapping;
 
@@ -16,10 +18,12 @@ public interface IPointsPoolClaimRecordGrain : IGrainWithStringKey
 public class PointsPoolClaimRecordGrain : Grain<PointsPoolClaimRecordState>, IPointsPoolClaimRecordGrain
 {
     private readonly IObjectMapper _objectMapper;
+    private readonly ILogger<PointsPoolClaimRecordGrain> _logger;
 
-    public PointsPoolClaimRecordGrain(IObjectMapper objectMapper)
+    public PointsPoolClaimRecordGrain(IObjectMapper objectMapper, ILogger<PointsPoolClaimRecordGrain> logger)
     {
         _objectMapper = objectMapper;
+        _logger = logger;
     }
 
     public override async Task OnActivateAsync()
@@ -51,6 +55,7 @@ public class PointsPoolClaimRecordGrain : Grain<PointsPoolClaimRecordState>, IPo
 
     public async Task<PointsPoolClaimRecordDto> GetAsync()
     {
+        _logger.LogInformation("get PointsPoolClaimRecord Id {}", State.Id);
         return State.Id == null ? null : _objectMapper.Map<PointsPoolClaimRecordState, PointsPoolClaimRecordDto>(State);
     }
 
