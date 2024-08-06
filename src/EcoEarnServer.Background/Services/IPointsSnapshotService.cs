@@ -188,7 +188,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
                               new BigInteger(settleKolMilliSeconds)
                             : BigInteger.Parse("0");
                         newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
-                                                           BigInteger.Parse(pointsListDto.EightSymbolAmount) +
+                                                           BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
                                                            settleKolPoints).ToString();
                         break;
                     case OperatorRole.User:
@@ -198,10 +198,10 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
                                new BigInteger(_selfIncreaseRateOptions.InviteeRate) +
                                new BigInteger(addressRelationShip.SecondInviteeNum) *
                                new BigInteger(_selfIncreaseRateOptions.SecondInviteeRate)) *
-                              new BigInteger(settleUserMilliSeconds)
+                              new BigInteger(settleUserMilliSeconds) 
                             : BigInteger.Parse("0");
                         newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
-                                                           BigInteger.Parse(pointsListDto.EightSymbolAmount) +
+                                                           BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
                                                            settleUserPoints).ToString();
                         break;
                     case OperatorRole.All:
