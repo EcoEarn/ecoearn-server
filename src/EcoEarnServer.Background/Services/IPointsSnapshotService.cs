@@ -172,7 +172,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
                         var settleInviterPoints = flag
                             ? new BigInteger(addressRelationShip.InviterKolFollowerNum) *
                               new BigInteger(_selfIncreaseRateOptions.InviterKolFollowerRate) *
-                              new BigInteger(settleInviterMilliSeconds)
+                              new BigInteger(settleInviterMilliSeconds < 0 ? 0 : settleInviterMilliSeconds)
                             : BigInteger.Parse("0");
                         newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
                                                            BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
@@ -185,7 +185,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
                                new BigInteger(_selfIncreaseRateOptions.KolFollowerRate) +
                                new BigInteger(addressRelationShip.KolFollowerInviteeNum) *
                                new BigInteger(_selfIncreaseRateOptions.KolFollowerInviteeRate)) *
-                              new BigInteger(settleKolMilliSeconds)
+                              new BigInteger(settleKolMilliSeconds < 0 ? 0 : settleKolMilliSeconds)
                             : BigInteger.Parse("0");
                         newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
                                                            BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
@@ -198,7 +198,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
                                new BigInteger(_selfIncreaseRateOptions.InviteeRate) +
                                new BigInteger(addressRelationShip.SecondInviteeNum) *
                                new BigInteger(_selfIncreaseRateOptions.SecondInviteeRate)) *
-                              new BigInteger(settleUserMilliSeconds) 
+                              new BigInteger(settleUserMilliSeconds  < 0 ? 0 : settleUserMilliSeconds) 
                             : BigInteger.Parse("0");
                         newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
                                                            BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
