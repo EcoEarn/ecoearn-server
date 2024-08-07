@@ -166,14 +166,19 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
                 newPointList.TwelveSymbolAmount = (BigInteger.Parse(newPointList.TwelveSymbolAmount) +
                                                    BigInteger.Parse(pointsListDto.TwelveSymbolAmount)).ToString();
                 var subMilliSeconds = startOfDayTimestamp - pointsListDto.UpdateTime;
-                var milliSeconds = subMilliSeconds < 0 ? 0 : subMilliSeconds;
+                if (subMilliSeconds < 0)
+                {
+                    newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
+                                                       BigInteger.Parse(pointsListDto.SecondSymbolAmount)).ToString();
+                    continue;
+                }
                 switch (pointsListDto.Role)
                 {
                     case OperatorRole.Inviter:
                         var settleInviterPoints = flag
                             ? new BigInteger(addressRelationShip.InviterKolFollowerNum) *
                               new BigInteger(_selfIncreaseRateOptions.InviterKolFollowerRate) *
-                              new BigInteger(milliSeconds)
+                              new BigInteger(subMilliSeconds)
                             : BigInteger.Parse("0");
                         newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
                                                            BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
@@ -185,7 +190,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
                                new BigInteger(_selfIncreaseRateOptions.KolFollowerRate) +
                                new BigInteger(addressRelationShip.KolFollowerInviteeNum) *
                                new BigInteger(_selfIncreaseRateOptions.KolFollowerInviteeRate)) *
-                              new BigInteger(milliSeconds)
+                              new BigInteger(subMilliSeconds)
                             : BigInteger.Parse("0");
                         newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
                                                            BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
@@ -197,7 +202,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
                                new BigInteger(_selfIncreaseRateOptions.InviteeRate) +
                                new BigInteger(addressRelationShip.SecondInviteeNum) *
                                new BigInteger(_selfIncreaseRateOptions.SecondInviteeRate)) *
-                              new BigInteger(milliSeconds) 
+                              new BigInteger(subMilliSeconds) 
                             : BigInteger.Parse("0");
                         newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
                                                            BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
