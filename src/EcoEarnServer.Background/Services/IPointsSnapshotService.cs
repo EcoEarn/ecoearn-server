@@ -166,7 +166,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
                 newPointList.TwelveSymbolAmount = (BigInteger.Parse(newPointList.TwelveSymbolAmount) +
                                                    BigInteger.Parse(pointsListDto.TwelveSymbolAmount)).ToString();
                 var subMilliSeconds = startOfDayTimestamp - pointsListDto.UpdateTime;
-                if (subMilliSeconds < 0)
+                if (subMilliSeconds <= 0)
                 {
                     newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
                                                        BigInteger.Parse(pointsListDto.SecondSymbolAmount)).ToString();
