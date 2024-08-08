@@ -105,81 +105,6 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         return projectItemListDtos;
     }
 
-    private async Task<Dictionary<string, ProjectItemAggDto>> GetProjectItemAggDataDic()
-    {
-        var snapshotDate = DateTime.UtcNow.ToString("yyyyMMdd");
-        await ConnectAsync();
-        var redisValue = await RedisDatabase.StringGetAsync(PointsPoolNowSnapshotRedisKeyPrefix + snapshotDate);
-        if (redisValue.HasValue)
-        {
-            return _serializer.Deserialize<Dictionary<string, ProjectItemAggDto>>(redisValue);
-        }
-
-        var res = new List<PointsSnapshotIndex>();
-        var skipCount = 0;
-        var maxResultCount = 5000;
-        List<PointsSnapshotIndex> list;
-        do
-        {
-            list = await _pointsStakingProvider.GetProjectItemAggDataAsync(snapshotDate, skipCount, maxResultCount);
-            var count = list.Count;
-            res.AddRange(list);
-            if (list.IsNullOrEmpty() || count < maxResultCount)
-            {
-                break;
-            }
-
-            skipCount += count;
-        } while (!list.IsNullOrEmpty());
-
-        _logger.LogInformation("GetProjectItemAggDataDic count.{count}", list.Count);
-
-        var projectItemAggDataDic = res.GroupBy(x => x.DappId)
-            .ToDictionary(g => g.Key, g =>
-            {
-                var firstSymbolSum = g.Select(x => BigInteger.Parse(x.FirstSymbolAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
-                var thirdSymbolSum = g.Select(x => BigInteger.Parse(x.ThirdSymbolAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
-                var fourSymbolSum = g.Select(x => BigInteger.Parse(x.FourSymbolAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
-                var fiveSymbolSum = g.Select(x => BigInteger.Parse(x.FiveSymbolAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
-                var sixSymbolSum = g.Select(x => BigInteger.Parse(x.SixSymbolAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
-                var sevenSymbolSum = g.Select(x => BigInteger.Parse(x.SevenSymbolAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
-                var eightSymbolSum = g.Select(x => BigInteger.Parse(x.EightSymbolAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
-                var nineSymbolSum = g.Select(x => BigInteger.Parse(x.NineSymbolAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
-                var tenSymbolSum = g.Select(x => BigInteger.Parse(x.TenSymbolAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
-                var elevenSymbolSum = g.Select(x => BigInteger.Parse(x.ElevenSymbolAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
-                var twelveSymbolSum = g.Select(x => BigInteger.Parse(x.TwelveSymbolAmount))
-                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
-                var tvl = firstSymbolSum + thirdSymbolSum + fourSymbolSum + fiveSymbolSum + sixSymbolSum +
-                          sevenSymbolSum + eightSymbolSum + nineSymbolSum + tenSymbolSum + elevenSymbolSum +
-                          twelveSymbolSum;
-                return new ProjectItemAggDto
-                {
-                    StakingAddress = g.Select(x => x.Address).Distinct().Count(),
-                    Tvl = tvl.ToString()
-                };
-            });
-        foreach (var projectItemAggDto in projectItemAggDataDic)
-        {
-            _logger.LogInformation("dic info key: {key}, value:{valaue}", projectItemAggDto.Key,
-                projectItemAggDto.Value.StakingAddress);
-        }
-
-        await RedisDatabase.StringSetAsync(PointsPoolNowSnapshotRedisKeyPrefix + snapshotDate,
-            _serializer.Serialize(projectItemAggDataDic), TimeSpan.FromHours(25));
-
-        return projectItemAggDataDic;
-    }
-
     public async Task<List<PointsPoolsDto>> GetPointsPoolsAsync(GetPointsPoolsInput input)
     {
         if (string.IsNullOrEmpty(input.Address))
@@ -192,7 +117,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             }
         }
 
-        var pointsPoolsIndexerList = await _pointsStakingProvider.GetPointsPoolsAsync(input.Name);
+        var pointsPoolsIndexerList = await _pointsStakingProvider.GetPointsPoolsAsync(input.Name, input.DappId);
         var poolIds = pointsPoolsIndexerList.Select(pool => pool.PoolId).ToList();
         var pointsPoolsDtos =
             _objectMapper.Map<List<PointsPoolsIndexerDto>, List<PointsPoolsDto>>(pointsPoolsIndexerList);
@@ -223,7 +148,8 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             : sortedPointsPools;
         if (string.IsNullOrEmpty(input.Address))
         {
-            await RedisDatabase.StringSetAsync(PointsPoolUnLoginListRedisKeyPrefix + input.Type, _serializer.Serialize(result),
+            await RedisDatabase.StringSetAsync(PointsPoolUnLoginListRedisKeyPrefix + input.Type,
+                _serializer.Serialize(result),
                 TimeSpan.FromHours(2));
         }
 
@@ -302,7 +228,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         {
             throw new UserFriendlyException("generate signature fail.");
         }
-        
+
         //save signature
         var claimRecordDto = new PointsPoolClaimRecordDto()
         {
@@ -334,67 +260,6 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             Signature = ByteStringHelper.FromHexString(signature),
             ExpirationTime = expiredTime / 1000
         };
-    }
-
-    private string GenerateSignature(byte[] privateKey, Hash poolId, long amount, Address account, Hash seed,
-        long expirationTime)
-    {
-        var data = new ClaimInput
-        {
-            PoolId = poolId,
-            Account = account,
-            Amount = amount,
-            Seed = seed,
-            ExpirationTime = expirationTime
-        };
-        var dataHash = HashHelper.ComputeFrom(data);
-        var signature = CryptoHelper.SignWithPrivateKey(privateKey, dataHash.ToByteArray());
-        return signature.ToHex();
-    }
-
-    private async Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address)
-    {
-        await ConnectAsync();
-        var redisValue = await RedisDatabase.StringGetAsync(PointsPoolStakeAmountRedisKeyPrefix + address);
-        if (redisValue.HasValue)
-        {
-            return _serializer.Deserialize<Dictionary<string, string>>(redisValue);
-        }
-
-        var result = await _pointsStakingProvider.GetAddressStakeAmountDicAsync(address);
-        await RedisDatabase.StringSetAsync(PointsPoolStakeAmountRedisKeyPrefix + address,
-            _serializer.Serialize(result), TimeSpan.FromHours(2));
-        return result;
-    }
-
-    private async Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address)
-    {
-        await ConnectAsync();
-        var redisValue = await RedisDatabase.StringGetAsync(PointsPoolStakeRewardsRedisKeyPrefix + address);
-        if (redisValue.HasValue)
-        {
-            return _serializer.Deserialize<Dictionary<string, string>>(redisValue);
-        }
-
-        var result = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(address);
-        await RedisDatabase.StringSetAsync(PointsPoolStakeRewardsRedisKeyPrefix + address,
-            _serializer.Serialize(result), TimeSpan.FromMinutes(1));
-        return result;
-    }
-
-    private async Task<string> GenerateSignatureByPubKeyAsync(string pubKey, Hash poolId, long amount, Address account,
-        Hash seed, long expirationTime)
-    {
-        var data = new ClaimInput
-        {
-            PoolId = poolId,
-            Account = account,
-            Amount = amount,
-            Seed = seed,
-            ExpirationTime = expirationTime
-        };
-        var dataHash = HashHelper.ComputeFrom(data);
-        return await _secretProvider.GetSignatureFromHashAsync(pubKey, dataHash);
     }
 
     public async Task<string> ClaimAsync(PointsClaimInput input)
@@ -449,6 +314,20 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
 
         return transactionOutput.TransactionId;
+    }
+
+    public async Task<List<EarlyStakeInfoDto>> GetEarlyStakeInfoAsync(GetEarlyStakeInfoInput input)
+    {
+        return await _tokenStakingService.GetStakedInfoAsync(input);
+    }
+
+    public async Task<AddressRewardsDto> GetAddressRewardsAsync(GetAddressRewardsInput input)
+    {
+        var pointsStakeRewardsList = await _pointsStakingProvider.GetAddressRewardsAsync(input.Address);
+        return new AddressRewardsDto
+        {
+            Reward = pointsStakeRewardsList.ToDictionary(x => x.PoolName, x => x.Rewards)
+        };
     }
 
     private async Task UpdateClaimStatusAsync(string address, string poolId, string oldId, string date)
@@ -521,17 +400,123 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         }.ToByteArray());
     }
 
-    public async Task<EarlyStakeInfoDto> GetEarlyStakeInfoAsync(GetEarlyStakeInfoInput input)
+    private async Task<Dictionary<string, ProjectItemAggDto>> GetProjectItemAggDataDic()
     {
-        return await _tokenStakingService.GetStakedInfoAsync(input);
+        var snapshotDate = DateTime.UtcNow.ToString("yyyyMMdd");
+        await ConnectAsync();
+        var redisValue = await RedisDatabase.StringGetAsync(PointsPoolNowSnapshotRedisKeyPrefix + snapshotDate);
+        if (redisValue.HasValue)
+        {
+            return _serializer.Deserialize<Dictionary<string, ProjectItemAggDto>>(redisValue);
+        }
+
+        var res = new List<PointsSnapshotIndex>();
+        var skipCount = 0;
+        var maxResultCount = 5000;
+        List<PointsSnapshotIndex> list;
+        do
+        {
+            list = await _pointsStakingProvider.GetProjectItemAggDataAsync(snapshotDate, skipCount, maxResultCount);
+            var count = list.Count;
+            res.AddRange(list);
+            if (list.IsNullOrEmpty() || count < maxResultCount)
+            {
+                break;
+            }
+
+            skipCount += count;
+        } while (!list.IsNullOrEmpty());
+
+        _logger.LogInformation("GetProjectItemAggDataDic count.{count}", list.Count);
+
+        var projectItemAggDataDic = res.GroupBy(x => x.DappId)
+            .ToDictionary(g => g.Key, g =>
+            {
+                var firstSymbolSum = g.Select(x => BigInteger.Parse(x.FirstSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var thirdSymbolSum = g.Select(x => BigInteger.Parse(x.ThirdSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var fourSymbolSum = g.Select(x => BigInteger.Parse(x.FourSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var fiveSymbolSum = g.Select(x => BigInteger.Parse(x.FiveSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var sixSymbolSum = g.Select(x => BigInteger.Parse(x.SixSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var sevenSymbolSum = g.Select(x => BigInteger.Parse(x.SevenSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var eightSymbolSum = g.Select(x => BigInteger.Parse(x.EightSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var nineSymbolSum = g.Select(x => BigInteger.Parse(x.NineSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var tenSymbolSum = g.Select(x => BigInteger.Parse(x.TenSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var elevenSymbolSum = g.Select(x => BigInteger.Parse(x.ElevenSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var twelveSymbolSum = g.Select(x => BigInteger.Parse(x.TwelveSymbolAmount))
+                    .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
+                var tvl = firstSymbolSum + thirdSymbolSum + fourSymbolSum + fiveSymbolSum + sixSymbolSum +
+                          sevenSymbolSum + eightSymbolSum + nineSymbolSum + tenSymbolSum + elevenSymbolSum +
+                          twelveSymbolSum;
+                return new ProjectItemAggDto
+                {
+                    StakingAddress = g.Select(x => x.Address).Distinct().Count(),
+                    Tvl = tvl.ToString()
+                };
+            });
+        foreach (var projectItemAggDto in projectItemAggDataDic)
+        {
+            _logger.LogInformation("dic info key: {key}, value:{valaue}", projectItemAggDto.Key,
+                projectItemAggDto.Value.StakingAddress);
+        }
+
+        await RedisDatabase.StringSetAsync(PointsPoolNowSnapshotRedisKeyPrefix + snapshotDate,
+            _serializer.Serialize(projectItemAggDataDic), TimeSpan.FromHours(25));
+
+        return projectItemAggDataDic;
     }
 
-    public async Task<AddressRewardsDto> GetAddressRewardsAsync(GetAddressRewardsInput input)
+    private async Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address)
     {
-        var pointsStakeRewardsList = await _pointsStakingProvider.GetAddressRewardsAsync(input.Address);
-        return new AddressRewardsDto
+        await ConnectAsync();
+        var redisValue = await RedisDatabase.StringGetAsync(PointsPoolStakeAmountRedisKeyPrefix + address);
+        if (redisValue.HasValue)
         {
-            Reward = pointsStakeRewardsList.ToDictionary(x => x.PoolName, x => x.Rewards)
+            return _serializer.Deserialize<Dictionary<string, string>>(redisValue);
+        }
+
+        var result = await _pointsStakingProvider.GetAddressStakeAmountDicAsync(address);
+        await RedisDatabase.StringSetAsync(PointsPoolStakeAmountRedisKeyPrefix + address,
+            _serializer.Serialize(result), TimeSpan.FromHours(2));
+        return result;
+    }
+
+    private async Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address)
+    {
+        await ConnectAsync();
+        var redisValue = await RedisDatabase.StringGetAsync(PointsPoolStakeRewardsRedisKeyPrefix + address);
+        if (redisValue.HasValue)
+        {
+            return _serializer.Deserialize<Dictionary<string, string>>(redisValue);
+        }
+
+        var result = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(address);
+        await RedisDatabase.StringSetAsync(PointsPoolStakeRewardsRedisKeyPrefix + address,
+            _serializer.Serialize(result), TimeSpan.FromMinutes(1));
+        return result;
+    }
+
+    private async Task<string> GenerateSignatureByPubKeyAsync(string pubKey, Hash poolId, long amount, Address account,
+        Hash seed, long expirationTime)
+    {
+        var data = new ClaimInput
+        {
+            PoolId = poolId,
+            Account = account,
+            Amount = amount,
+            Seed = seed,
+            ExpirationTime = expirationTime
         };
+        var dataHash = HashHelper.ComputeFrom(data);
+        return await _secretProvider.GetSignatureFromHashAsync(pubKey, dataHash);
     }
 }

@@ -216,29 +216,4 @@ public class FarmService : IFarmService, ISingletonDependency
 
         return res;
     }
-
-    private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType,
-        List<string> liquidityIds = null)
-    {
-        var res = new List<RewardsListIndexerDto>();
-        var skipCount = 0;
-        var maxResultCount = 5000;
-        List<RewardsListIndexerDto> list;
-        do
-        {
-            var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(poolType, address,
-                skipCount, maxResultCount, liquidityIds: liquidityIds);
-            list = rewardsListIndexerResult.Data;
-            var count = list.Count;
-            res.AddRange(list);
-            if (list.IsNullOrEmpty() || count < maxResultCount)
-            {
-                break;
-            }
-
-            skipCount += count;
-        } while (!list.IsNullOrEmpty());
-
-        return res;
-    }
 }

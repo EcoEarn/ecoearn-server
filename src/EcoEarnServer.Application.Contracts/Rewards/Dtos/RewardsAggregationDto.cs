@@ -4,11 +4,14 @@ namespace EcoEarnServer.Rewards.Dtos;
 
 public class RewardsAggregationDto
 {
-    public RewardsAggDto PointsPoolAgg { get; set; } = new();
-    public RewardsAggDto TokenPoolAgg { get; set; } = new();
-    public RewardsAggDto LpPoolAgg { get; set; } = new();
-
     public string DappId { get; set; }
+    public string PoolName { get; set; }
+    public string PoolId { get; set; }
+    public string RewardsTokenName { get; set; }
+    public double Sort { get; set; }
+    public PoolTypeEnums PoolType { get; set; }
+    public bool SupportEarlyStake { get; set; }
+    public RewardsAggDto RewardsInfo { get; set; }
 }
 
 public class RewardsAggDto
@@ -36,6 +39,7 @@ public class RewardsAggDto
     public List<ClaimInfoDto> ClaimInfos { get; set; }
     public List<ClaimInfoDto> WithdrawableClaimInfos { get; set; }
     public bool AllRewardsRelease { get; set; }
+    public long FirstClaimTime { get; set; }
 }
 
 public class PointsPoolAggDto

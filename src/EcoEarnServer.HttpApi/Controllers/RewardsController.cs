@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using EcoEarnServer.Rewards;
 using EcoEarnServer.Rewards.Dtos;
@@ -27,7 +28,7 @@ public class RewardsController : EcoEarnServerController
     }
 
     [HttpPost("aggregation")]
-    public async Task<RewardsAggregationDto> GetRewardsAggregationAsync(GetRewardsAggregationInput input)
+    public async Task<List<RewardsAggregationDto>> GetRewardsAggregationAsync(GetRewardsAggregationInput input)
     {
         return await _rewardsService.GetRewardsAggregationAsync(input);
     }
@@ -97,5 +98,11 @@ public class RewardsController : EcoEarnServerController
     public async Task<string> RemoveLiquidityAsync(RewardsTransactionInput input)
     {
         return await _rewardsService.RemoveLiquidityAsync(input);
+    }
+    
+    [HttpGet("filter/items")]
+    public async Task<List<FilterItemDto>> GetFilterItemsAsync()
+    {
+        return await _rewardsService.GetFilterItemsAsync();
     }
 }

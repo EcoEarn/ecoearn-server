@@ -15,7 +15,8 @@ namespace EcoEarnServer.Rewards.Provider;
 public interface IRewardsProvider
 {
     Task<RewardsListIndexerResult> GetRewardsListAsync(PoolTypeEnums poolType, string address, int skipCount,
-        int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false, List<string> liquidityIds = null);
+        int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false, List<string> liquidityIds = null,
+        List<string> poolIds = null, List<string> dappIds = null);
 
     Task<List<string>> GetUnLockedStakeIdsAsync(List<string> stakeIds, string address);
 
@@ -27,10 +28,10 @@ public interface IRewardsProvider
     Task<long> GetRewardsCountAsync(PoolTypeEnums poolType, string address, int skipCount,
         int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false, List<string> liquidityIds = null);
 
-    Task<MergedRewardsListIndexerResult> GetMergedRewardsListAsync(string address, PoolTypeEnums poolType,
-        int skipCount, int maxResultCount);
+    Task<MergedRewardsListIndexerResult> GetMergedRewardsListAsync(string address, List<string> poolIds,
+        PoolTypeEnums poolType, List<string> dappIds = null, int skipCount = 0, int maxResultCount = 5000);
 
-    Task<RewardsInfoListIndexerDto> GetRewardsInfoListAsync(PoolTypeEnums poolType, string address, int skipCount,
+    Task<RewardsInfoListIndexerDto> GetRewardsInfoListAsync(PoolTypeEnums poolType, string address, string id, int skipCount,
         int maxResultCount);
 }
 
@@ -50,7 +51,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
 
     public async Task<RewardsListIndexerResult> GetRewardsListAsync(PoolTypeEnums poolType, string address,
         int skipCount, int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false,
-        List<string> liquidityIds = null)
+        List<string> liquidityIds = null, List<string> poolIds = null, List<string> dappIds = null)
     {
         if (string.IsNullOrEmpty(address))
         {
@@ -62,8 +63,8 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<RewardsListQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($poolType:PoolType!, $liquidityIds:[String!]!, $filterUnlock:Boolean!,$filterWithdraw:Boolean!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
-                    getClaimInfoList(input: {poolType:$poolType,liquidityIds:$liquidityIds,filterUnlock:$filterUnlock,filterWithdraw:$filterWithdraw,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($poolType:PoolType!, $liquidityIds:[String!]!, $poolIds:[String!]!, $dappIds:[String!]!,$filterUnlock:Boolean!,$filterWithdraw:Boolean!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
+                    getClaimInfoList(input: {poolType:$poolType,liquidityIds:$liquidityIds,poolIds:$poolIds,dappIds:$dappIds,filterUnlock:$filterUnlock,filterWithdraw:$filterWithdraw,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         claimId,
@@ -91,7 +92,9 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
                 {
                     poolType = poolType, filterUnlock = filterUnlocked, filterWithdraw = filterWithdraw,
                     address = address, skipCount = skipCount, maxResultCount = maxResultCount,
-                    liquidityIds = liquidityIds ?? new List<string>()
+                    liquidityIds = liquidityIds ?? new List<string>(),
+                    poolIds = poolIds ?? new List<string>(),
+                    dappIds = dappIds ?? new List<string>()
                 }
             });
 
@@ -196,8 +199,8 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         }
     }
 
-    public async Task<MergedRewardsListIndexerResult> GetMergedRewardsListAsync(string address, PoolTypeEnums poolType,
-        int skipCount, int maxResultCount)
+    public async Task<MergedRewardsListIndexerResult> GetMergedRewardsListAsync(string address, List<string> poolIds,
+        PoolTypeEnums poolType, List<string> dappIds = null, int skipCount = 0, int maxResultCount = 5000)
     {
         if (string.IsNullOrEmpty(address))
         {
@@ -209,13 +212,14 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<MergedRewardsListQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($poolType:PoolType!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
-                    getMergedRewardsList(input: {poolType:$poolType,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($poolIds:[String!]!,$address:String!,$poolType:PoolType!,$dappIds:String!,$skipCount:Int!,$maxResultCount:Int!){
+                    getMergedRewardsList(input: {poolIds:$poolIds,address:$address,poolType:$poolType,dappIds:$dappIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount
                         data{
                           account
                           amount
                           poolType
+                          poolId
                           releaseTime
                           createTime
                           mergeClaimInfos{
@@ -227,7 +231,8 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    poolType = poolType, address = address, skipCount = skipCount, maxResultCount = maxResultCount
+                    poolIds = poolIds ?? new List<string>(), address = address, dappIds = dappIds ?? new List<string>(), 
+                    poolType = poolType, skipCount = skipCount, maxResultCount = maxResultCount
                 }
             });
 
@@ -241,7 +246,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
     }
 
     public async Task<RewardsInfoListIndexerDto> GetRewardsInfoListAsync(PoolTypeEnums poolType, string address,
-        int skipCount, int maxResultCount)
+        string id, int skipCount, int maxResultCount)
     {
         if (string.IsNullOrEmpty(address))
         {
@@ -253,8 +258,8 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<RewardsInfoListQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($poolType:PoolType!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
-                    getRewardsInfoList(input: {poolType:$poolType,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($poolType:PoolType!,$address:String!,$id:String!, $skipCount:Int!,$maxResultCount:Int!){
+                    getRewardsInfoList(input: {poolType:$poolType,address:$address,id:$id,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         account
@@ -271,7 +276,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    poolType = poolType, address = address, skipCount = skipCount, maxResultCount = maxResultCount
+                    poolType = poolType, address = address, id = id, skipCount = skipCount, maxResultCount = maxResultCount
                 }
             });
 

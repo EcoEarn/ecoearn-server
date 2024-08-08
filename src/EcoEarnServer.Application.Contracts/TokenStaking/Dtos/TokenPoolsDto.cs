@@ -23,6 +23,7 @@ public class TokenPoolsDto
     public long FixedBoostFactor { get; set; }
     public long ReleasePeriod { get; set; }
     public long MinimumClaimAmount { get; set; }
+    public bool SupportEarlyStake { get; set; }
     
     //stake info
     public string StakeId { get; set; }
@@ -39,4 +40,5 @@ public class TokenPoolsDto
     public long LatestClaimTime { get; set; }
     public long EarlyStakedAmount { get; set; }
     public List<SubStakeInfoDto> StakeInfos { get; set; } = new();
+    
 }

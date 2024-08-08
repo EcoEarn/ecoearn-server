@@ -9,4 +9,7 @@ public class ProjectItemListDto
     public string Tvl { get; set; }
     public long StakingAddress { get; set; }
     public bool IsOpenStake { get; set; }
+    public string PointsName { get; set; }
+    public string Website { get; set; }
+    public string TextWord { get; set; }
 }

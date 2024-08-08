@@ -13,6 +13,24 @@ using aelf = global::AElf.CSharp.Core;
 namespace EcoEarn.Contracts.Rewards {
 
   #region Events
+  public partial class ConfigSet : aelf::IEvent<ConfigSet>
+  {
+    public global::System.Collections.Generic.IEnumerable<ConfigSet> GetIndexed()
+    {
+      return new List<ConfigSet>
+      {
+      };
+    }
+
+    public ConfigSet GetNonIndexed()
+    {
+      return new ConfigSet
+      {
+        Config = Config,
+      };
+    }
+  }
+
   public partial class AdminSet : aelf::IEvent<AdminSet>
   {
     public global::System.Collections.Generic.IEnumerable<AdminSet> GetIndexed()
@@ -233,6 +251,7 @@ namespace EcoEarn.Contracts.Rewards {
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.InitializeInput> __Marshaller_InitializeInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.InitializeInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Google.Protobuf.WellKnownTypes.Empty> __Marshaller_google_protobuf_Empty = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Google.Protobuf.WellKnownTypes.Empty.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AElf.Types.Address> __Marshaller_aelf_Address = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AElf.Types.Address.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.Config> __Marshaller_Config = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.Config.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.RegisterInput> __Marshaller_RegisterInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.RegisterInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.SetDappAdminInput> __Marshaller_SetDappAdminInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.SetDappAdminInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.SetDappConfigInput> __Marshaller_SetDappConfigInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.SetDappConfigInput.Parser.ParseFrom);
@@ -270,6 +289,20 @@ namespace EcoEarn.Contracts.Rewards {
         "GetAdmin",
         __Marshaller_google_protobuf_Empty,
         __Marshaller_aelf_Address);
+
+    static readonly aelf::Method<global::EcoEarn.Contracts.Rewards.Config, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetConfig = new aelf::Method<global::EcoEarn.Contracts.Rewards.Config, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "SetConfig",
+        __Marshaller_Config,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::EcoEarn.Contracts.Rewards.Config> __Method_GetConfig = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::EcoEarn.Contracts.Rewards.Config>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetConfig",
+        __Marshaller_google_protobuf_Empty,
+        __Marshaller_Config);
 
     static readonly aelf::Method<global::EcoEarn.Contracts.Rewards.RegisterInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_Register = new aelf::Method<global::EcoEarn.Contracts.Rewards.RegisterInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
@@ -383,7 +416,7 @@ namespace EcoEarn.Contracts.Rewards {
     }
     #endregion
 
-    // /// <summary>Base class for the contract of EcoEarnRewardsContract</summary>
+    /// <summary>Base class for the contract of EcoEarnRewardsContract</summary>
     // public abstract partial class EcoEarnRewardsContractBase : AElf.Sdk.CSharp.CSharpSmartContract<EcoEarn.Contracts.Rewards.EcoEarnRewardsContractState>
     // {
     //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Initialize(global::EcoEarn.Contracts.Rewards.InitializeInput input)
@@ -397,6 +430,16 @@ namespace EcoEarn.Contracts.Rewards {
     //   }
     //
     //   public virtual global::AElf.Types.Address GetAdmin(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetConfig(global::EcoEarn.Contracts.Rewards.Config input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::EcoEarn.Contracts.Rewards.Config GetConfig(global::Google.Protobuf.WellKnownTypes.Empty input)
     //   {
     //     throw new global::System.NotImplementedException();
     //   }
@@ -475,6 +518,8 @@ namespace EcoEarn.Contracts.Rewards {
     //       .AddMethod(__Method_Initialize, serviceImpl.Initialize)
     //       .AddMethod(__Method_SetAdmin, serviceImpl.SetAdmin)
     //       .AddMethod(__Method_GetAdmin, serviceImpl.GetAdmin)
+    //       .AddMethod(__Method_SetConfig, serviceImpl.SetConfig)
+    //       .AddMethod(__Method_GetConfig, serviceImpl.GetConfig)
     //       .AddMethod(__Method_Register, serviceImpl.Register)
     //       .AddMethod(__Method_SetDappAdmin, serviceImpl.SetDappAdmin)
     //       .AddMethod(__Method_SetDappConfig, serviceImpl.SetDappConfig)
