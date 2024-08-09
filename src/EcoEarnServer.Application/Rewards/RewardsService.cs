@@ -92,8 +92,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
     public async Task<PagedResultDto<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input)
     {
         var rewardsListIndexerResult = await _rewardsProvider.GetRewardsInfoListAsync(input.PoolType, input.Id,
-            input.Address,
-            input.SkipCount, input.MaxResultCount);
+            input.Address, input.SkipCount, input.MaxResultCount);
         var result =
             _objectMapper.Map<List<RewardsInfoIndexerDto>, List<RewardsListDto>>(rewardsListIndexerResult.Data);
 
@@ -210,6 +209,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 DappId = tokenPool.DappId,
                 PoolName = hasPoolInfo ? poolInfo.PoolName : "",
                 Sort = hasPoolInfo ? poolInfo.Sort : 0,
+                Rate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(tokenPool.TokenPoolConfig.StakeTokenContract, out var poolRate)
+                    ? poolRate
+                    : 0,
                 SupportEarlyStake = hasPoolInfo && poolInfo.SupportEarlyStake,
                 PoolId = poolId,
                 RewardsTokenName = tokenPool.TokenPoolConfig.RewardToken,

@@ -212,7 +212,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             var indexerResult = await _graphQlHelper.QueryAsync<MergedRewardsListQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($poolIds:[String!]!,$address:String!,$poolType:PoolType!,$dappIds:String!,$skipCount:Int!,$maxResultCount:Int!){
+                    @"query($poolIds:[String!]!,$address:String!,$poolType:PoolType!,$dappIds:[String!]!,$skipCount:Int!,$maxResultCount:Int!){
                     getMergedRewardsList(input: {poolIds:$poolIds,address:$address,poolType:$poolType,dappIds:$dappIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount
                         data{

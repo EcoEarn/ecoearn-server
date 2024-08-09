@@ -9,6 +9,7 @@ public class RewardsAggregationDto
     public string PoolId { get; set; }
     public string RewardsTokenName { get; set; }
     public double Sort { get; set; }
+    public double Rate { get; set; }
     public PoolTypeEnums PoolType { get; set; }
     public bool SupportEarlyStake { get; set; }
     public RewardsAggDto RewardsInfo { get; set; }

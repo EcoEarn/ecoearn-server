@@ -194,13 +194,14 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         return rewardsSumList;
     }
 
-    private string CheckPoints(string index, string poolId, PointsSnapshotIndex pointsSnapshot)
+    private string CheckPoints(string pointsName, string poolId, PointsSnapshotIndex pointsSnapshot)
     {
         if (string.IsNullOrEmpty(poolId))
         {
             return "0";
         }
-
+        
+        var index = pointsName[(pointsName.LastIndexOf('-') + 1)..];
         var symbolFieldName = PoolInfoConst.PoolIndexSymbolDic[index];
         var property = typeof(PointsSnapshotIndex).GetProperty(symbolFieldName);
         var value = property != null ? property.GetValue(pointsSnapshot) : null;

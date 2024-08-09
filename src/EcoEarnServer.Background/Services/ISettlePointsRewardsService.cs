@@ -29,6 +29,7 @@ public interface ISettlePointsRewardsService
 public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingletonDependency
 {
     private const string LockKeyPrefix = "EcoEarnServer:SettlePointsRewards:Lock:";
+    private const long DailySeconds = 86400;
 
     private readonly ISettlePointsRewardsProvider _settlePointsRewardsProvider;
     private readonly PointsPoolOptions _poolOptions;
@@ -84,7 +85,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         try
         {
             var list = await GetYesterdaySnapshotAsync(settleRewardsBeforeDays);
-            var stakeSumDic = GetYesterdayStakeSumDic(list);
+            var stakeSumDic = await GetYesterdayStakeSumDic(list);
             //update the staked sum for each points pool
             if (_pointsSnapshotOptions.SettleRewards)
             {
@@ -122,10 +123,10 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         }
     }
 
-    private Dictionary<string, PointsPoolStakeSumDto> GetYesterdayStakeSumDic(
+    private async Task<Dictionary<string, PointsPoolStakeSumDto>> GetYesterdayStakeSumDic(
         List<PointsSnapshotIndex> list)
     {
-        var poolOptionsDic = _poolOptions.PointsPoolDictionary;
+        var poolOptionsDic = await GetPointsPoolInfosAsync();
         var poolStakeDic = new Dictionary<string, PointsPoolStakeSumDto>();
         poolOptionsDic.ForEach(entry =>
         {
@@ -164,7 +165,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         {
             first.StakeAmount = firstSum.ToString();
         }
-        
+
         if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.SecondSymbolAmount)],
                 out var second))
         {
@@ -236,8 +237,15 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
 
     private async Task<Dictionary<string, PointsPoolInfo>> GetPointsPoolInfosAsync()
     {
-        //var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("");
-        return null;
+        var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("");
+        return pointsPoolsIndexerDtos.ToDictionary(x => x.PointsName, x => new PointsPoolInfo
+        {
+            PoolId = x.PoolId,
+            PoolName = x.PointsName,
+            DappId = x.DappId,
+            DailyReward = decimal.Parse((x.PointsPoolConfig.RewardPerBlock * DailySeconds).ToString()) /
+                          decimal.Parse("100000000")
+        });
     }
 
     private async Task<List<PointsSnapshotIndex>> GetYesterdaySnapshotAsync(int settleRewardsBeforeDays)
