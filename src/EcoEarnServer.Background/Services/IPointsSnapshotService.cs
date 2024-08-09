@@ -122,13 +122,6 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
 
         _logger.LogInformation("get points sum list count. {count}", pointsSumList.Count);
         var addressRelationShipDic = await GetRelationShipAsync(pointsSumList);
-        var addressPointsGroups = pointsSumList.GroupBy(x => x.Address)
-            .Select(g => new
-            {
-                Address = g.Key,
-                Points = g.ToList()
-            })
-            .ToList();
 
         var groupedPoints = pointsSumList.GroupBy(x => x.DappId)
             .Select(dappGroup => new
