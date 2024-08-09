@@ -64,7 +64,6 @@ public class EcoEarnServerBackgroundModule : AbpModule
         Configure<LarkAlertOptions>(configuration.GetSection("LarkAlert"));
         Configure<LpPoolRateOptions>(configuration.GetSection("LpPoolRate"));
         Configure<MetricsGenerateOptions>(configuration.GetSection("MetricsGenerate"));
-        Configure<PoolInfoOptions>(configuration.GetSection("PoolInfo"));
         context.Services.AddSingleton<IPointsSnapshotService, PointsSnapshotService>();
         context.Services.AddSingleton<IPointsSnapshotProvider, PointsSnapshotProvider>();
         context.Services.AddSingleton<IStateProvider, StateProvider>();
@@ -121,6 +120,7 @@ public class EcoEarnServerBackgroundModule : AbpModule
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
+
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
     {
         var mongoType = configuration["Hangfire:MongoType"];
