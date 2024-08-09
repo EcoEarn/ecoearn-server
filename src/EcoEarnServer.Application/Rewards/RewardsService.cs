@@ -91,8 +91,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
     public async Task<PagedResultDto<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input)
     {
-        var rewardsListIndexerResult = await _rewardsProvider.GetRewardsInfoListAsync(input.PoolType, input.Id,
-            input.Address, input.SkipCount, input.MaxResultCount);
+        var rewardsListIndexerResult = await _rewardsProvider.GetRewardsInfoListAsync(input.PoolType, input.Address,
+            input.Id, input.SkipCount, input.MaxResultCount);
         var result =
             _objectMapper.Map<List<RewardsInfoIndexerDto>, List<RewardsListDto>>(rewardsListIndexerResult.Data);
 
@@ -635,7 +635,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             FilterName = x.Value.FilterName,
             Id = x.Key,
             PoolType = x.Value.PoolType,
-        }).ToList();
+        }).OrderBy(x => x.Sort).ToList();
     }
 
 
