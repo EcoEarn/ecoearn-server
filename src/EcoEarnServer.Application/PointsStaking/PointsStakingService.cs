@@ -107,6 +107,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
 
     public async Task<List<PointsPoolsDto>> GetPointsPoolsAsync(GetPointsPoolsInput input)
     {
+        var dappId = input.DappId;
         if (string.IsNullOrEmpty(input.Address))
         {
             await ConnectAsync();
@@ -117,13 +118,13 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             }
         }
 
-        var pointsPoolsIndexerList = await _pointsStakingProvider.GetPointsPoolsAsync(input.Name, input.DappId);
+        var pointsPoolsIndexerList = await _pointsStakingProvider.GetPointsPoolsAsync(input.Name, dappId);
         var poolIds = pointsPoolsIndexerList.Select(pool => pool.PoolId).ToList();
         var pointsPoolsDtos =
             _objectMapper.Map<List<PointsPoolsIndexerDto>, List<PointsPoolsDto>>(pointsPoolsIndexerList);
         var pointsPoolStakeSumDic = await _pointsStakingProvider.GetPointsPoolStakeSumDicAsync(poolIds);
-        var addressStakeAmountDic = await GetAddressStakeAmountDicAsync(input.Address);
-        var addressStakeRewardsDic = await GetAddressStakeRewardsDicAsync(input.Address);
+        var addressStakeAmountDic = await GetAddressStakeAmountDicAsync(input.Address, dappId);
+        var addressStakeRewardsDic = await GetAddressStakeRewardsDicAsync(input.Address, dappId);
         pointsPoolsDtos.ForEach(dto =>
         {
             dto.TotalStake = pointsPoolStakeSumDic.TryGetValue(dto.PoolId, out var totalStake) ? totalStake : "0";
@@ -475,32 +476,32 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         return projectItemAggDataDic;
     }
 
-    private async Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address)
+    private async Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address, string dappId)
     {
         await ConnectAsync();
-        var redisValue = await RedisDatabase.StringGetAsync(PointsPoolStakeAmountRedisKeyPrefix + address);
+        var redisValue = await RedisDatabase.StringGetAsync(PointsPoolStakeAmountRedisKeyPrefix + address + ":" + dappId);
         if (redisValue.HasValue)
         {
             return _serializer.Deserialize<Dictionary<string, string>>(redisValue);
         }
 
-        var result = await _pointsStakingProvider.GetAddressStakeAmountDicAsync(address);
-        await RedisDatabase.StringSetAsync(PointsPoolStakeAmountRedisKeyPrefix + address,
+        var result = await _pointsStakingProvider.GetAddressStakeAmountDicAsync(address, dappId);
+        await RedisDatabase.StringSetAsync(PointsPoolStakeAmountRedisKeyPrefix + address + ":" + dappId,
             _serializer.Serialize(result), TimeSpan.FromHours(2));
         return result;
     }
 
-    private async Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address)
+    private async Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address, string dappId)
     {
         await ConnectAsync();
-        var redisValue = await RedisDatabase.StringGetAsync(PointsPoolStakeRewardsRedisKeyPrefix + address);
+        var redisValue = await RedisDatabase.StringGetAsync(PointsPoolStakeRewardsRedisKeyPrefix + address + ":" + dappId);
         if (redisValue.HasValue)
         {
             return _serializer.Deserialize<Dictionary<string, string>>(redisValue);
         }
 
-        var result = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(address);
-        await RedisDatabase.StringSetAsync(PointsPoolStakeRewardsRedisKeyPrefix + address,
+        var result = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(address, dappId);
+        await RedisDatabase.StringSetAsync(PointsPoolStakeRewardsRedisKeyPrefix + address + ":" + dappId,
             _serializer.Serialize(result), TimeSpan.FromMinutes(1));
         return result;
     }

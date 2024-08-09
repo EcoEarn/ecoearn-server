@@ -23,8 +23,8 @@ public interface IPointsStakingProvider
     Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name, string dappId = "", List<string> poolIds = null);
 
     Task<Dictionary<string, string>> GetPointsPoolStakeSumDicAsync(List<string> poolIds);
-    Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address);
-    Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address);
+    Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address, string dappId = "");
+    Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address, string dappId = "");
     Task<List<RewardsListIndexerDto>> GetRealClaimInfoListAsync(List<string> seeds, string address, string poolId);
     Task<List<PointsPoolClaimRecordIndex>> GetClaimingListAsync(string address, string poolId);
     Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string inputAddress);
@@ -121,7 +121,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         return list.ToDictionary(x => x.PoolId, x => x.StakeAmount);
     }
 
-    public async Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address)
+    public async Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address, string dappId = "")
     {
         if (string.IsNullOrEmpty(address))
         {
@@ -131,7 +131,10 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         var mustQuery = new List<Func<QueryContainerDescriptor<PointsPoolAddressStakeIndex>, QueryContainer>>();
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
-
+        if (!string.IsNullOrEmpty(dappId))
+        {
+            mustQuery.Add(q => q.Term(i => i.Field(f => f.DappId).Value(dappId)));
+        }
         QueryContainer Filter(QueryContainerDescriptor<PointsPoolAddressStakeIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
@@ -141,7 +144,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         return list.ToDictionary(x => GuidHelper.GenerateId(x.Address, x.PoolId), x => x.StakeAmount);
     }
 
-    public async Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address)
+    public async Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address, string dappId = "")
     {
         if (string.IsNullOrEmpty(address))
         {
@@ -151,7 +154,11 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         var mustQuery = new List<Func<QueryContainerDescriptor<PointsStakeRewardsSumIndex>, QueryContainer>>();
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
-
+        if (!string.IsNullOrEmpty(dappId))
+        {
+            mustQuery.Add(q => q.Term(i => i.Field(f => f.DappId).Value(dappId)));
+        }
+        
         QueryContainer Filter(QueryContainerDescriptor<PointsStakeRewardsSumIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 

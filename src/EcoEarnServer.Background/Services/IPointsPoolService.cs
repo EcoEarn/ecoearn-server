@@ -86,6 +86,10 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         var stakeListEto = new List<PointsPoolAddressStakeEto>();
         foreach (var (poolIndex, pointsPoolStakeSumDto) in stakeSumDic)
         {
+            if (pointsSnapshot.DappId != pointsPoolStakeSumDto.DappId)
+            {
+                continue;
+            }
             var value = CheckPoints(poolIndex, pointsPoolStakeSumDto.PoolId, pointsSnapshot);
 
             if (value == "0")
@@ -121,6 +125,11 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         var rewardsList = new List<PointsStakeRewardsEto>();
         foreach (var (poolIndex, pointsPoolStakeSumDto) in stakeSumDic)
         {
+            if (pointsSnapshot.DappId != pointsPoolStakeSumDto.DappId)
+            {
+                continue;
+            }
+            
             var value = CheckPoints(poolIndex, pointsPoolStakeSumDto.PoolId, pointsSnapshot);
 
             if (value == "0")
@@ -158,6 +167,11 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         var rewardsSumList = new List<PointsStakeRewardsSumEto>();
         foreach (var (poolIndex, pointsPoolStakeSumDto) in stakeSumDic)
         {
+            if (pointsSnapshot.DappId != pointsPoolStakeSumDto.DappId)
+            {
+                continue;
+            }
+            
             var value = CheckPoints(poolIndex, pointsPoolStakeSumDto.PoolId, pointsSnapshot);
 
             if (value == "0")
