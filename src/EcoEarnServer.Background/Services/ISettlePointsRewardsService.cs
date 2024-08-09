@@ -9,6 +9,7 @@ using EcoEarnServer.Background.Provider.Dtos;
 using EcoEarnServer.Constants;
 using EcoEarnServer.Grains.Grain.PointsPool;
 using EcoEarnServer.PointsSnapshot;
+using EcoEarnServer.PointsStaking.Provider;
 using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -38,12 +39,13 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
     private readonly IStateProvider _stateProvider;
     private readonly PointsSnapshotOptions _pointsSnapshotOptions;
     private readonly ILarkAlertProvider _larkAlertProvider;
+    private readonly IPointsStakingProvider _pointsStakingProvider;
 
     public SettlePointsRewardsService(ISettlePointsRewardsProvider settlePointsRewardsProvider,
         IOptionsSnapshot<PointsPoolOptions> poolOptions, IPointsPoolService pointsPoolService,
         IObjectMapper objectMapper, IAbpDistributedLock distributedLock, ILogger<SettlePointsRewardsService> logger,
         IStateProvider stateProvider, IOptionsSnapshot<PointsSnapshotOptions> pointsSnapshotOptions,
-        ILarkAlertProvider larkAlertProvider)
+        ILarkAlertProvider larkAlertProvider, IPointsStakingProvider pointsStakingProvider)
     {
         _settlePointsRewardsProvider = settlePointsRewardsProvider;
         _pointsPoolService = pointsPoolService;
@@ -52,6 +54,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         _logger = logger;
         _stateProvider = stateProvider;
         _larkAlertProvider = larkAlertProvider;
+        _pointsStakingProvider = pointsStakingProvider;
         _pointsSnapshotOptions = pointsSnapshotOptions.Value;
         _poolOptions = poolOptions.Value;
     }
@@ -229,6 +232,12 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         }
 
         return poolStakeDic;
+    }
+
+    private async Task<Dictionary<string, PointsPoolInfo>> GetPointsPoolInfosAsync()
+    {
+        //var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("");
+        return null;
     }
 
     private async Task<List<PointsSnapshotIndex>> GetYesterdaySnapshotAsync(int settleRewardsBeforeDays)

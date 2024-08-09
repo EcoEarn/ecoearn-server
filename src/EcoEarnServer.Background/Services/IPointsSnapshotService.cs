@@ -130,103 +130,122 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
             })
             .ToList();
 
-        foreach (var addressPointsGroup in addressPointsGroups)
+        var groupedPoints = pointsSumList.GroupBy(x => x.DappId)
+            .Select(dappGroup => new
+            {
+                DappId = dappGroup.Key,
+                Addresses = dappGroup.GroupBy(x => x.Address)
+                    .Select(addressGroup => new
+                    {
+                        Address = addressGroup.Key,
+                        Points = addressGroup.ToList()
+                    })
+                    .ToList()
+            })
+            .ToList();
+
+        foreach (var pointsGroup in groupedPoints)
         {
-            var address = addressPointsGroup.Address;
-            var dappId = addressPointsGroup.Points.FirstOrDefault()?.DappId;
-            var flag = addressRelationShipDic.TryGetValue(address, out var addressRelationShip);
-            var newPointList = new PointsListDto
+            var dappId = pointsGroup.DappId;
+            foreach (var addressPointsGroup in pointsGroup.Addresses)
             {
-                Address = address,
-                UpdateTime = startOfDayTimestamp,
-                DappId = dappId
-            };
-            foreach (var pointsListDto in addressPointsGroup.Points)
-            {
-                newPointList.FirstSymbolAmount = (BigInteger.Parse(newPointList.FirstSymbolAmount) +
-                                                  BigInteger.Parse(pointsListDto.FirstSymbolAmount)).ToString();
-                newPointList.ThirdSymbolAmount = (BigInteger.Parse(newPointList.ThirdSymbolAmount) +
-                                                  BigInteger.Parse(pointsListDto.ThirdSymbolAmount)).ToString();
-                newPointList.FourSymbolAmount = (BigInteger.Parse(newPointList.FourSymbolAmount) +
-                                                 BigInteger.Parse(pointsListDto.FourSymbolAmount)).ToString();
-                newPointList.FiveSymbolAmount = (BigInteger.Parse(newPointList.FiveSymbolAmount) +
-                                                 BigInteger.Parse(pointsListDto.FiveSymbolAmount)).ToString();
-                newPointList.SixSymbolAmount = (BigInteger.Parse(newPointList.SixSymbolAmount) +
-                                                BigInteger.Parse(pointsListDto.SixSymbolAmount)).ToString();
-                newPointList.SevenSymbolAmount = (BigInteger.Parse(newPointList.SevenSymbolAmount) +
-                                                  BigInteger.Parse(pointsListDto.SevenSymbolAmount)).ToString();
-                newPointList.EightSymbolAmount = (BigInteger.Parse(newPointList.EightSymbolAmount) +
-                                                  BigInteger.Parse(pointsListDto.EightSymbolAmount)).ToString();
-                newPointList.NineSymbolAmount = (BigInteger.Parse(newPointList.NineSymbolAmount) +
-                                                 BigInteger.Parse(pointsListDto.NineSymbolAmount)).ToString();
-                newPointList.TenSymbolAmount = (BigInteger.Parse(newPointList.TenSymbolAmount) +
-                                                BigInteger.Parse(pointsListDto.TenSymbolAmount)).ToString();
-                newPointList.ElevenSymbolAmount = (BigInteger.Parse(newPointList.ElevenSymbolAmount) +
-                                                   BigInteger.Parse(pointsListDto.ElevenSymbolAmount)).ToString();
-                newPointList.TwelveSymbolAmount = (BigInteger.Parse(newPointList.TwelveSymbolAmount) +
-                                                   BigInteger.Parse(pointsListDto.TwelveSymbolAmount)).ToString();
-                var subMilliSeconds = startOfDayTimestamp - pointsListDto.UpdateTime;
-                if (subMilliSeconds <= 0)
+                var address = addressPointsGroup.Address;
+                var flag = addressRelationShipDic.TryGetValue(address, out var addressRelationShip);
+                var newPointList = new PointsListDto
                 {
-                    newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
-                                                       BigInteger.Parse(pointsListDto.SecondSymbolAmount)).ToString();
-                    continue;
-                }
-                switch (pointsListDto.Role)
+                    Address = address,
+                    UpdateTime = startOfDayTimestamp,
+                    DappId = dappId
+                };
+                foreach (var pointsListDto in addressPointsGroup.Points)
                 {
-                    case OperatorRole.Inviter:
-                        var settleInviterPoints = flag
-                            ? new BigInteger(addressRelationShip.InviterKolFollowerNum) *
-                              new BigInteger(_selfIncreaseRateOptions.InviterKolFollowerRate) *
-                              new BigInteger(subMilliSeconds)
-                            : BigInteger.Parse("0");
+                    newPointList.FirstSymbolAmount = (BigInteger.Parse(newPointList.FirstSymbolAmount) +
+                                                      BigInteger.Parse(pointsListDto.FirstSymbolAmount)).ToString();
+                    newPointList.ThirdSymbolAmount = (BigInteger.Parse(newPointList.ThirdSymbolAmount) +
+                                                      BigInteger.Parse(pointsListDto.ThirdSymbolAmount)).ToString();
+                    newPointList.FourSymbolAmount = (BigInteger.Parse(newPointList.FourSymbolAmount) +
+                                                     BigInteger.Parse(pointsListDto.FourSymbolAmount)).ToString();
+                    newPointList.FiveSymbolAmount = (BigInteger.Parse(newPointList.FiveSymbolAmount) +
+                                                     BigInteger.Parse(pointsListDto.FiveSymbolAmount)).ToString();
+                    newPointList.SixSymbolAmount = (BigInteger.Parse(newPointList.SixSymbolAmount) +
+                                                    BigInteger.Parse(pointsListDto.SixSymbolAmount)).ToString();
+                    newPointList.SevenSymbolAmount = (BigInteger.Parse(newPointList.SevenSymbolAmount) +
+                                                      BigInteger.Parse(pointsListDto.SevenSymbolAmount)).ToString();
+                    newPointList.EightSymbolAmount = (BigInteger.Parse(newPointList.EightSymbolAmount) +
+                                                      BigInteger.Parse(pointsListDto.EightSymbolAmount)).ToString();
+                    newPointList.NineSymbolAmount = (BigInteger.Parse(newPointList.NineSymbolAmount) +
+                                                     BigInteger.Parse(pointsListDto.NineSymbolAmount)).ToString();
+                    newPointList.TenSymbolAmount = (BigInteger.Parse(newPointList.TenSymbolAmount) +
+                                                    BigInteger.Parse(pointsListDto.TenSymbolAmount)).ToString();
+                    newPointList.ElevenSymbolAmount = (BigInteger.Parse(newPointList.ElevenSymbolAmount) +
+                                                       BigInteger.Parse(pointsListDto.ElevenSymbolAmount)).ToString();
+                    newPointList.TwelveSymbolAmount = (BigInteger.Parse(newPointList.TwelveSymbolAmount) +
+                                                       BigInteger.Parse(pointsListDto.TwelveSymbolAmount)).ToString();
+                    var subMilliSeconds = startOfDayTimestamp - pointsListDto.UpdateTime;
+                    if (subMilliSeconds <= 0)
+                    {
                         newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
-                                                           BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
-                                                           settleInviterPoints).ToString();
-                        break;
-                    case OperatorRole.Kol:
-                        var settleKolPoints = flag
-                            ? (new BigInteger(addressRelationShip.KolFollowerNum) *
-                               new BigInteger(_selfIncreaseRateOptions.KolFollowerRate) +
-                               new BigInteger(addressRelationShip.KolFollowerInviteeNum) *
-                               new BigInteger(_selfIncreaseRateOptions.KolFollowerInviteeRate)) *
-                              new BigInteger(subMilliSeconds)
-                            : BigInteger.Parse("0");
-                        newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
-                                                           BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
-                                                           settleKolPoints).ToString();
-                        break;
-                    case OperatorRole.User:
-                        var settleUserPoints = flag
-                            ? (new BigInteger(addressRelationShip.InviteeNum) *
-                               new BigInteger(_selfIncreaseRateOptions.InviteeRate) +
-                               new BigInteger(addressRelationShip.SecondInviteeNum) *
-                               new BigInteger(_selfIncreaseRateOptions.SecondInviteeRate)) *
-                              new BigInteger(subMilliSeconds) 
-                            : BigInteger.Parse("0");
-                        newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
-                                                           BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
-                                                           settleUserPoints).ToString();
-                        break;
-                    case OperatorRole.All:
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
+                                                           BigInteger.Parse(pointsListDto.SecondSymbolAmount))
+                            .ToString();
+                        continue;
+                    }
+
+                    switch (pointsListDto.Role)
+                    {
+                        case OperatorRole.Inviter:
+                            var settleInviterPoints = flag
+                                ? new BigInteger(addressRelationShip.InviterKolFollowerNum) *
+                                  new BigInteger(_selfIncreaseRateOptions.InviterKolFollowerRate) *
+                                  new BigInteger(subMilliSeconds)
+                                : BigInteger.Parse("0");
+                            newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
+                                                               BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
+                                                               settleInviterPoints).ToString();
+                            break;
+                        case OperatorRole.Kol:
+                            var settleKolPoints = flag
+                                ? (new BigInteger(addressRelationShip.KolFollowerNum) *
+                                   new BigInteger(_selfIncreaseRateOptions.KolFollowerRate) +
+                                   new BigInteger(addressRelationShip.KolFollowerInviteeNum) *
+                                   new BigInteger(_selfIncreaseRateOptions.KolFollowerInviteeRate)) *
+                                  new BigInteger(subMilliSeconds)
+                                : BigInteger.Parse("0");
+                            newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
+                                                               BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
+                                                               settleKolPoints).ToString();
+                            break;
+                        case OperatorRole.User:
+                            var settleUserPoints = flag
+                                ? (new BigInteger(addressRelationShip.InviteeNum) *
+                                   new BigInteger(_selfIncreaseRateOptions.InviteeRate) +
+                                   new BigInteger(addressRelationShip.SecondInviteeNum) *
+                                   new BigInteger(_selfIncreaseRateOptions.SecondInviteeRate)) *
+                                  new BigInteger(subMilliSeconds)
+                                : BigInteger.Parse("0");
+                            newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
+                                                               BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
+                                                               settleUserPoints).ToString();
+                            break;
+                        case OperatorRole.All:
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
                 }
-            }
 
-            if (_pointsSnapshotOptions.ElevenSymbolSubAddressDic.TryGetValue(address, out var dto))
-            {
-                newPointList.ElevenSymbolAmount = (BigInteger.Parse(newPointList.ElevenSymbolAmount) -
-                                                   BigInteger.Parse(dto.Amount)).ToString();
-            }
+                if (_pointsSnapshotOptions.ElevenSymbolSubAddressDic.TryGetValue(address, out var dto))
+                {
+                    newPointList.ElevenSymbolAmount = (BigInteger.Parse(newPointList.ElevenSymbolAmount) -
+                                                       BigInteger.Parse(dto.Amount)).ToString();
+                }
 
-            if (_pointsSnapshotOptions.NineSymbolContractAddressList.Contains(address))
-            {
-                newPointList.NineSymbolAmount = "0";
-            }
+                if (_pointsSnapshotOptions.NineSymbolContractAddressList.Contains(address))
+                {
+                    newPointList.NineSymbolAmount = "0";
+                }
 
-            result.Add(newPointList);
+                result.Add(newPointList);
+            }
         }
 
         var larkAlertDto = BuildLarkAlertParam(pointsSumList.Count, result.Count, startOfDay.ToString("yyyy-MM-dd"));
