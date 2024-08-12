@@ -136,7 +136,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
                 addressStakeRewardsDic.TryGetValue(GuidHelper.GenerateId(input.Address, dto.PoolId), out var earned)
                     ? earned
                     : "0";
-            dto.RealEarned = (double.Parse(dto.Earned) * 0.9).ToString(CultureInfo.InvariantCulture);
+            dto.RealEarned = (decimal.Parse(dto.Earned) * decimal.Parse("0.9")).ToString(CultureInfo.InvariantCulture);
             dto.DailyRewards = dto.TotalStake == "0"
                 ? "0"
                 : Math.Floor(10000 * 30 / decimal.Parse(dto.TotalStake) * dto.PoolDailyRewards * 100000000)
