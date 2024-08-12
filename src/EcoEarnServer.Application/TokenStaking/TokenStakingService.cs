@@ -219,9 +219,16 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             tokenPoolIndexerListDto = new List<TokenPoolsIndexerDto> {tokenPoolsIndexerDto};
         }
 
+        var poolIds = tokenPoolIndexerListDto.Select(x => x.PoolId).ToList();
+        var stakedInfoIndexerList = await _tokenStakingProvider.GetStakedInfoAsync(tokenName, address, poolIds);
+        var tokenStakedIndexerDtos = stakedInfoIndexerList.ToDictionary(x => x.PoolId, x => x);
         foreach (var tokenPoolIndexerDto in tokenPoolIndexerListDto)
         {
-            var stakedInfoIndexerDtos = await _tokenStakingProvider.GetStakedInfoAsync(tokenName, address);
+            if (!tokenStakedIndexerDtos.TryGetValue(tokenPoolIndexerDto.PoolId, out var stakedInfoIndexerDtos))
+            {
+                continue;
+            }
+            
             var yearlyRewards = YearlyBlocks * tokenPoolIndexerDto.TokenPoolConfig.RewardPerBlock;
             var tokenPoolStakedSum = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
                 { PoolId = tokenPoolIndexerDto.PoolId, ChainId = chainId });
