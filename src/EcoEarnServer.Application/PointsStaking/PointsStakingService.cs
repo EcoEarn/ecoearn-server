@@ -111,7 +111,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         if (string.IsNullOrEmpty(input.Address))
         {
             await ConnectAsync();
-            var redisValue = await RedisDatabase.StringGetAsync(PointsPoolUnLoginListRedisKeyPrefix + input.Type);
+            var redisValue = await RedisDatabase.StringGetAsync(PointsPoolUnLoginListRedisKeyPrefix + input.Type + ":" + dappId);
             if (redisValue.HasValue)
             {
                 return _serializer.Deserialize<List<PointsPoolsDto>>(redisValue);
@@ -149,7 +149,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             : sortedPointsPools;
         if (string.IsNullOrEmpty(input.Address))
         {
-            await RedisDatabase.StringSetAsync(PointsPoolUnLoginListRedisKeyPrefix + input.Type,
+            await RedisDatabase.StringSetAsync(PointsPoolUnLoginListRedisKeyPrefix + input.Type + ":" + dappId,
                 _serializer.Serialize(result),
                 TimeSpan.FromHours(2));
         }
