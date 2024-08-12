@@ -234,7 +234,10 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             
             if (!tokenStakedIndexerDtos.TryGetValue(tokenPoolIndexerDto.PoolId, out var stakedInfoIndexerDtos))
             {
-                stakedInfoIndexerDtos = new TokenStakedIndexerDto();
+                stakedInfoIndexerDtos = new TokenStakedIndexerDto()
+                {
+                    StakingToken = tokenPoolIndexerDto.TokenPoolConfig.StakingToken
+                };
             }
             
             var stakeInfoDto = new EarlyStakeInfoDto
