@@ -792,8 +792,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var period = input.Period;
         var tokenAMin = input.TokenAMin;
         var tokenBMin = input.TokenBMin;
-        var operationPoolIds = input.OperationPoolIds;
-        var dappIds = input.OperationDappIds;
+        var operationPoolIds = input.OperationPoolIds.Where(x => !string.IsNullOrEmpty(x)).Distinct().ToList();
+        var dappIds = input.OperationDappIds.Where(x => !string.IsNullOrEmpty(x)).Distinct().ToList();
 
 
         _logger.LogInformation("RewardsSignatureAsync, input: {input}", JsonConvert.SerializeObject(input));
