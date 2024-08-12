@@ -17,7 +17,7 @@ public interface ITokenStakingProvider
     Task<TokenStakedIndexerDto> GetStakedInfoAsync(string tokenName, string address);
 
     Task<Dictionary<string, TokenStakedIndexerDto>> GetAddressStakedInPoolDicAsync(List<string> pools, string address);
-    Task<List<TokenPoolsIndexerDto>> GetTokenPoolByTokenAsync(string tokenName);
+    Task<List<TokenPoolsIndexerDto>> GetTokenPoolByTokenAsync(string tokenName, PoolTypeEnums poolType);
     Task<List<TokenPoolStakedInfoDto>> GetTokenPoolStakedInfoListAsync(List<string> poolIds);
 
     Task<List<TokenStakedIndexerDto>> GetStakedInfoListAsync(string tokenName, string address,
@@ -107,7 +107,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             .ToDictionary(g => g.Key, g => g.First());
     }
 
-    public async Task<List<TokenPoolsIndexerDto>> GetTokenPoolByTokenAsync(string tokenName)
+    public async Task<List<TokenPoolsIndexerDto>> GetTokenPoolByTokenAsync(string tokenName, PoolTypeEnums poolType)
     {
         try
         {
@@ -146,7 +146,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    tokenName = tokenName, poolType = PoolTypeEnums.All, poolIds = new List<string>(), skipCount = 0,
+                    tokenName = tokenName, poolType = poolType, poolIds = new List<string>(), skipCount = 0,
                     maxResultCount = 5000,
                 }
             });

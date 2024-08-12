@@ -204,7 +204,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         var chainId = input.ChainId;
         var poolType = input.PoolType;
         var rate = input.Rate;
-        var tokenPoolIndexerListDto = await _tokenStakingProvider.GetTokenPoolByTokenAsync(tokenName);
+        var tokenPoolIndexerListDto = await _tokenStakingProvider.GetTokenPoolByTokenAsync(tokenName, poolType);
 
         if (!string.IsNullOrEmpty(tokenName) && poolType == PoolTypeEnums.Token)
         {
