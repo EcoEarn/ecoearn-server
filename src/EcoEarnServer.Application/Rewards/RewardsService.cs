@@ -637,6 +637,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             FilterName = x.Value.FilterName,
             Id = x.Key,
             PoolType = x.Value.PoolType.ToString(),
+            Sort = x.Value.Sort
         }).OrderBy(x => x.Sort).ToList();
     }
 
