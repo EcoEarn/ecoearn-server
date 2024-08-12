@@ -224,7 +224,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         if (input.PoolType == PoolTypeEnums.All)
         {
-            return result.OrderBy(x => x.Sort).ToList();
+            return result.OrderBy(x => x.Sort)
+                .ThenBy(x => x.RewardsInfo.FirstClaimTime)
+                .ToList();
         }
 
         return result.Where(x => x.PoolType == input.PoolType)
