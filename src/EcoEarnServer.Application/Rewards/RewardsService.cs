@@ -178,11 +178,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 Sort = hasPoolInfo ? poolInfo.Sort : 0,
                 SupportEarlyStake = hasPoolInfo && poolInfo.SupportEarlyStake,
                 RewardsTokenName = rewardsTokenName,
-                PoolType = PoolTypeEnums.Points,
+                PoolType = PoolTypeEnums.Points.ToString(),
+                PoolTypeEnums = PoolTypeEnums.Points,
             };
 
             var rewardsAggInfo = await GetRewardsAggAsync(rewardsListIndexerDtos, address, usdRate, "",
-                poolRewardsInfoDto.PoolType, dappId);
+                poolRewardsInfoDto.PoolTypeEnums, dappId);
             poolRewardsInfoDto.RewardsInfo = rewardsAggInfo;
             result.Add(poolRewardsInfoDto);
         }
@@ -215,7 +216,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 SupportEarlyStake = hasPoolInfo && poolInfo.SupportEarlyStake,
                 PoolId = poolId,
                 RewardsTokenName = tokenPool.TokenPoolConfig.RewardToken,
-                PoolType = poolType,
+                PoolType = poolType.ToString(),
+                PoolTypeEnums = poolType,
                 RewardsInfo = rewardsAggInfo
             };
 
@@ -229,7 +231,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 .ToList();
         }
 
-        return result.Where(x => x.PoolType == input.PoolType)
+        return result.Where(x => x.PoolTypeEnums == input.PoolType)
             .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
             .ToList();
     }
