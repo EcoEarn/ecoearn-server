@@ -103,6 +103,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             var tokenPoolsDto = _objectMapper.Map<TokenPoolsIndexerDto, TokenPoolsDto>(tokenPoolsIndexerDto);
             tokenPoolsDto.SupportEarlyStake = poolInfoDic.TryGetValue(tokenPoolsIndexerDto.PoolId, out var poolInfo) &&
                                               poolInfo.SupportEarlyStake;
+            tokenPoolsDto.Sort = poolInfo!.Sort;
             var tokenPoolStakedSumLong = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
                 { PoolId = tokenPoolsDto.PoolId, ChainId = input.ChainId });
 
@@ -174,7 +175,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 
         var result = new TokenPoolsResult()
         {
-            Pools = tokenPoolsList,
+            Pools = tokenPoolsList.OrderBy(x => x.Sort).ToList(),
             TextNodes = JsonConvert.DeserializeObject<List<TextNodeDto>>(_poolTextWordOptions.PointsTextWord)
         };
 
