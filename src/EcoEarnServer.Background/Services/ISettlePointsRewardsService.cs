@@ -67,7 +67,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             return;
         }
 
-        if (!await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateSnapshotKey()))
+        if (!await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateSnapshotKey(), true))
         {
             _logger.LogInformation("today points snapshot has not ready.");
             return;
