@@ -23,6 +23,7 @@ using Google.Protobuf;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -361,6 +362,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             PoolId = poolId,
             Rewards = claimAmount.ToString(CultureInfo.InvariantCulture)
         };
+        _logger.LogInformation("update rewards sum: {info}", JsonConvert.SerializeObject(rewardsSumDto));
         var rewardsSumGrain = _clusterClient.GetGrain<IPointsStakeRewardsSumGrain>(id);
         var result = await rewardsSumGrain.CreateOrUpdateAsync(rewardsSumDto);
 
