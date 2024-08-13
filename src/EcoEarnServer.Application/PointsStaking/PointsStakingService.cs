@@ -493,7 +493,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
 
         var result = await _pointsStakingProvider.GetAddressStakeAmountDicAsync(address, dappId);
         await RedisDatabase.StringSetAsync(PointsPoolStakeAmountRedisKeyPrefix + address + ":" + dappId,
-            _serializer.Serialize(result), TimeSpan.FromHours(2));
+            _serializer.Serialize(result), TimeSpan.FromMinutes(10));
         return result;
     }
 
