@@ -210,7 +210,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 DappId = tokenPool.DappId,
                 PoolName = hasPoolInfo ? poolInfo.PoolName : "",
                 Sort = hasPoolInfo ? poolInfo.Sort : 0,
-                Rate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(tokenPool.TokenPoolConfig.StakeTokenContract, out var poolRate)
+                Rate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(tokenPool.TokenPoolConfig.StakeTokenContract,
+                    out var poolRate)
                     ? poolRate
                     : 0,
                 SupportEarlyStake = hasPoolInfo && poolInfo.SupportEarlyStake,
@@ -1115,7 +1116,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var operationRecordList =
             await _rewardsProvider.GetRewardOperationRecordListAsync(address, executeStatusList);
         var rewardOperationRecordList = operationRecordList
-            .Where(x => x.ExpiredTime > DateTime.UtcNow.ToUtcMilliSeconds())
+            .Where(x => x.ExecuteStatus == ExecuteStatus.Ended || (x.ExecuteStatus == ExecuteStatus.Executing &&
+                                                                   x.ExpiredTime > DateTime.UtcNow.ToUtcMilliSeconds()))
             .ToList();
         var rewardOperationRecordClaimIds = rewardOperationRecordList
             .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId).ToList())
