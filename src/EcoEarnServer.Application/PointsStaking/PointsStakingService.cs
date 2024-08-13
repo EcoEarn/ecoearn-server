@@ -208,8 +208,9 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         {
             //change record status
             await UpdateClaimStatusAsync(address, poolId, claimingRecord.Id, "");
-            //sub amount
-            await SettleRewardsAsync(address, poolId, -decimal.Parse((claimingRecord.Amount / 100000000).ToString()));
+            //sub amount   819135044
+
+            await SettleRewardsAsync(address, poolId, -decimal.Parse(claimingRecord.Amount.ToString()) / decimal.Parse("100000000"));
             amount -= claimingRecord.Amount;
         }
 
@@ -313,7 +314,8 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
 
         var poolId = claimInput.PoolId.ToHex();
         var address = claimInput.Account.ToBase58();
-        await SettleRewardsAsync(address, poolId, -decimal.Parse((claimInput.Amount / 100000000).ToString()));
+        
+        await SettleRewardsAsync(address, poolId, -decimal.Parse(claimInput.Amount.ToString()) / decimal.Parse("100000000"));
         await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
 
         return transactionOutput.TransactionId;
