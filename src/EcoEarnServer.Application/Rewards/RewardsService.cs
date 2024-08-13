@@ -1112,8 +1112,11 @@ public class RewardsService : IRewardsService, ISingletonDependency
             executeStatusList.Add(ExecuteStatus.Executing);
         }
 
-        var rewardOperationRecordList =
+        var operationRecordList =
             await _rewardsProvider.GetRewardOperationRecordListAsync(address, executeStatusList);
+        var rewardOperationRecordList = operationRecordList
+            .Where(x => x.ExpiredTime > DateTime.UtcNow.ToUtcMilliSeconds())
+            .ToList();
         var rewardOperationRecordClaimIds = rewardOperationRecordList
             .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId).ToList())
             .Distinct()
