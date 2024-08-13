@@ -112,7 +112,8 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         if (string.IsNullOrEmpty(input.Address))
         {
             await ConnectAsync();
-            var redisValue = await RedisDatabase.StringGetAsync(PointsPoolUnLoginListRedisKeyPrefix + input.Type + ":" + dappId);
+            var redisValue =
+                await RedisDatabase.StringGetAsync(PointsPoolUnLoginListRedisKeyPrefix + input.Type + ":" + dappId);
             if (redisValue.HasValue)
             {
                 return _serializer.Deserialize<List<PointsPoolsDto>>(redisValue);
@@ -208,7 +209,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             //change record status
             await UpdateClaimStatusAsync(address, poolId, claimingRecord.Id, "");
             //sub amount
-            await SettleRewardsAsync(address, poolId, -((double)claimingRecord.Amount / 100000000));
+            await SettleRewardsAsync(address, poolId, -decimal.Parse((claimingRecord.Amount / 100000000).ToString()));
             amount -= claimingRecord.Amount;
         }
 
@@ -312,7 +313,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
 
         var poolId = claimInput.PoolId.ToHex();
         var address = claimInput.Account.ToBase58();
-        await SettleRewardsAsync(address, poolId, -((double)claimInput.Amount / 100000000));
+        await SettleRewardsAsync(address, poolId, -decimal.Parse((claimInput.Amount / 100000000).ToString()));
         await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
 
         return transactionOutput.TransactionId;
@@ -351,7 +352,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             _objectMapper.Map<PointsPoolClaimRecordDto, PointsPoolClaimRecordEto>(saveResult.Data));
     }
 
-    private async Task SettleRewardsAsync(string address, string poolId, double claimAmount)
+    private async Task SettleRewardsAsync(string address, string poolId, decimal claimAmount)
     {
         await ConnectAsync();
         await RedisDatabase.KeyDeleteAsync(PointsPoolStakeRewardsRedisKeyPrefix + address);
@@ -481,7 +482,8 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
     private async Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address, string dappId)
     {
         await ConnectAsync();
-        var redisValue = await RedisDatabase.StringGetAsync(PointsPoolStakeAmountRedisKeyPrefix + address + ":" + dappId);
+        var redisValue =
+            await RedisDatabase.StringGetAsync(PointsPoolStakeAmountRedisKeyPrefix + address + ":" + dappId);
         if (redisValue.HasValue)
         {
             return _serializer.Deserialize<Dictionary<string, string>>(redisValue);
@@ -496,7 +498,8 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
     private async Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address, string dappId)
     {
         await ConnectAsync();
-        var redisValue = await RedisDatabase.StringGetAsync(PointsPoolStakeRewardsRedisKeyPrefix + address + ":" + dappId);
+        var redisValue =
+            await RedisDatabase.StringGetAsync(PointsPoolStakeRewardsRedisKeyPrefix + address + ":" + dappId);
         if (redisValue.HasValue)
         {
             return _serializer.Deserialize<Dictionary<string, string>>(redisValue);
