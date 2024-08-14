@@ -41,10 +41,6 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.PoolName, m => m.MapFrom(f => f.TokenPoolConfig.StakingToken))
             .ForPath(t => t.EarnedSymbol, m => m.MapFrom(f => f.TokenPoolConfig.RewardToken))
             .ForPath(t => t.StakeSymbol, m => m.MapFrom(f => f.TokenPoolConfig.StakingToken))
-            .ForPath(t => t.ProjectOwner,
-                m => m.MapFrom(f =>
-                    f.PoolType == PoolTypeEnums.Lp ? "AwakenSwap" :
-                    f.PoolType == PoolTypeEnums.Token ? "Schrödinger" : "AI-powered 404 NFT dApp"))
             .ForPath(t => t.FixedBoostFactor, m => m.MapFrom(f => f.TokenPoolConfig.FixedBoostFactor))
             .ForPath(t => t.UnlockWindowDuration, m => m.MapFrom(f => f.TokenPoolConfig.UnlockWindowDuration))
             .ForPath(t => t.MinimumClaimAmount, m => m.MapFrom(f => f.TokenPoolConfig.MinimumClaimAmount))
