@@ -121,7 +121,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
         //group by address and calculate points sum
 
         _logger.LogInformation("get points sum list count. {count}", pointsSumList.Count);
-        var addressRelationShipDic = await GetRelationShipAsync(pointsSumList);
+        //var addressRelationShipDic = await GetRelationShipAsync(pointsSumList);
 
         var groupedPoints = pointsSumList.GroupBy(x => x.DappId)
             .Select(dappGroup => new
@@ -143,7 +143,7 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
             foreach (var addressPointsGroup in pointsGroup.Addresses)
             {
                 var address = addressPointsGroup.Address;
-                var flag = addressRelationShipDic.TryGetValue(address, out var addressRelationShip);
+                //var flag = addressRelationShipDic.TryGetValue(address, out var addressRelationShip);
                 var newPointList = new PointsListDto
                 {
                     Address = address,
@@ -154,6 +154,8 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
                 {
                     newPointList.FirstSymbolAmount = (BigInteger.Parse(newPointList.FirstSymbolAmount) +
                                                       BigInteger.Parse(pointsListDto.FirstSymbolAmount)).ToString();
+                    newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
+                                                       BigInteger.Parse(pointsListDto.SecondSymbolAmount)).ToString();
                     newPointList.ThirdSymbolAmount = (BigInteger.Parse(newPointList.ThirdSymbolAmount) +
                                                       BigInteger.Parse(pointsListDto.ThirdSymbolAmount)).ToString();
                     newPointList.FourSymbolAmount = (BigInteger.Parse(newPointList.FourSymbolAmount) +
@@ -174,56 +176,56 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
                                                        BigInteger.Parse(pointsListDto.ElevenSymbolAmount)).ToString();
                     newPointList.TwelveSymbolAmount = (BigInteger.Parse(newPointList.TwelveSymbolAmount) +
                                                        BigInteger.Parse(pointsListDto.TwelveSymbolAmount)).ToString();
-                    var subMilliSeconds = startOfDayTimestamp - pointsListDto.UpdateTime;
-                    if (subMilliSeconds <= 0)
-                    {
-                        newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
-                                                           BigInteger.Parse(pointsListDto.SecondSymbolAmount))
-                            .ToString();
-                        continue;
-                    }
-
-                    switch (pointsListDto.Role)
-                    {
-                        case OperatorRole.Inviter:
-                            var settleInviterPoints = flag
-                                ? new BigInteger(addressRelationShip.InviterKolFollowerNum) *
-                                  new BigInteger(_selfIncreaseRateOptions.InviterKolFollowerRate) *
-                                  new BigInteger(subMilliSeconds)
-                                : BigInteger.Parse("0");
-                            newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
-                                                               BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
-                                                               settleInviterPoints).ToString();
-                            break;
-                        case OperatorRole.Kol:
-                            var settleKolPoints = flag
-                                ? (new BigInteger(addressRelationShip.KolFollowerNum) *
-                                   new BigInteger(_selfIncreaseRateOptions.KolFollowerRate) +
-                                   new BigInteger(addressRelationShip.KolFollowerInviteeNum) *
-                                   new BigInteger(_selfIncreaseRateOptions.KolFollowerInviteeRate)) *
-                                  new BigInteger(subMilliSeconds)
-                                : BigInteger.Parse("0");
-                            newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
-                                                               BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
-                                                               settleKolPoints).ToString();
-                            break;
-                        case OperatorRole.User:
-                            var settleUserPoints = flag
-                                ? (new BigInteger(addressRelationShip.InviteeNum) *
-                                   new BigInteger(_selfIncreaseRateOptions.InviteeRate) +
-                                   new BigInteger(addressRelationShip.SecondInviteeNum) *
-                                   new BigInteger(_selfIncreaseRateOptions.SecondInviteeRate)) *
-                                  new BigInteger(subMilliSeconds)
-                                : BigInteger.Parse("0");
-                            newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
-                                                               BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
-                                                               settleUserPoints).ToString();
-                            break;
-                        case OperatorRole.All:
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
+                    // var subMilliSeconds = startOfDayTimestamp - pointsListDto.UpdateTime;
+                    // if (subMilliSeconds <= 0)
+                    // {
+                    //     newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
+                    //                                        BigInteger.Parse(pointsListDto.SecondSymbolAmount))
+                    //         .ToString();
+                    //     continue;
+                    // }
+                    //
+                    // switch (pointsListDto.Role)
+                    // {
+                    //     case OperatorRole.Inviter:
+                    //         var settleInviterPoints = flag
+                    //             ? new BigInteger(addressRelationShip.InviterKolFollowerNum) *
+                    //               new BigInteger(_selfIncreaseRateOptions.InviterKolFollowerRate) *
+                    //               new BigInteger(subMilliSeconds)
+                    //             : BigInteger.Parse("0");
+                    //         newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
+                    //                                            BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
+                    //                                            settleInviterPoints).ToString();
+                    //         break;
+                    //     case OperatorRole.Kol:
+                    //         var settleKolPoints = flag
+                    //             ? (new BigInteger(addressRelationShip.KolFollowerNum) *
+                    //                new BigInteger(_selfIncreaseRateOptions.KolFollowerRate) +
+                    //                new BigInteger(addressRelationShip.KolFollowerInviteeNum) *
+                    //                new BigInteger(_selfIncreaseRateOptions.KolFollowerInviteeRate)) *
+                    //               new BigInteger(subMilliSeconds)
+                    //             : BigInteger.Parse("0");
+                    //         newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
+                    //                                            BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
+                    //                                            settleKolPoints).ToString();
+                    //         break;
+                    //     case OperatorRole.User:
+                    //         var settleUserPoints = flag
+                    //             ? (new BigInteger(addressRelationShip.InviteeNum) *
+                    //                new BigInteger(_selfIncreaseRateOptions.InviteeRate) +
+                    //                new BigInteger(addressRelationShip.SecondInviteeNum) *
+                    //                new BigInteger(_selfIncreaseRateOptions.SecondInviteeRate)) *
+                    //               new BigInteger(subMilliSeconds)
+                    //             : BigInteger.Parse("0");
+                    //         newPointList.SecondSymbolAmount = (BigInteger.Parse(newPointList.SecondSymbolAmount) +
+                    //                                            BigInteger.Parse(pointsListDto.SecondSymbolAmount) +
+                    //                                            settleUserPoints).ToString();
+                    //         break;
+                    //     case OperatorRole.All:
+                    //         break;
+                    //     default:
+                    //         throw new ArgumentOutOfRangeException();
+                    // }
                 }
 
                 if (_pointsSnapshotOptions.ElevenSymbolSubAddressDic.TryGetValue(address, out var dto))
