@@ -19,7 +19,7 @@ namespace EcoEarnServer.PointsStaking.Provider;
 
 public interface IPointsStakingProvider
 {
-    Task<List<PointsSnapshotIndex>> GetProjectItemAggDataAsync(string snapshotDate, int skipCount, int maxResultCount);
+    Task<long> GetProjectItemAggDataAsync(string snapshotDate, string dappId);
     Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name, string dappId = "", List<string> poolIds = null);
 
     Task<Dictionary<string, string>> GetPointsPoolStakeSumDicAsync(List<string> poolIds);
@@ -28,6 +28,7 @@ public interface IPointsStakingProvider
     Task<List<RewardsListIndexerDto>> GetRealClaimInfoListAsync(List<string> seeds, string address, string poolId);
     Task<List<PointsPoolClaimRecordIndex>> GetClaimingListAsync(string address, string poolId);
     Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string inputAddress);
+    Task<List<PointsPoolStakeSumIndex>> GetPointsPoolStakeSumAsync();
 }
 
 public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependency
@@ -36,6 +37,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
     private readonly INESTRepository<PointsPoolStakeSumIndex, string> _poolStakeSumRepository;
     private readonly INESTRepository<PointsPoolAddressStakeIndex, string> _addressStakeSumRepository;
     private readonly INESTRepository<PointsStakeRewardsSumIndex, string> _addressStakeRewardsRepository;
+    private readonly INESTRepository<PointsPoolStakeSumIndex, string> _stakeSumRepository;
     private readonly INESTRepository<PointsPoolClaimRecordIndex, string> _claimRecordRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly IGraphQlHelper _graphQlHelper;
@@ -47,7 +49,8 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         INESTRepository<PointsPoolStakeSumIndex, string> poolStakeSumRepository,
         INESTRepository<PointsPoolAddressStakeIndex, string> addressStakeSumRepository,
         INESTRepository<PointsStakeRewardsSumIndex, string> addressStakeRewardsRepository,
-        INESTRepository<PointsPoolClaimRecordIndex, string> claimRecordRepository)
+        INESTRepository<PointsPoolClaimRecordIndex, string> claimRecordRepository,
+        INESTRepository<PointsPoolStakeSumIndex, string> stakeSumRepository)
     {
         _pointsSnapshotRepository = pointsSnapshotRepository;
         _objectMapper = objectMapper;
@@ -57,22 +60,23 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         _addressStakeSumRepository = addressStakeSumRepository;
         _addressStakeRewardsRepository = addressStakeRewardsRepository;
         _claimRecordRepository = claimRecordRepository;
+        _stakeSumRepository = stakeSumRepository;
     }
 
-    public async Task<List<PointsSnapshotIndex>> GetProjectItemAggDataAsync(string snapshotDate, int skipCount,
-        int maxResultCount)
+    public async Task<long> GetProjectItemAggDataAsync(string snapshotDate, string dappId)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<PointsSnapshotIndex>, QueryContainer>>();
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.SnapshotDate).Value(snapshotDate)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.DappId).Value(dappId)));
 
         QueryContainer Filter(QueryContainerDescriptor<PointsSnapshotIndex> f) => f.Bool(b => b.Must(mustQuery));
-        var (total, list) = await _pointsSnapshotRepository.GetListAsync(Filter,
-            skip: skipCount, limit: maxResultCount);
-        return list;
+        var countResponse = await _pointsSnapshotRepository.CountAsync(Filter);
+        return countResponse.Count;
     }
 
-    public async Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name, string dappId = "", List<string> poolIds = null)
+    public async Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name, string dappId = "",
+        List<string> poolIds = null)
     {
         try
         {
@@ -94,7 +98,8 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
             }",
                 Variables = new
                 {
-                    name = string.IsNullOrEmpty(name) ? "" : name, dappId = dappId, poolIds = poolIds ?? new List<string>(),
+                    name = string.IsNullOrEmpty(name) ? "" : name, dappId = dappId,
+                    poolIds = poolIds ?? new List<string>(),
                     skipCount = 0, maxResultCount = 5000
                 }
             });
@@ -135,6 +140,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         {
             mustQuery.Add(q => q.Term(i => i.Field(f => f.DappId).Value(dappId)));
         }
+
         QueryContainer Filter(QueryContainerDescriptor<PointsPoolAddressStakeIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
@@ -158,7 +164,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         {
             mustQuery.Add(q => q.Term(i => i.Field(f => f.DappId).Value(dappId)));
         }
-        
+
         QueryContainer Filter(QueryContainerDescriptor<PointsStakeRewardsSumIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
@@ -233,7 +239,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.PoolId).Value(poolId)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.ClaimStatus).Value(ClaimStatus.Claiming)));
- 
+
         QueryContainer Filter(QueryContainerDescriptor<PointsPoolClaimRecordIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
@@ -244,7 +250,6 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
 
     public async Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string address)
     {
-        
         if (string.IsNullOrEmpty(address))
         {
             return new List<PointsStakeRewardsSumIndex>();
@@ -253,12 +258,18 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         var mustQuery = new List<Func<QueryContainerDescriptor<PointsStakeRewardsSumIndex>, QueryContainer>>();
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
- 
+
         QueryContainer Filter(QueryContainerDescriptor<PointsStakeRewardsSumIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
         var (total, list) = await _addressStakeRewardsRepository.GetListAsync(Filter, skip: 0, limit: 5000);
 
+        return list;
+    }
+
+    public async Task<List<PointsPoolStakeSumIndex>> GetPointsPoolStakeSumAsync()
+    {
+        var (total, list) = await _stakeSumRepository.GetListAsync();
         return list;
     }
 }
