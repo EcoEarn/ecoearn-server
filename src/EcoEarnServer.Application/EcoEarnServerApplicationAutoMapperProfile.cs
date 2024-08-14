@@ -31,7 +31,7 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.StakeTokenName, m => m.MapFrom(f => f.PointsName))
             .ForPath(t => t.RewardsTokenName, m => m.MapFrom(f => f.PointsPoolConfig.RewardToken))
             .ForPath(t => t.PoolDailyRewards,
-                m => m.MapFrom(f => (decimal)f.PointsPoolConfig.RewardPerBlock * 86400 / 100000000))
+                m => m.MapFrom(f => decimal.Parse((f.PointsPoolConfig.RewardPerBlock * 86400).ToString()) / decimal.Parse("100000000")))
             .ForPath(t => t.ReleasePeriod, m => m.MapFrom(f => f.PointsPoolConfig.ReleasePeriod))
             ;
 

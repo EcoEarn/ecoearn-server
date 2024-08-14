@@ -16,5 +16,5 @@ public class ProjectItem
     public bool IsOpenStake { get; set; }
     public string PointsType { get; set; }
     public string GainUrl { get; set; }
-    public string RulesText { get; set; }
+    public List<string> RulesText { get; set; }
 }

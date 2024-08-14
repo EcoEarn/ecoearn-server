@@ -99,7 +99,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
                 return;
             }
 
-            dto.Tvl = aggData.Tvl;
+            dto.Tvl = (decimal.Parse(aggData.Tvl) / decimal.Parse("100000000")).ToString(CultureInfo.InvariantCulture);
             dto.StakingAddress = aggData.StakingAddress;
         });
         return projectItemListDtos;
