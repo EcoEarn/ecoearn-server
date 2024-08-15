@@ -11,6 +11,7 @@ using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.Rewards.Provider;
 using GraphQL;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver.Linq;
 using Nest;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -66,7 +67,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
     public async Task<long> GetProjectItemAggDataAsync(string snapshotDate, string dappId)
     {
         var list = await GetAllStakeInfoAsync(dappId);
-        return list.Count;
+        return list.Select(x => x.Address).Distinct().Count();
     }
 
     public async Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name, string dappId = "",
