@@ -234,19 +234,20 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }
 
         {
-            var lpList = result.Where(x => x.PoolTypeEnums == PoolTypeEnums.Lp)
+            
+            var pointList = result.Where(x => x.PoolTypeEnums == PoolTypeEnums.Points)
                 .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
                 .ToList();
             var tokenList = result.Where(x => x.PoolTypeEnums == PoolTypeEnums.Token)
                 .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
                 .ToList();
-
-            var pointList = result.Where(x => x.PoolTypeEnums == PoolTypeEnums.Points)
+            var lpList = result.Where(x => x.PoolTypeEnums == PoolTypeEnums.Lp)
                 .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
                 .ToList();
-            lpList.AddRange(tokenList);
-            lpList.AddRange(pointList);
-            return lpList;
+            
+            pointList.AddRange(tokenList);
+            pointList.AddRange(lpList);
+            return pointList;
         }
 
     }

@@ -65,13 +65,13 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
 
     public async Task<long> GetProjectItemAggDataAsync(string snapshotDate, string dappId)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<PointsSnapshotIndex>, QueryContainer>>();
+        var mustQuery = new List<Func<QueryContainerDescriptor<PointsPoolAddressStakeIndex>, QueryContainer>>();
 
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.SnapshotDate).Value(snapshotDate)));
+        //mustQuery.Add(q => q.Term(i => i.Field(f => f.SnapshotDate).Value(snapshotDate)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.DappId).Value(dappId)));
 
-        QueryContainer Filter(QueryContainerDescriptor<PointsSnapshotIndex> f) => f.Bool(b => b.Must(mustQuery));
-        var countResponse = await _pointsSnapshotRepository.CountAsync(Filter);
+        QueryContainer Filter(QueryContainerDescriptor<PointsPoolAddressStakeIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var countResponse = await _addressStakeSumRepository.CountAsync(Filter);
         return countResponse.Count;
     }
 
