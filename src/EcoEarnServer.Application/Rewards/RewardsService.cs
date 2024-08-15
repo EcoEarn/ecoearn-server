@@ -111,7 +111,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
         foreach (var rewardsListDto in result)
         {
             rewardsListDto.TokenIcon =
-                _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(rewardsListDto.PoolId, out var icons)
+                _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(
+                    rewardsListDto.PoolType == PoolTypeEnums.Points ? rewardsListDto.DappId : rewardsListDto.PoolId,
+                    out var icons)
                     ? icons
                     : rewardsListDto.PoolType == PoolTypeEnums.Points
                         ? new List<string> { }
@@ -234,7 +236,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }
 
         {
-            
             var pointList = result.Where(x => x.PoolTypeEnums == PoolTypeEnums.Points)
                 .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
                 .ToList();
@@ -244,12 +245,11 @@ public class RewardsService : IRewardsService, ISingletonDependency
             var lpList = result.Where(x => x.PoolTypeEnums == PoolTypeEnums.Lp)
                 .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
                 .ToList();
-            
+
             pointList.AddRange(tokenList);
             pointList.AddRange(lpList);
             return pointList;
         }
-
     }
 
     public async Task<RewardsSignatureDto> RewardsWithdrawSignatureAsync(RewardsSignatureInput input)

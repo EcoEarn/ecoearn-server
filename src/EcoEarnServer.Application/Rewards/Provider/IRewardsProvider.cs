@@ -267,6 +267,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
                         stakeId
                         seed
                         poolId
+                        dappId
                         claimedAmount
                         claimedSymbol
                         claimedTime
