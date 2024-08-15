@@ -100,7 +100,7 @@ public class FarmService : IFarmService, ISingletonDependency
                 .Sum(x => x.LpAmount);
             _lpPoolRateOptions.SymbolIconMappingsDic.TryGetValue(liquidityInfoDto.TokenASymbol!, out var iconA);
             _lpPoolRateOptions.SymbolIconMappingsDic.TryGetValue(liquidityInfoDto.TokenBSymbol!, out var iconB);
-            liquidityInfoDto.Icons = new List<string> { iconA, iconB };
+            liquidityInfoDto.Icons = new List<string> { iconB, iconA };
             result.Add(liquidityInfoDto);
         }
 
@@ -163,7 +163,7 @@ public class FarmService : IFarmService, ISingletonDependency
             }
             _lpPoolRateOptions.SymbolIconMappingsDic.TryGetValue(liquidityInfoDto.TokenASymbol!, out var iconA);
             _lpPoolRateOptions.SymbolIconMappingsDic.TryGetValue(liquidityInfoDto.TokenBSymbol!, out var iconB);
-            liquidityInfoDto.Icons = new List<string> { iconA, iconB };
+            liquidityInfoDto.Icons = new List<string> { iconB, iconA };
 
             result.Add(liquidityInfoDto);
         }
