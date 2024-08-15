@@ -49,7 +49,7 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
 
         CreateMap<RewardsListIndexerDto, RewardsListDto>()
             .ForPath(t => t.ProjectOwner,
-                m => m.MapFrom(f => f.PoolType == PoolTypeEnums.Lp ? "AwakenSwap" : "Schrödinger"))
+                m => m.MapFrom(f => f.PoolType == PoolTypeEnums.Lp ? "AwakenSwap" : ""))
             .ForPath(t => t.RewardsToken, m => m.MapFrom(f => f.ClaimedSymbol))
             .ForPath(t => t.Rewards, m => m.MapFrom(f => f.ClaimedAmount))
             .ForPath(t => t.ClaimedId, m => m.MapFrom(f => f.ClaimId))

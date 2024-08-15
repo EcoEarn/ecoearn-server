@@ -60,6 +60,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
     private readonly IFarmProvider _farmProvider;
     private readonly IPriceProvider _priceProvider;
     private readonly PoolInfoOptions _poolInfoOptions;
+    private readonly ProjectItemOptions _projectItemOptions;
 
     public RewardsService(IRewardsProvider rewardsProvider, IObjectMapper objectMapper, ILogger<RewardsService> logger,
         IOptionsSnapshot<TokenPoolIconsOptions> tokenPoolIconsOptions, IPointsStakingProvider pointsStakingProvider,
@@ -68,7 +69,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         IOptionsSnapshot<ProjectKeyPairInfoOptions> projectKeyPairInfoOptions, ISecretProvider secretProvider,
         IDistributedEventBus distributedEventBus, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
         ContractProvider contractProvider, IFarmProvider farmProvider, IPriceProvider priceProvider,
-        IOptionsSnapshot<PoolInfoOptions> poolInfoOptions)
+        IOptionsSnapshot<PoolInfoOptions> poolInfoOptions, IOptionsSnapshot<ProjectItemOptions> projectItemOptions)
     {
         _rewardsProvider = rewardsProvider;
         _objectMapper = objectMapper;
@@ -82,6 +83,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         _contractProvider = contractProvider;
         _farmProvider = farmProvider;
         _priceProvider = priceProvider;
+        _projectItemOptions = projectItemOptions.Value;
         _poolInfoOptions = poolInfoOptions.Value;
         _earnContractOptions = earnContractOptions.Value;
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
@@ -101,15 +103,20 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             return new PagedResultDto<RewardsListDto>();
         }
-
+        
         var rewardsToken = result.FirstOrDefault()?.RewardsToken ?? "";
         var currencyPair = $"{rewardsToken}_USDT";
         var rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
 
         var poolsIdDic = await GetPoolIdDicAsync(result);
-
+        var dappIdDic = _projectItemOptions.ProjectItems.ToDictionary(x => x.DappId, x => x.DappName);
         foreach (var rewardsListDto in result)
         {
+            if (string.IsNullOrEmpty(rewardsListDto.ProjectOwner))
+            {
+                rewardsListDto.ProjectOwner =
+                    dappIdDic.TryGetValue(rewardsListDto.DappId, out var projectOwner) ? projectOwner : "";
+            }
             rewardsListDto.TokenIcon =
                 _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(
                     rewardsListDto.PoolType == PoolTypeEnums.Points ? rewardsListDto.DappId : rewardsListDto.PoolId,
