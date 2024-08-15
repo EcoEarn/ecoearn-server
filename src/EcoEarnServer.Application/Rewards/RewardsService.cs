@@ -25,6 +25,7 @@ using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
@@ -225,16 +226,29 @@ public class RewardsService : IRewardsService, ISingletonDependency
             result.Add(poolRewardsInfoDto);
         }
 
-        if (input.PoolType == PoolTypeEnums.All)
+        if (input.PoolType != PoolTypeEnums.All)
         {
-            return result.OrderBy(x => x.Sort)
-                .ThenByDescending(x => x.RewardsInfo.FirstClaimTime)
+            return result.Where(x => x.PoolTypeEnums == input.PoolType)
+                .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
                 .ToList();
         }
 
-        return result.Where(x => x.PoolTypeEnums == input.PoolType)
-            .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
-            .ToList();
+        {
+            var lpList = result.Where(x => x.PoolTypeEnums == PoolTypeEnums.Lp)
+                .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
+                .ToList();
+            var tokenList = result.Where(x => x.PoolTypeEnums == PoolTypeEnums.Token)
+                .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
+                .ToList();
+
+            var pointList = result.Where(x => x.PoolTypeEnums == PoolTypeEnums.Points)
+                .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
+                .ToList();
+            lpList.AddRange(tokenList);
+            lpList.AddRange(pointList);
+            return lpList;
+        }
+
     }
 
     public async Task<RewardsSignatureDto> RewardsWithdrawSignatureAsync(RewardsSignatureInput input)
