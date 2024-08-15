@@ -65,14 +65,8 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
 
     public async Task<long> GetProjectItemAggDataAsync(string snapshotDate, string dappId)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<PointsPoolAddressStakeIndex>, QueryContainer>>();
-
-        //mustQuery.Add(q => q.Term(i => i.Field(f => f.SnapshotDate).Value(snapshotDate)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.DappId).Value(dappId)));
-
-        QueryContainer Filter(QueryContainerDescriptor<PointsPoolAddressStakeIndex> f) => f.Bool(b => b.Must(mustQuery));
-        var countResponse = await _addressStakeSumRepository.CountAsync(Filter);
-        return countResponse.Count;
+        var list = await GetAllStakeInfoAsync(dappId);
+        return list.Count;
     }
 
     public async Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name, string dappId = "",
@@ -271,5 +265,36 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
     {
         var (total, list) = await _stakeSumRepository.GetListAsync();
         return list;
+    }
+
+    private async Task<List<PointsPoolAddressStakeIndex>> GetAllStakeInfoAsync(string dappId)
+    {
+        var res = new List<PointsPoolAddressStakeIndex>();
+        var skipCount = 0;
+        var maxResultCount = 5000;
+        List<PointsPoolAddressStakeIndex> list;
+        do
+        {
+            var mustQuery = new List<Func<QueryContainerDescriptor<PointsPoolAddressStakeIndex>, QueryContainer>>();
+
+            mustQuery.Add(q => q.Term(i => i.Field(f => f.DappId).Value(dappId)));
+
+            QueryContainer Filter(QueryContainerDescriptor<PointsPoolAddressStakeIndex> f) =>
+                f.Bool(b => b.Must(mustQuery));
+
+            var result = await _addressStakeSumRepository.GetListAsync(Filter, skip: skipCount, limit: maxResultCount);
+
+            list = result.Item2;
+            var count = list.Count;
+            res.AddRange(list);
+            if (list.IsNullOrEmpty() || count < maxResultCount)
+            {
+                break;
+            }
+
+            skipCount += count;
+        } while (!list.IsNullOrEmpty());
+
+        return res;
     }
 }
