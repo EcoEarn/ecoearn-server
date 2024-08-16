@@ -103,10 +103,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             return new PagedResultDto<RewardsListDto>();
         }
-
-        var rewardsToken = result.FirstOrDefault()?.RewardsToken ?? "";
-        var currencyPair = $"{rewardsToken}_USDT";
-        var rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
+        
 
         var poolsIdDic = await GetPoolIdDicAsync(result);
         var dappIdDic = _projectItemOptions.ProjectItems.ToDictionary(x => x.DappId, x => x.DappName);
@@ -132,6 +129,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 continue;
             }
 
+            var rewardsToken = rewardsListDto.RewardsToken ?? "";
+            var currencyPair = $"{rewardsToken}_USDT";
+            var rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
             rewardsListDto.Rate =
                 _lpPoolRateOptions.LpPoolRateDic.TryGetValue(poolData.StakeTokenContract, out var poolRate)
                     ? poolRate
