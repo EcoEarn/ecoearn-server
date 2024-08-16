@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using EcoEarnServer.Rewards.Dtos;
 using Volo.Abp.Application.Dtos;
+using FilterItemDto = EcoEarnServer.Rewards.Dtos.FilterItemDto;
 
 namespace EcoEarnServer.Rewards;
 
