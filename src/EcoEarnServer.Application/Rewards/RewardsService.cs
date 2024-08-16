@@ -1019,6 +1019,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var operationRewardsInfo =
             await GetOperationRewardsAsync(unWithdrawList, address, poolIds, poolType: poolType, true, dappIds);
+        _logger.LogInformation("CheckAmountValidityV2Async OperationRewardsInfo: {info}", JsonConvert.SerializeObject(operationRewardsInfo));
         var nowRewards = operationRewardsInfo.NowRewards;
         var nextReward = operationRewardsInfo.NextRewards;
         var operationClaimInfos = operationRewardsInfo.OperationClaimInfos;
@@ -1089,6 +1090,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var dappIds = !string.IsNullOrEmpty(dappId) ? new List<string> { dappId } : null;
         var operationRewardsInfo =
             await GetOperationRewardsAsync(unWithdrawList, address, poolIds, poolType: poolType, dappIds: dappIds);
+        _logger.LogInformation("GetRewardsAggAsync OperationRewardsInfo: {info}", JsonConvert.SerializeObject(operationRewardsInfo));
 
         var nowRewards = operationRewardsInfo.NowRewards;
         var nextReward = operationRewardsInfo.NextRewards;
