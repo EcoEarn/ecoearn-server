@@ -103,7 +103,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             return new PagedResultDto<RewardsListDto>();
         }
-        
+
         var rewardsToken = result.FirstOrDefault()?.RewardsToken ?? "";
         var currencyPair = $"{rewardsToken}_USDT";
         var rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
@@ -117,6 +117,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 rewardsListDto.ProjectOwner =
                     dappIdDic.TryGetValue(rewardsListDto.DappId, out var projectOwner) ? projectOwner : "";
             }
+
             rewardsListDto.TokenIcon =
                 _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(
                     rewardsListDto.PoolType == PoolTypeEnums.Points ? rewardsListDto.DappId : rewardsListDto.PoolId,
@@ -1019,7 +1020,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var operationRewardsInfo =
             await GetOperationRewardsAsync(unWithdrawList, address, poolIds, poolType: poolType, true, dappIds);
-        _logger.LogInformation("CheckAmountValidityV2Async OperationRewardsInfo: {info}", JsonConvert.SerializeObject(operationRewardsInfo));
+        _logger.LogInformation("CheckAmountValidityV2Async OperationRewardsInfo: {info}",
+            JsonConvert.SerializeObject(operationRewardsInfo));
         var nowRewards = operationRewardsInfo.NowRewards;
         var nextReward = operationRewardsInfo.NextRewards;
         var operationClaimInfos = operationRewardsInfo.OperationClaimInfos;
@@ -1055,6 +1057,10 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var checkResult = resultList.Count == withdrawClaimIds.Count && !includeClaimIds.Any() &&
                           amount == operationAmount;
+
+        _logger.LogInformation(
+            "resultList : {resultList}, withdrawClaimIds: {withdrawClaimIds}, includeClaimIds: {includeClaimIds}, amount: {amount}, operationAmount: {operationAmount}",
+            resultList.Count,withdrawClaimIds.Count,JsonConvert.SerializeObject(includeClaimIds), amount, operationAmount);
         return checkResult;
     }
 
@@ -1091,7 +1097,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var operationRewardsInfo =
             await GetOperationRewardsAsync(unWithdrawList, address, poolIds, poolType: poolType, dappIds: dappIds);
         _logger.LogInformation("==============poolId: {poolId}", JsonConvert.SerializeObject(poolIds));
-        _logger.LogInformation("GetRewardsAggAsync OperationRewardsInfo: {info}", JsonConvert.SerializeObject(operationRewardsInfo));
+        _logger.LogInformation("GetRewardsAggAsync OperationRewardsInfo: {info}",
+            JsonConvert.SerializeObject(operationRewardsInfo));
 
         var nowRewards = operationRewardsInfo.NowRewards;
         var nextReward = operationRewardsInfo.NextRewards;
