@@ -157,9 +157,6 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var poolIdRewardDic = rewardsList
             .GroupBy(x => x.PoolId)
             .ToDictionary(g => g.Key, g => g.ToList());
-        var claimedSymbol = rewardsList.FirstOrDefault()?.ClaimedSymbol ?? "";
-        var currencyPair = $"{claimedSymbol}_USDT";
-        var usdRate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
         var pointsPools = await _pointsStakingProvider.GetPointsPoolsAsync("");
         var dappIdPointsPools = pointsPools.GroupBy(x => x.DappId)
             .ToDictionary(g => g.Key, g => g.ToList());
@@ -181,6 +178,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
             }
 
             var rewardsTokenName = dappPointsPools.FirstOrDefault()?.PointsPoolConfig.RewardToken ?? "";
+            var currencyPair = $"{rewardsTokenName}_USDT";
+            var usdRate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
             var hasPoolInfo = poolInfoDic.TryGetValue(dappId, out var poolInfo);
             var poolRewardsInfoDto = new RewardsAggregationDto
             {
@@ -213,6 +212,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 continue;
             }
 
+            var rewardsTokenName = tokenPool.TokenPoolConfig.RewardToken;
+            var currencyPair = $"{rewardsTokenName}_USDT";
+            var usdRate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
             var rewardsAggInfo =
                 await GetRewardsAggAsync(rewardsListIndexerDtos, address, usdRate, poolId, poolType);
             var hasPoolInfo = poolInfoDic.TryGetValue(poolId, out var poolInfo);
@@ -227,7 +229,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
                     : 0,
                 SupportEarlyStake = hasPoolInfo && poolInfo.SupportEarlyStake,
                 PoolId = poolId,
-                RewardsTokenName = tokenPool.TokenPoolConfig.RewardToken,
+                RewardsTokenName = rewardsTokenName,
                 PoolType = poolType.ToString(),
                 PoolTypeEnums = poolType,
                 RewardsInfo = rewardsAggInfo
