@@ -12,6 +12,7 @@ using EcoEarnServer.PointsSnapshot;
 using EcoEarnServer.PointsStakeRewards;
 using Hangfire;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
@@ -86,6 +87,10 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         var stakeListEto = new List<PointsPoolAddressStakeEto>();
         foreach (var (poolIndex, pointsPoolStakeSumDto) in stakeSumDic)
         {
+            if (pointsSnapshot.DappId != pointsPoolStakeSumDto.DappId)
+            {
+                continue;
+            }
             var value = CheckPoints(poolIndex, pointsPoolStakeSumDto.PoolId, pointsSnapshot);
 
             if (value == "0")
@@ -121,6 +126,11 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         var rewardsList = new List<PointsStakeRewardsEto>();
         foreach (var (poolIndex, pointsPoolStakeSumDto) in stakeSumDic)
         {
+            if (pointsSnapshot.DappId != pointsPoolStakeSumDto.DappId)
+            {
+                continue;
+            }
+            
             var value = CheckPoints(poolIndex, pointsPoolStakeSumDto.PoolId, pointsSnapshot);
 
             if (value == "0")
@@ -158,6 +168,11 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         var rewardsSumList = new List<PointsStakeRewardsSumEto>();
         foreach (var (poolIndex, pointsPoolStakeSumDto) in stakeSumDic)
         {
+            if (pointsSnapshot.DappId != pointsPoolStakeSumDto.DappId)
+            {
+                continue;
+            }
+            
             var value = CheckPoints(poolIndex, pointsPoolStakeSumDto.PoolId, pointsSnapshot);
 
             if (value == "0")
@@ -194,13 +209,14 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         return rewardsSumList;
     }
 
-    private string CheckPoints(string index, string poolId, PointsSnapshotIndex pointsSnapshot)
+    private string CheckPoints(string pointsName, string poolId, PointsSnapshotIndex pointsSnapshot)
     {
         if (string.IsNullOrEmpty(poolId))
         {
             return "0";
         }
-
+        
+        var index = pointsName[(pointsName.LastIndexOf('-') + 1)..];
         var symbolFieldName = PoolInfoConst.PoolIndexSymbolDic[index];
         var property = typeof(PointsSnapshotIndex).GetProperty(symbolFieldName);
         var value = property != null ? property.GetValue(pointsSnapshot) : null;

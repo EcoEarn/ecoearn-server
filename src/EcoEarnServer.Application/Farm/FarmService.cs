@@ -78,7 +78,8 @@ public class FarmService : IFarmService, ISingletonDependency
                 (double.Parse(entity.Value.Where(x => !unLockedStakeIds.Contains(x.StakeId)).Sum(x => x.LpAmount)
                     .ToString()) / 100000000).ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.Value =
-                ((double.Parse(liquidityInfoDto.Banlance) + double.Parse(liquidityInfoDto.StakingAmount)) * lpPrice).ToString(CultureInfo.InvariantCulture);
+                ((double.Parse(liquidityInfoDto.Banlance) + double.Parse(liquidityInfoDto.StakingAmount)) * lpPrice)
+                .ToString(CultureInfo.InvariantCulture);
             liquidityInfoDto.TokenAAmount =
                 (decimal.Parse(entity.Value.Sum(x => x.TokenAAmount).ToString()) / 100000000).ToString(CultureInfo
                     .InvariantCulture);
@@ -97,6 +98,9 @@ public class FarmService : IFarmService, ISingletonDependency
             liquidityInfoDto.LpAmount = entity.Value
                 .Where(x => unLockedStakeIds.Contains(x.StakeId))
                 .Sum(x => x.LpAmount);
+            _lpPoolRateOptions.SymbolIconMappingsDic.TryGetValue(liquidityInfoDto.TokenASymbol!, out var iconA);
+            _lpPoolRateOptions.SymbolIconMappingsDic.TryGetValue(liquidityInfoDto.TokenBSymbol!, out var iconB);
+            liquidityInfoDto.Icons = new List<string> { iconB, iconA };
             result.Add(liquidityInfoDto);
         }
 
@@ -117,7 +121,8 @@ public class FarmService : IFarmService, ISingletonDependency
         {
             var (symbol0, symbol1) = LpSymbolHelper.GetLpSymbols(tokenPoolsIndexerDto.TokenPoolConfig.StakingToken);
             var awakenLiquidityInfos = await _farmProvider.GetAwakenLiquidityInfoAsync(symbol0, symbol1);
-            foreach (var lpPriceItemDto in awakenLiquidityInfos.Where(lpPriceItemDto => rates.Contains(lpPriceItemDto.FeeRate)))
+            foreach (var lpPriceItemDto in awakenLiquidityInfos.Where(lpPriceItemDto =>
+                         rates.Contains(lpPriceItemDto.FeeRate)))
             {
                 lpPriceItemDto.LpSymbol = tokenPoolsIndexerDto.TokenPoolConfig.StakingToken;
                 lpPriceItemDto.RewardToken = tokenPoolsIndexerDto.TokenPoolConfig.RewardToken;
@@ -144,7 +149,6 @@ public class FarmService : IFarmService, ISingletonDependency
                 liquidityInfoDto.TokenBAmount = lpPriceItemDto.ValueLocked0.ToString(CultureInfo.InvariantCulture);
             }
 
-            liquidityInfoDto.Icons = new List<string>();
             if (rateDic.TryGetValue(liquidityInfoDto.Rate, out var myLiquidity))
             {
                 liquidityInfoDto.LiquidityIds = myLiquidity.LiquidityIds;
@@ -157,6 +161,9 @@ public class FarmService : IFarmService, ISingletonDependency
                 liquidityInfoDto.EcoEarnTokenAUnStakingAmount = myLiquidity.TokenAUnStakingAmount;
                 liquidityInfoDto.EcoEarnTokenBUnStakingAmount = myLiquidity.TokenBUnStakingAmount;
             }
+            _lpPoolRateOptions.SymbolIconMappingsDic.TryGetValue(liquidityInfoDto.TokenASymbol!, out var iconA);
+            _lpPoolRateOptions.SymbolIconMappingsDic.TryGetValue(liquidityInfoDto.TokenBSymbol!, out var iconB);
+            liquidityInfoDto.Icons = new List<string> { iconB, iconA };
 
             result.Add(liquidityInfoDto);
         }
@@ -168,7 +175,7 @@ public class FarmService : IFarmService, ISingletonDependency
     {
         var listIndexerResult = await _farmProvider.GetLiquidityListAsync(new List<string>(), input.Address,
             LpStatus.Added, input.SkipCount, input.MaxResultCount);
-        
+
         var result = new List<LiquidityInfoListDto>();
         foreach (var liquidityInfoListDto in listIndexerResult.Data.Select(liquidityInfoIndexerDto =>
                      _objectMapper.Map<LiquidityInfoIndexerDto, LiquidityInfoListDto>(liquidityInfoIndexerDto)))
@@ -182,7 +189,8 @@ public class FarmService : IFarmService, ISingletonDependency
             var lpPrice = await _priceProvider.GetLpPriceAsync("", rate, symbol0,
                 symbol1);
             liquidityInfoListDto.LpUsdAmount =
-                (double.Parse(liquidityInfoListDto.LpAmount.ToString()) * lpPrice).ToString(CultureInfo.InvariantCulture);
+                (double.Parse(liquidityInfoListDto.LpAmount.ToString()) * lpPrice).ToString(
+                    CultureInfo.InvariantCulture);
             result.Add(liquidityInfoListDto);
         }
 
@@ -204,31 +212,6 @@ public class FarmService : IFarmService, ISingletonDependency
             var listIndexerResult = await _farmProvider.GetLiquidityInfoAsync(new List<string>(), address,
                 LpStatus.Added, skipCount, maxResultCount);
             list = listIndexerResult;
-            var count = list.Count;
-            res.AddRange(list);
-            if (list.IsNullOrEmpty() || count < maxResultCount)
-            {
-                break;
-            }
-
-            skipCount += count;
-        } while (!list.IsNullOrEmpty());
-
-        return res;
-    }
-
-    private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType,
-        List<string> liquidityIds = null)
-    {
-        var res = new List<RewardsListIndexerDto>();
-        var skipCount = 0;
-        var maxResultCount = 5000;
-        List<RewardsListIndexerDto> list;
-        do
-        {
-            var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(poolType, address,
-                skipCount, maxResultCount, liquidityIds: liquidityIds);
-            list = rewardsListIndexerResult.Data;
             var count = list.Count;
             res.AddRange(list);
             if (list.IsNullOrEmpty() || count < maxResultCount)

@@ -17,6 +17,7 @@ public class RewardsListDto
     public long Date { get; set; }
     public long LockUpPeriod { get; set; }
     public string PoolId { get; set; }
+    public string DappId { get; set; }
     public double Rate { get; set; }
 }
 

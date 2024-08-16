@@ -70,6 +70,7 @@ public class RewardsMergedListIndexerDto
     public string Id { get; set; }
     public string Amount { get; set; }
     public string Account { get; set; }
+    public string PoolId { get; set; }
     public PoolTypeEnums PoolType { get; set; }
     public long ReleaseTime { get; set; }
     public long CreateTime { get; set; }

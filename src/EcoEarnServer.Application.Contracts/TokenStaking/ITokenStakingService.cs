@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.TokenStaking.Dtos;
@@ -8,5 +9,5 @@ public interface ITokenStakingService
 {
     Task<TokenPoolsResult> GetTokenPoolsAsync(GetTokenPoolsInput input);
     Task<long> GetTokenPoolStakedSumAsync(GetTokenPoolStakedSumInput input);
-    Task<EarlyStakeInfoDto> GetStakedInfoAsync(GetEarlyStakeInfoInput input);
+    Task<List<EarlyStakeInfoDto>> GetStakedInfoAsync(GetEarlyStakeInfoInput input);
 }

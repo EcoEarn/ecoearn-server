@@ -16,6 +16,8 @@ public class RewardsSignatureInput
     public long Period { get; set; }
     public long TokenAMin { get; set; }
     public long TokenBMin { get; set; }
+    public List<string> OperationPoolIds { get; set; }
+    public List<string> OperationDappIds { get; set; }
 }
 
 public class RewardsEarlyStakeSignatureInput : RewardsSignatureInput

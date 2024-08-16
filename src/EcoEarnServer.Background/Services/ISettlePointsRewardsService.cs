@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using EcoEarnServer.Background.Options;
 using EcoEarnServer.Background.Provider;
 using EcoEarnServer.Background.Provider.Dtos;
-using EcoEarnServer.Constants;
 using EcoEarnServer.Grains.Grain.PointsPool;
 using EcoEarnServer.PointsSnapshot;
+using EcoEarnServer.PointsStaking.Provider;
 using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -28,9 +28,9 @@ public interface ISettlePointsRewardsService
 public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingletonDependency
 {
     private const string LockKeyPrefix = "EcoEarnServer:SettlePointsRewards:Lock:";
+    private const long DailySeconds = 86400;
 
     private readonly ISettlePointsRewardsProvider _settlePointsRewardsProvider;
-    private readonly PointsPoolOptions _poolOptions;
     private readonly IPointsPoolService _pointsPoolService;
     private readonly IObjectMapper _objectMapper;
     private readonly IAbpDistributedLock _distributedLock;
@@ -38,12 +38,13 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
     private readonly IStateProvider _stateProvider;
     private readonly PointsSnapshotOptions _pointsSnapshotOptions;
     private readonly ILarkAlertProvider _larkAlertProvider;
+    private readonly IPointsStakingProvider _pointsStakingProvider;
 
     public SettlePointsRewardsService(ISettlePointsRewardsProvider settlePointsRewardsProvider,
-        IOptionsSnapshot<PointsPoolOptions> poolOptions, IPointsPoolService pointsPoolService,
-        IObjectMapper objectMapper, IAbpDistributedLock distributedLock, ILogger<SettlePointsRewardsService> logger,
-        IStateProvider stateProvider, IOptionsSnapshot<PointsSnapshotOptions> pointsSnapshotOptions,
-        ILarkAlertProvider larkAlertProvider)
+        IPointsPoolService pointsPoolService, IObjectMapper objectMapper, IAbpDistributedLock distributedLock,
+        ILogger<SettlePointsRewardsService> logger, IStateProvider stateProvider,
+        IOptionsSnapshot<PointsSnapshotOptions> pointsSnapshotOptions, ILarkAlertProvider larkAlertProvider,
+        IPointsStakingProvider pointsStakingProvider)
     {
         _settlePointsRewardsProvider = settlePointsRewardsProvider;
         _pointsPoolService = pointsPoolService;
@@ -52,8 +53,8 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         _logger = logger;
         _stateProvider = stateProvider;
         _larkAlertProvider = larkAlertProvider;
+        _pointsStakingProvider = pointsStakingProvider;
         _pointsSnapshotOptions = pointsSnapshotOptions.Value;
-        _poolOptions = poolOptions.Value;
     }
 
     public async Task SettlePointsRewardsAsync(int settleRewardsBeforeDays)
@@ -66,7 +67,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             return;
         }
 
-        if (!await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateSnapshotKey()))
+        if (!await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateSnapshotKey(), true))
         {
             _logger.LogInformation("today points snapshot has not ready.");
             return;
@@ -81,7 +82,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         try
         {
             var list = await GetYesterdaySnapshotAsync(settleRewardsBeforeDays);
-            var stakeSumDic = GetYesterdayStakeSumDic(list);
+            var stakeSumDic = await GetYesterdayStakeSumDic(list);
             //update the staked sum for each points pool
             if (_pointsSnapshotOptions.SettleRewards)
             {
@@ -119,110 +120,123 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         }
     }
 
-    private Dictionary<string, PointsPoolStakeSumDto> GetYesterdayStakeSumDic(
+    private async Task<Dictionary<string, PointsPoolStakeSumDto>> GetYesterdayStakeSumDic(
         List<PointsSnapshotIndex> list)
     {
-        var poolOptionsDic = _poolOptions.PointsPoolDictionary;
+        var poolOptionsDic = await GetPointsPoolInfosAsync();
+        var groupedSnapshot = list.GroupBy(x => x.DappId)
+            .Select(g => new
+            {
+                DappId = g.Key,
+                Rewards = g.ToList()
+            })
+            .ToList();
         var poolStakeDic = new Dictionary<string, PointsPoolStakeSumDto>();
         poolOptionsDic.ForEach(entry =>
         {
             poolStakeDic[entry.Key] = _objectMapper.Map<PointsPoolInfo, PointsPoolStakeSumDto>(entry.Value);
         });
-        var firstSum = BigInteger.Zero;
-        var secondSum = BigInteger.Zero;
-        var thirdSum = BigInteger.Zero;
-        var fourSum = BigInteger.Zero;
-        var fiveSum = BigInteger.Zero;
-        var sixSum = BigInteger.Zero;
-        var sevenSum = BigInteger.Zero;
-        var eightSum = BigInteger.Zero;
-        var nineSum = BigInteger.Zero;
-        var tenSum = BigInteger.Zero;
-        var elevenSum = BigInteger.Zero;
-        var twelveSum = BigInteger.Zero;
-        foreach (var pointsSnapshot in list)
-        {
-            firstSum += BigInteger.Parse(pointsSnapshot.FirstSymbolAmount);
-            secondSum += BigInteger.Parse(pointsSnapshot.SecondSymbolAmount);
-            thirdSum += BigInteger.Parse(pointsSnapshot.ThirdSymbolAmount);
-            fourSum += BigInteger.Parse(pointsSnapshot.FourSymbolAmount);
-            fiveSum += BigInteger.Parse(pointsSnapshot.FiveSymbolAmount);
-            sixSum += BigInteger.Parse(pointsSnapshot.SixSymbolAmount);
-            sevenSum += BigInteger.Parse(pointsSnapshot.SevenSymbolAmount);
-            eightSum += BigInteger.Parse(pointsSnapshot.EightSymbolAmount);
-            nineSum += BigInteger.Parse(pointsSnapshot.NineSymbolAmount);
-            tenSum += BigInteger.Parse(pointsSnapshot.TenSymbolAmount);
-            elevenSum += BigInteger.Parse(pointsSnapshot.ElevenSymbolAmount);
-            twelveSum += BigInteger.Parse(pointsSnapshot.TwelveSymbolAmount);
-        }
 
-        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.FirstSymbolAmount)],
-                out var first))
+        foreach (var snapshotList in groupedSnapshot)
         {
-            first.StakeAmount = firstSum.ToString();
-        }
+            var firstSum = BigInteger.Zero;
+            var secondSum = BigInteger.Zero;
+            var thirdSum = BigInteger.Zero;
+            var fourSum = BigInteger.Zero;
+            var fiveSum = BigInteger.Zero;
+            var sixSum = BigInteger.Zero;
+            var sevenSum = BigInteger.Zero;
+            var eightSum = BigInteger.Zero;
+            var nineSum = BigInteger.Zero;
+            var tenSum = BigInteger.Zero;
+            var elevenSum = BigInteger.Zero;
+            var twelveSum = BigInteger.Zero;
+            var dappId = snapshotList.DappId;
+            foreach (var pointsSnapshot in snapshotList.Rewards)
+            {
+                firstSum += BigInteger.Parse(pointsSnapshot.FirstSymbolAmount);
+                secondSum += BigInteger.Parse(pointsSnapshot.SecondSymbolAmount);
+                thirdSum += BigInteger.Parse(pointsSnapshot.ThirdSymbolAmount);
+                fourSum += BigInteger.Parse(pointsSnapshot.FourSymbolAmount);
+                fiveSum += BigInteger.Parse(pointsSnapshot.FiveSymbolAmount);
+                sixSum += BigInteger.Parse(pointsSnapshot.SixSymbolAmount);
+                sevenSum += BigInteger.Parse(pointsSnapshot.SevenSymbolAmount);
+                eightSum += BigInteger.Parse(pointsSnapshot.EightSymbolAmount);
+                nineSum += BigInteger.Parse(pointsSnapshot.NineSymbolAmount);
+                tenSum += BigInteger.Parse(pointsSnapshot.TenSymbolAmount);
+                elevenSum += BigInteger.Parse(pointsSnapshot.ElevenSymbolAmount);
+                twelveSum += BigInteger.Parse(pointsSnapshot.TwelveSymbolAmount);
+            }
 
-        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.ThirdSymbolAmount)],
-                out var third))
-        {
-            third.StakeAmount = thirdSum.ToString();
-        }
-
-        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.FourSymbolAmount)],
-                out var four))
-        {
-            four.StakeAmount = fourSum.ToString();
-        }
-
-        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.FiveSymbolAmount)],
-                out var five))
-        {
-            five.StakeAmount = fiveSum.ToString();
-        }
-
-        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.SixSymbolAmount)],
-                out var six))
-        {
-            six.StakeAmount = sixSum.ToString();
-        }
-
-        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.SevenSymbolAmount)],
-                out var seven))
-        {
-            seven.StakeAmount = sevenSum.ToString();
-        }
-
-        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.EightSymbolAmount)],
-                out var eight))
-        {
-            eight.StakeAmount = eightSum.ToString();
-        }
-
-        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.NineSymbolAmount)],
-                out var nine))
-        {
-            nine.StakeAmount = nineSum.ToString();
-        }
-
-        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.TenSymbolAmount)],
-                out var ten))
-        {
-            ten.StakeAmount = tenSum.ToString();
-        }
-
-        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.ElevenSymbolAmount)],
-                out var eleven))
-        {
-            eleven.StakeAmount = elevenSum.ToString();
-        }
-
-        if (poolStakeDic.TryGetValue(PoolInfoConst.SymbolPoolIndexDic[nameof(PointsSnapshotIndex.TwelveSymbolAmount)],
-                out var twelve))
-        {
-            twelve.StakeAmount = twelveSum.ToString();
+            foreach (var pointsPoolStakeSumDto in poolStakeDic.Values.Where(x => x.DappId == dappId))
+            {
+                var pointsName = pointsPoolStakeSumDto.PointsName;
+                if (pointsName.EndsWith("-1"))
+                {
+                    pointsPoolStakeSumDto.StakeAmount = firstSum.ToString();
+                }
+                else if (pointsName.EndsWith("-2"))
+                {
+                    pointsPoolStakeSumDto.StakeAmount = secondSum.ToString();
+                }
+                else if (pointsName.EndsWith("-3"))
+                {
+                    pointsPoolStakeSumDto.StakeAmount = thirdSum.ToString();
+                }
+                else if (pointsName.EndsWith("-4"))
+                {
+                    pointsPoolStakeSumDto.StakeAmount = fourSum.ToString();
+                }
+                else if (pointsName.EndsWith("-5"))
+                {
+                    pointsPoolStakeSumDto.StakeAmount = fiveSum.ToString();
+                }
+                else if (pointsName.EndsWith("-6"))
+                {
+                    pointsPoolStakeSumDto.StakeAmount = sixSum.ToString();
+                }
+                else if (pointsName.EndsWith("-7"))
+                {
+                    pointsPoolStakeSumDto.StakeAmount = sevenSum.ToString();
+                }
+                else if (pointsName.EndsWith("-8"))
+                {
+                    pointsPoolStakeSumDto.StakeAmount = eightSum.ToString();
+                }
+                else if (pointsName.EndsWith("-9"))
+                {
+                    pointsPoolStakeSumDto.StakeAmount = nineSum.ToString();
+                }
+                else if (pointsName.EndsWith("-10"))
+                {
+                    pointsPoolStakeSumDto.StakeAmount = tenSum.ToString();
+                }
+                else if (pointsName.EndsWith("-11"))
+                {
+                    pointsPoolStakeSumDto.StakeAmount = elevenSum.ToString();
+                }
+                else if (pointsName.EndsWith("-12"))
+                {
+                    pointsPoolStakeSumDto.StakeAmount = twelveSum.ToString();
+                }
+            }
         }
 
         return poolStakeDic;
+    }
+
+    private async Task<Dictionary<string, PointsPoolInfo>> GetPointsPoolInfosAsync()
+    {
+        var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("");
+        return pointsPoolsIndexerDtos.ToDictionary(x => x.PointsName, x => new PointsPoolInfo
+        {
+            PoolId = x.PoolId,
+            PoolName = x.PointsName,
+            PointsName = x.PointsName,
+            DappId = x.DappId,
+            DailyReward = decimal.Parse((x.PointsPoolConfig.RewardPerBlock * DailySeconds).ToString()) /
+                          decimal.Parse("100000000")
+        });
     }
 
     private async Task<List<PointsSnapshotIndex>> GetYesterdaySnapshotAsync(int settleRewardsBeforeDays)

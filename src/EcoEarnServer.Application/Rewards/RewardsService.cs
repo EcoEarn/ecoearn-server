@@ -25,6 +25,7 @@ using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
@@ -58,6 +59,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
     private readonly ContractProvider _contractProvider;
     private readonly IFarmProvider _farmProvider;
     private readonly IPriceProvider _priceProvider;
+    private readonly PoolInfoOptions _poolInfoOptions;
+    private readonly ProjectItemOptions _projectItemOptions;
 
     public RewardsService(IRewardsProvider rewardsProvider, IObjectMapper objectMapper, ILogger<RewardsService> logger,
         IOptionsSnapshot<TokenPoolIconsOptions> tokenPoolIconsOptions, IPointsStakingProvider pointsStakingProvider,
@@ -65,7 +68,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         IAbpDistributedLock distributedLock, IClusterClient clusterClient, IOptionsSnapshot<ChainOption> chainOption,
         IOptionsSnapshot<ProjectKeyPairInfoOptions> projectKeyPairInfoOptions, ISecretProvider secretProvider,
         IDistributedEventBus distributedEventBus, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
-        ContractProvider contractProvider, IFarmProvider farmProvider, IPriceProvider priceProvider)
+        ContractProvider contractProvider, IFarmProvider farmProvider, IPriceProvider priceProvider,
+        IOptionsSnapshot<PoolInfoOptions> poolInfoOptions, IOptionsSnapshot<ProjectItemOptions> projectItemOptions)
     {
         _rewardsProvider = rewardsProvider;
         _objectMapper = objectMapper;
@@ -79,6 +83,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         _contractProvider = contractProvider;
         _farmProvider = farmProvider;
         _priceProvider = priceProvider;
+        _projectItemOptions = projectItemOptions.Value;
+        _poolInfoOptions = poolInfoOptions.Value;
         _earnContractOptions = earnContractOptions.Value;
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
         _chainOption = chainOption.Value;
@@ -89,7 +95,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
     public async Task<PagedResultDto<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input)
     {
         var rewardsListIndexerResult = await _rewardsProvider.GetRewardsInfoListAsync(input.PoolType, input.Address,
-            input.SkipCount, input.MaxResultCount);
+            input.Id, input.SkipCount, input.MaxResultCount);
         var result =
             _objectMapper.Map<List<RewardsInfoIndexerDto>, List<RewardsListDto>>(rewardsListIndexerResult.Data);
 
@@ -97,18 +103,22 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             return new PagedResultDto<RewardsListDto>();
         }
-
-        var rewardsToken = result.FirstOrDefault()?.RewardsToken ?? "";
-        var currencyPair = $"{rewardsToken}_USDT";
-        var rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
+        
 
         var poolsIdDic = await GetPoolIdDicAsync(result);
-
-
+        var dappIdDic = _projectItemOptions.ProjectItems.ToDictionary(x => x.DappId, x => x.DappName);
         foreach (var rewardsListDto in result)
         {
+            if (string.IsNullOrEmpty(rewardsListDto.ProjectOwner))
+            {
+                rewardsListDto.ProjectOwner =
+                    dappIdDic.TryGetValue(rewardsListDto.DappId, out var projectOwner) ? projectOwner : "";
+            }
+
             rewardsListDto.TokenIcon =
-                _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(rewardsListDto.PoolId, out var icons)
+                _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(
+                    rewardsListDto.PoolType == PoolTypeEnums.Points ? rewardsListDto.DappId : rewardsListDto.PoolId,
+                    out var icons)
                     ? icons
                     : rewardsListDto.PoolType == PoolTypeEnums.Points
                         ? new List<string> { }
@@ -119,14 +129,18 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 continue;
             }
 
+            var rewardsToken = rewardsListDto.RewardsToken ?? "";
+            var currencyPair = $"{rewardsToken}_USDT";
+            var rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
             rewardsListDto.Rate =
                 _lpPoolRateOptions.LpPoolRateDic.TryGetValue(poolData.StakeTokenContract, out var poolRate)
                     ? poolRate
                     : 0;
             rewardsListDto.TokenName = poolData.PointsName;
-            rewardsListDto.RewardsInUsd = (double.Parse(rewardsListDto.Rewards) * rate).ToString(CultureInfo.InvariantCulture);
+            rewardsListDto.RewardsInUsd =
+                (double.Parse(rewardsListDto.Rewards) * rate).ToString(CultureInfo.InvariantCulture);
         }
-        
+
         return new PagedResultDto<RewardsListDto>
         {
             Items = result,
@@ -134,61 +148,118 @@ public class RewardsService : IRewardsService, ISingletonDependency
         };
     }
 
-    public async Task<RewardsAggregationDto> GetRewardsAggregationAsync(GetRewardsAggregationInput input)
+    public async Task<List<RewardsAggregationDto>> GetRewardsAggregationAsync(GetRewardsAggregationInput input)
     {
+        var result = new List<RewardsAggregationDto>();
         var address = input.Address;
+        var poolInfoDic = _poolInfoOptions.PoolInfoDic;
         var rewardsList = await GetAllRewardsList(address, PoolTypeEnums.All);
-        var poolTypeRewardDic = rewardsList
-            .GroupBy(x => x.PoolType)
+        var poolIdRewardDic = rewardsList
+            .GroupBy(x => x.PoolId)
             .ToDictionary(g => g.Key, g => g.ToList());
-        var claimedSymbol = rewardsList.FirstOrDefault()?.ClaimedSymbol ?? "";
-        var currencyPair = $"{claimedSymbol}_USDT";
-        var usdRate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
-        var rewardsAggregationDto = new RewardsAggregationDto();
-        foreach (var keyValuePair in poolTypeRewardDic)
+        var pointsPools = await _pointsStakingProvider.GetPointsPoolsAsync("");
+        var dappIdPointsPools = pointsPools.GroupBy(x => x.DappId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        foreach (var (dappId, dappPointsPools) in dappIdPointsPools)
         {
-            switch (keyValuePair.Key)
+            var rewardsListIndexerDtos = new List<RewardsListIndexerDto>();
+            foreach (var pointsPoolsIndexerDto in dappPointsPools)
             {
-                case PoolTypeEnums.Points:
-                    rewardsAggregationDto.PointsPoolAgg =
-                        await GetRewardsAggAsync(keyValuePair.Value, address, usdRate, PoolTypeEnums.Points);
-                    break;
-                case PoolTypeEnums.Token:
-                    rewardsAggregationDto.TokenPoolAgg =
-                        await GetRewardsAggAsync(keyValuePair.Value, address, usdRate, PoolTypeEnums.Token);
-                    break;
-                case PoolTypeEnums.Lp:
-                    rewardsAggregationDto.LpPoolAgg =
-                        await GetRewardsAggAsync(keyValuePair.Value, address, usdRate, PoolTypeEnums.Lp);
-                    break;
+                if (poolIdRewardDic.TryGetValue(pointsPoolsIndexerDto.PoolId, out var rewards))
+                {
+                    rewardsListIndexerDtos.AddRange(rewards);
+                }
             }
-        }
 
-        var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("");
-        var pointsPoolRewardsToken = pointsPoolsIndexerDtos.FirstOrDefault()?.PointsPoolConfig.RewardToken ?? "";
-        rewardsAggregationDto.PointsPoolAgg.RewardsTokenName = pointsPoolRewardsToken;
-        rewardsAggregationDto.DappId = pointsPoolsIndexerDtos.FirstOrDefault()?.DappId ?? "";
-        if (string.IsNullOrEmpty(rewardsAggregationDto.TokenPoolAgg.RewardsTokenName))
-        {
-            var tokenPools = await _tokenStakingProvider.GetTokenPoolsAsync(new GetTokenPoolsInput()
+            if (rewardsListIndexerDtos.IsNullOrEmpty())
             {
-                PoolType = PoolTypeEnums.Token
-            });
-            var tokenPoolRewardsToken = tokenPools.FirstOrDefault()?.TokenPoolConfig.RewardToken ?? "";
-            rewardsAggregationDto.TokenPoolAgg.RewardsTokenName = tokenPoolRewardsToken;
-        }
+                continue;
+            }
 
-        if (string.IsNullOrEmpty(rewardsAggregationDto.LpPoolAgg.RewardsTokenName))
-        {
-            var lpPools = await _tokenStakingProvider.GetTokenPoolsAsync(new GetTokenPoolsInput()
+            var rewardsTokenName = dappPointsPools.FirstOrDefault()?.PointsPoolConfig.RewardToken ?? "";
+            var currencyPair = $"{rewardsTokenName}_USDT";
+            var usdRate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
+            var hasPoolInfo = poolInfoDic.TryGetValue(dappId, out var poolInfo);
+            var poolRewardsInfoDto = new RewardsAggregationDto
             {
-                PoolType = PoolTypeEnums.Lp
-            });
-            var lpPoolRewardsToken = lpPools.FirstOrDefault()?.TokenPoolConfig.RewardToken ?? "";
-            rewardsAggregationDto.LpPoolAgg.RewardsTokenName = lpPoolRewardsToken;
+                DappId = dappId,
+                PoolName = hasPoolInfo ? poolInfo.PoolName : "",
+                Sort = hasPoolInfo ? poolInfo.Sort : 0,
+                SupportEarlyStake = hasPoolInfo && poolInfo.SupportEarlyStake,
+                RewardsTokenName = rewardsTokenName,
+                PoolType = PoolTypeEnums.Points.ToString(),
+                PoolTypeEnums = PoolTypeEnums.Points,
+            };
+
+            var rewardsAggInfo = await GetRewardsAggAsync(rewardsListIndexerDtos, address, usdRate, "",
+                poolRewardsInfoDto.PoolTypeEnums, dappId);
+            poolRewardsInfoDto.RewardsInfo = rewardsAggInfo;
+            result.Add(poolRewardsInfoDto);
         }
 
-        return rewardsAggregationDto;
+        var tokenPools = await _tokenStakingProvider.GetTokenPoolsAsync(new GetTokenPoolsInput()
+        {
+            PoolType = PoolTypeEnums.All
+        });
+        foreach (var tokenPool in tokenPools)
+        {
+            var poolId = tokenPool.PoolId;
+            var poolType = tokenPool.PoolType;
+
+            if (!poolIdRewardDic.TryGetValue(poolId, out var rewardsListIndexerDtos))
+            {
+                continue;
+            }
+
+            var rewardsTokenName = tokenPool.TokenPoolConfig.RewardToken;
+            var currencyPair = $"{rewardsTokenName}_USDT";
+            var usdRate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
+            var rewardsAggInfo =
+                await GetRewardsAggAsync(rewardsListIndexerDtos, address, usdRate, poolId, poolType);
+            var hasPoolInfo = poolInfoDic.TryGetValue(poolId, out var poolInfo);
+            var poolRewardsInfoDto = new RewardsAggregationDto
+            {
+                DappId = tokenPool.DappId,
+                PoolName = hasPoolInfo ? poolInfo.PoolName : "",
+                Sort = hasPoolInfo ? poolInfo.Sort : 0,
+                Rate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(tokenPool.TokenPoolConfig.StakeTokenContract,
+                    out var poolRate)
+                    ? poolRate
+                    : 0,
+                SupportEarlyStake = hasPoolInfo && poolInfo.SupportEarlyStake,
+                PoolId = poolId,
+                RewardsTokenName = rewardsTokenName,
+                PoolType = poolType.ToString(),
+                PoolTypeEnums = poolType,
+                RewardsInfo = rewardsAggInfo
+            };
+
+            result.Add(poolRewardsInfoDto);
+        }
+
+        if (input.PoolType != PoolTypeEnums.All)
+        {
+            return result.Where(x => x.PoolTypeEnums == input.PoolType)
+                .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
+                .ToList();
+        }
+
+        {
+            var pointList = result.Where(x => x.PoolTypeEnums == PoolTypeEnums.Points)
+                .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
+                .ToList();
+            var tokenList = result.Where(x => x.PoolTypeEnums == PoolTypeEnums.Token)
+                .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
+                .ToList();
+            var lpList = result.Where(x => x.PoolTypeEnums == PoolTypeEnums.Lp)
+                .OrderByDescending(x => x.RewardsInfo.FirstClaimTime)
+                .ToList();
+
+            pointList.AddRange(tokenList);
+            pointList.AddRange(lpList);
+            return pointList;
+        }
     }
 
     public async Task<RewardsSignatureDto> RewardsWithdrawSignatureAsync(RewardsSignatureInput input)
@@ -587,6 +658,17 @@ public class RewardsService : IRewardsService, ISingletonDependency
         return transactionOutput.TransactionId;
     }
 
+    public async Task<List<FilterItemDto>> GetFilterItemsAsync()
+    {
+        return _poolInfoOptions.PoolInfoDic.Select(x => new FilterItemDto
+        {
+            FilterName = x.Value.FilterName,
+            Id = x.Key,
+            PoolType = x.Value.PoolType.ToString(),
+            Sort = x.Value.Sort
+        }).OrderBy(x => x.Sort).ToList();
+    }
+
 
     private async Task<RewardsSignatureDto> LiquiditySignatureAsync(LiquiditySignatureInput input,
         ExecuteType executeType)
@@ -738,6 +820,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var period = input.Period;
         var tokenAMin = input.TokenAMin;
         var tokenBMin = input.TokenBMin;
+        var operationPoolIds = input.OperationPoolIds.Where(x => !string.IsNullOrEmpty(x)).Distinct().ToList();
+        var dappIds = input.OperationDappIds.Where(x => !string.IsNullOrEmpty(x)).Distinct().ToList();
 
 
         _logger.LogInformation("RewardsSignatureAsync, input: {input}", JsonConvert.SerializeObject(input));
@@ -780,7 +864,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }
 
         //prevention of over withdraw
-        var isValid = await CheckAmountValidityV2Async(address, amount, executeClaimIds, poolType, executeType);
+        var isValid = await CheckAmountValidityV2Async(address, amount, executeClaimIds, executeType, operationPoolIds,
+            poolType, dappIds);
         if (!isValid)
         {
             throw new UserFriendlyException("invalid amount.");
@@ -848,6 +933,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             throw new UserFriendlyException("generate signature fail.");
         }
+
         //save signature
         var recordDto = new RewardOperationRecordDto()
         {
@@ -894,7 +980,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             .Where(x => x.PoolType is PoolTypeEnums.Token or PoolTypeEnums.Lp)
             .Select(x => x.PoolId)
             .ToList();
-        var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("", pointsPoolIds);
+        var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("", poolIds: pointsPoolIds);
         var poolIdDic = pointsPoolsIndexerDtos.ToDictionary(x => x.PoolId, x => new PoolIdDataDto
         {
             PointsName = x.PointsName,
@@ -927,14 +1013,17 @@ public class RewardsService : IRewardsService, ISingletonDependency
     }
 
     private async Task<bool> CheckAmountValidityV2Async(string address, long amount, List<string> withdrawClaimIds,
-        PoolTypeEnums poolType, ExecuteType executeType)
+        ExecuteType executeType, List<string> poolIds, PoolTypeEnums poolType, List<string> dappIds)
     {
-        var rewardsAllList = await GetAllRewardsList(address, poolType);
+        var rewardsAllList = await GetAllRewardsList(address, poolType, poolIds: poolIds, dappIds: dappIds);
         var unWithdrawList = rewardsAllList
             .Where(x => x.WithdrawTime == 0)
             .ToList();
 
-        var operationRewardsInfo = await GetOperationRewardsAsync(unWithdrawList, address, poolType, true);
+        var operationRewardsInfo =
+            await GetOperationRewardsAsync(unWithdrawList, address, poolIds, poolType: poolType, true, dappIds);
+        _logger.LogInformation("CheckAmountValidityV2Async OperationRewardsInfo: {info}",
+            JsonConvert.SerializeObject(operationRewardsInfo));
         var nowRewards = operationRewardsInfo.NowRewards;
         var nextReward = operationRewardsInfo.NextRewards;
         var operationClaimInfos = operationRewardsInfo.OperationClaimInfos;
@@ -970,11 +1059,15 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var checkResult = resultList.Count == withdrawClaimIds.Count && !includeClaimIds.Any() &&
                           amount == operationAmount;
+
+        _logger.LogInformation(
+            "resultList : {resultList}, withdrawClaimIds: {withdrawClaimIds}, includeClaimIds: {includeClaimIds}, amount: {amount}, operationAmount: {operationAmount}",
+            resultList.Count,withdrawClaimIds.Count,JsonConvert.SerializeObject(includeClaimIds), amount, operationAmount);
         return checkResult;
     }
 
     private async Task<RewardsAggDto> GetRewardsAggAsync(List<RewardsListIndexerDto> list, string address,
-        double usdRate, PoolTypeEnums poolType)
+        double usdRate, string poolId, PoolTypeEnums poolType, string dappId = "")
     {
         var pointsPoolAggDto = new RewardsAggDto();
         if (list.IsNullOrEmpty())
@@ -982,7 +1075,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
             return pointsPoolAggDto;
         }
 
+        var firstClaimTime = list.Min(x => x.ClaimedTime);
         pointsPoolAggDto.RewardsTokenName = list.FirstOrDefault()?.ClaimedSymbol ?? "";
+        pointsPoolAggDto.FirstClaimTime = firstClaimTime;
 
         var totalRewards = list
             .Select(x => BigInteger.Parse(x.ClaimedAmount))
@@ -999,7 +1094,13 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var unWithdrawList = list
             .Where(x => x.WithdrawTime == 0)
             .ToList();
-        var operationRewardsInfo = await GetOperationRewardsAsync(unWithdrawList, address, poolType);
+        var poolIds = !string.IsNullOrEmpty(poolId) ? new List<string> { poolId } : null;
+        var dappIds = !string.IsNullOrEmpty(dappId) ? new List<string> { dappId } : null;
+        var operationRewardsInfo =
+            await GetOperationRewardsAsync(unWithdrawList, address, poolIds, poolType: poolType, dappIds: dappIds);
+        _logger.LogInformation("==============poolId: {poolId}", JsonConvert.SerializeObject(poolIds));
+        _logger.LogInformation("GetRewardsAggAsync OperationRewardsInfo: {info}",
+            JsonConvert.SerializeObject(operationRewardsInfo));
 
         var nowRewards = operationRewardsInfo.NowRewards;
         var nextReward = operationRewardsInfo.NextRewards;
@@ -1036,7 +1137,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
     }
 
     private async Task<OperationRewardsDto> GetOperationRewardsAsync(List<RewardsListIndexerDto> unWithdrawList,
-        string address, PoolTypeEnums poolType, bool isCheckAmount = false)
+        string address, List<string> poolIds, PoolTypeEnums poolType, bool isCheckAmount = false,
+        List<string> dappIds = null)
     {
         var rewardsTokenName = unWithdrawList.FirstOrDefault()?.ClaimedSymbol ?? "";
         var executeStatusList = new List<ExecuteStatus> { ExecuteStatus.Ended };
@@ -1045,8 +1147,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
             executeStatusList.Add(ExecuteStatus.Executing);
         }
 
-        var rewardOperationRecordList =
+        var operationRecordList =
             await _rewardsProvider.GetRewardOperationRecordListAsync(address, executeStatusList);
+        var rewardOperationRecordList = operationRecordList
+            .Where(x => x.ExecuteStatus == ExecuteStatus.Ended || (x.ExecuteStatus == ExecuteStatus.Executing &&
+                                                                   x.ExpiredTime > DateTime.UtcNow.ToUtcMilliSeconds()))
+            .ToList();
         var rewardOperationRecordClaimIds = rewardOperationRecordList
             .SelectMany(x => x.ClaimInfos.Select(info => info.ClaimId).ToList())
             .Distinct()
@@ -1091,7 +1197,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var earlyStakedLossAmount = 0L;
         if (!liquidityRemovedList.IsNullOrEmpty())
         {
-            lossAmount = rewardsTokenName == liquidityRemovedList.FirstOrDefault()?.TokenASymbol 
+            lossAmount = rewardsTokenName == liquidityRemovedList.FirstOrDefault()?.TokenASymbol
                 ? liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenALossAmount))
                 : liquidityAddedInfoDtos.Sum(l => long.Parse(l.TokenBLossAmount));
             lossAmountSum = rewardsTokenName == liquidityRemovedList.FirstOrDefault()?.TokenASymbol
@@ -1103,7 +1209,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }
 
         var realClaimIds = realList.Select(x => x.ClaimId).ToList();
-        var rewardsMergedList = await GetAllMergedRewardsList(address, poolType);
+        var rewardsMergedList = await GetAllMergedRewardsList(address, poolIds, poolType, dappIds);
 
         var rewardsMergeDtos = new List<RewardsMergeDto>();
         foreach (var rewardsMergedListIndexerDto in rewardsMergedList)
@@ -1257,7 +1363,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
     }
 
     private async Task<List<RewardsListIndexerDto>> GetAllRewardsList(string address, PoolTypeEnums poolType,
-        List<string> liquidityIds = null)
+        List<string> poolIds = null, List<string> dappIds = null)
     {
         var res = new List<RewardsListIndexerDto>();
         var skipCount = 0;
@@ -1266,7 +1372,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         do
         {
             var rewardsListIndexerResult = await _rewardsProvider.GetRewardsListAsync(poolType, address,
-                skipCount, maxResultCount, liquidityIds: liquidityIds);
+                skipCount, maxResultCount, poolIds: poolIds, dappIds: dappIds);
             list = rewardsListIndexerResult.Data;
             var count = list.Count;
             res.AddRange(list);
@@ -1282,7 +1388,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
     }
 
     private async Task<List<RewardsMergedListIndexerDto>> GetAllMergedRewardsList(string address,
-        PoolTypeEnums poolType)
+        List<string> poolIds, PoolTypeEnums poolType, List<string> dappIds = null)
     {
         var res = new List<RewardsMergedListIndexerDto>();
         var skipCount = 0;
@@ -1290,8 +1396,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         List<RewardsMergedListIndexerDto> list;
         do
         {
-            var rewardsListIndexerResult = await _rewardsProvider.GetMergedRewardsListAsync(address, poolType,
-                skipCount, maxResultCount);
+            var rewardsListIndexerResult = await _rewardsProvider.GetMergedRewardsListAsync(address, poolIds, poolType,
+                dappIds, skipCount, maxResultCount);
             list = rewardsListIndexerResult.Data;
             var count = list.Count;
             res.AddRange(list);

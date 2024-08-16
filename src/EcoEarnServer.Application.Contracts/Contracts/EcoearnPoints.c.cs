@@ -64,6 +64,26 @@ namespace EcoEarn.Contracts.Points {
       {
         DappId = DappId,
         Admin = Admin,
+        Config = Config,
+      };
+    }
+  }
+
+  public partial class DappConfigSet : aelf::IEvent<DappConfigSet>
+  {
+    public global::System.Collections.Generic.IEnumerable<DappConfigSet> GetIndexed()
+    {
+      return new List<DappConfigSet>
+      {
+      };
+    }
+
+    public DappConfigSet GetNonIndexed()
+    {
+      return new DappConfigSet
+      {
+        DappId = DappId,
+        Config = Config,
       };
     }
   }
@@ -193,25 +213,6 @@ namespace EcoEarn.Contracts.Points {
     }
   }
 
-  public partial class PointsPoolUpdateAddressSet : aelf::IEvent<PointsPoolUpdateAddressSet>
-  {
-    public global::System.Collections.Generic.IEnumerable<PointsPoolUpdateAddressSet> GetIndexed()
-    {
-      return new List<PointsPoolUpdateAddressSet>
-      {
-      };
-    }
-
-    public PointsPoolUpdateAddressSet GetNonIndexed()
-    {
-      return new PointsPoolUpdateAddressSet
-      {
-        PoolId = PoolId,
-        UpdateAddress = UpdateAddress,
-      };
-    }
-  }
-
   public partial class PointsPoolRewardConfigSet : aelf::IEvent<PointsPoolRewardConfigSet>
   {
     public global::System.Collections.Generic.IEnumerable<PointsPoolRewardConfigSet> GetIndexed()
@@ -284,10 +285,10 @@ namespace EcoEarn.Contracts.Points {
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.SetDappAdminInput> __Marshaller_SetDappAdminInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.SetDappAdminInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AElf.Types.Hash> __Marshaller_aelf_Hash = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AElf.Types.Hash.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.DappInfo> __Marshaller_DappInfo = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.DappInfo.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.SetDappConfigInput> __Marshaller_SetDappConfigInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.SetDappConfigInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.CreatePointsPoolInput> __Marshaller_CreatePointsPoolInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.CreatePointsPoolInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.SetPointsPoolEndTimeInput> __Marshaller_SetPointsPoolEndTimeInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.SetPointsPoolEndTimeInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.RestartPointsPoolInput> __Marshaller_RestartPointsPoolInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.RestartPointsPoolInput.Parser.ParseFrom);
-    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.SetPointsPoolUpdateAddressInput> __Marshaller_SetPointsPoolUpdateAddressInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.SetPointsPoolUpdateAddressInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.SetPointsPoolRewardConfigInput> __Marshaller_SetPointsPoolRewardConfigInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.SetPointsPoolRewardConfigInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.SetPointsPoolRewardPerSecondInput> __Marshaller_SetPointsPoolRewardPerSecondInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.SetPointsPoolRewardPerSecondInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Points.GetPoolInfoOutput> __Marshaller_GetPoolInfoOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Points.GetPoolInfoOutput.Parser.ParseFrom);
@@ -356,6 +357,13 @@ namespace EcoEarn.Contracts.Points {
         __Marshaller_aelf_Hash,
         __Marshaller_DappInfo);
 
+    static readonly aelf::Method<global::EcoEarn.Contracts.Points.SetDappConfigInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetDappConfig = new aelf::Method<global::EcoEarn.Contracts.Points.SetDappConfigInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "SetDappConfig",
+        __Marshaller_SetDappConfigInput,
+        __Marshaller_google_protobuf_Empty);
+
     static readonly aelf::Method<global::EcoEarn.Contracts.Points.CreatePointsPoolInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_CreatePointsPool = new aelf::Method<global::EcoEarn.Contracts.Points.CreatePointsPoolInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
@@ -375,13 +383,6 @@ namespace EcoEarn.Contracts.Points {
         __ServiceName,
         "RestartPointsPool",
         __Marshaller_RestartPointsPoolInput,
-        __Marshaller_google_protobuf_Empty);
-
-    static readonly aelf::Method<global::EcoEarn.Contracts.Points.SetPointsPoolUpdateAddressInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetPointsPoolUpdateAddress = new aelf::Method<global::EcoEarn.Contracts.Points.SetPointsPoolUpdateAddressInput, global::Google.Protobuf.WellKnownTypes.Empty>(
-        aelf::MethodType.Action,
-        __ServiceName,
-        "SetPointsPoolUpdateAddress",
-        __Marshaller_SetPointsPoolUpdateAddressInput,
         __Marshaller_google_protobuf_Empty);
 
     static readonly aelf::Method<global::EcoEarn.Contracts.Points.SetPointsPoolRewardConfigInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetPointsPoolRewardConfig = new aelf::Method<global::EcoEarn.Contracts.Points.SetPointsPoolRewardConfigInput, global::Google.Protobuf.WellKnownTypes.Empty>(
@@ -511,6 +512,11 @@ namespace EcoEarn.Contracts.Points {
     //     throw new global::System.NotImplementedException();
     //   }
     //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetDappConfig(global::EcoEarn.Contracts.Points.SetDappConfigInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
     //   public virtual global::Google.Protobuf.WellKnownTypes.Empty CreatePointsPool(global::EcoEarn.Contracts.Points.CreatePointsPoolInput input)
     //   {
     //     throw new global::System.NotImplementedException();
@@ -522,11 +528,6 @@ namespace EcoEarn.Contracts.Points {
     //   }
     //
     //   public virtual global::Google.Protobuf.WellKnownTypes.Empty RestartPointsPool(global::EcoEarn.Contracts.Points.RestartPointsPoolInput input)
-    //   {
-    //     throw new global::System.NotImplementedException();
-    //   }
-    //
-    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetPointsPoolUpdateAddress(global::EcoEarn.Contracts.Points.SetPointsPoolUpdateAddressInput input)
     //   {
     //     throw new global::System.NotImplementedException();
     //   }
@@ -590,10 +591,10 @@ namespace EcoEarn.Contracts.Points {
     //       .AddMethod(__Method_Register, serviceImpl.Register)
     //       .AddMethod(__Method_SetDappAdmin, serviceImpl.SetDappAdmin)
     //       .AddMethod(__Method_GetDappInfo, serviceImpl.GetDappInfo)
+    //       .AddMethod(__Method_SetDappConfig, serviceImpl.SetDappConfig)
     //       .AddMethod(__Method_CreatePointsPool, serviceImpl.CreatePointsPool)
     //       .AddMethod(__Method_SetPointsPoolEndTime, serviceImpl.SetPointsPoolEndTime)
     //       .AddMethod(__Method_RestartPointsPool, serviceImpl.RestartPointsPool)
-    //       .AddMethod(__Method_SetPointsPoolUpdateAddress, serviceImpl.SetPointsPoolUpdateAddress)
     //       .AddMethod(__Method_SetPointsPoolRewardConfig, serviceImpl.SetPointsPoolRewardConfig)
     //       .AddMethod(__Method_SetPointsPoolRewardPerSecond, serviceImpl.SetPointsPoolRewardPerSecond)
     //       .AddMethod(__Method_GetPoolInfo, serviceImpl.GetPoolInfo)

@@ -14,10 +14,10 @@ namespace EcoEarnServer.TokenStaking.Provider;
 public interface ITokenStakingProvider
 {
     Task<List<TokenPoolsIndexerDto>> GetTokenPoolsAsync(GetTokenPoolsInput input);
-    Task<TokenStakedIndexerDto> GetStakedInfoAsync(string tokenName, string address);
+    Task<List<TokenStakedIndexerDto>> GetStakedInfoAsync(string tokenName, string address, List<string> poolIds);
 
     Task<Dictionary<string, TokenStakedIndexerDto>> GetAddressStakedInPoolDicAsync(List<string> pools, string address);
-    Task<List<TokenPoolsIndexerDto>> GetTokenPoolByTokenAsync(string tokenName);
+    Task<List<TokenPoolsIndexerDto>> GetTokenPoolByTokenAsync(string tokenName, PoolTypeEnums poolType);
     Task<List<TokenPoolStakedInfoDto>> GetTokenPoolStakedInfoListAsync(List<string> poolIds);
 
     Task<List<TokenStakedIndexerDto>> GetStakedInfoListAsync(string tokenName, string address,
@@ -88,10 +88,10 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
         }
     }
 
-    public async Task<TokenStakedIndexerDto> GetStakedInfoAsync(string tokenName, string address)
+    public async Task<List<TokenStakedIndexerDto>> GetStakedInfoAsync(string tokenName, string address, List<string> poolIds)
     {
-        var list = await GetStakedInfoListAsync(tokenName, address, new List<string>());
-        return list.Count > 0 ? list[0] : new TokenStakedIndexerDto();
+        var list = await GetStakedInfoListAsync(tokenName, address, poolIds);
+        return list;
     }
 
     public async Task<Dictionary<string, TokenStakedIndexerDto>> GetAddressStakedInPoolDicAsync(List<string> poolIds,
@@ -107,7 +107,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             .ToDictionary(g => g.Key, g => g.First());
     }
 
-    public async Task<List<TokenPoolsIndexerDto>> GetTokenPoolByTokenAsync(string tokenName)
+    public async Task<List<TokenPoolsIndexerDto>> GetTokenPoolByTokenAsync(string tokenName, PoolTypeEnums poolType)
     {
         try
         {
@@ -146,7 +146,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    tokenName = tokenName, poolType = PoolTypeEnums.All, poolIds = new List<string>(), skipCount = 0,
+                    tokenName = tokenName, poolType = poolType, poolIds = new List<string>(), skipCount = 0,
                     maxResultCount = 5000,
                 }
             });

@@ -46,7 +46,7 @@ public class SnapshotGeneratorService : ISnapshotGeneratorService, ITransientDep
             var etoList = list.Select(dto =>
             {
                 var pointsSnapshotEto = _objectMapper.Map<PointsListDto, PointsSnapshotEto>(dto);
-                pointsSnapshotEto.Id = GuidHelper.GenerateId(dto.Address, snapshotDate);
+                pointsSnapshotEto.Id = GuidHelper.GenerateId(dto.Address, dto.DappId, snapshotDate);
                 pointsSnapshotEto.CreateTime = DateTime.UtcNow.ToUtcMilliSeconds();
                 pointsSnapshotEto.SnapshotDate = snapshotDate;
                 return pointsSnapshotEto;

@@ -120,6 +120,7 @@ public class EcoEarnServerBackgroundModule : AbpModule
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
+
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
     {
         var mongoType = configuration["Hangfire:MongoType"];

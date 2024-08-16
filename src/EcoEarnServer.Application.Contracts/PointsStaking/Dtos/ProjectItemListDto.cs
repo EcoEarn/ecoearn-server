@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace EcoEarnServer.PointsStaking.Dtos;
 
 public class ProjectItemListDto
@@ -9,4 +11,7 @@ public class ProjectItemListDto
     public string Tvl { get; set; }
     public long StakingAddress { get; set; }
     public bool IsOpenStake { get; set; }
+    public string PointsType { get; set; }
+    public string GainUrl { get; set; }
+    public List<string> RulesText { get; set; }
 }

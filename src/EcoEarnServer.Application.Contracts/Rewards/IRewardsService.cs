@@ -1,13 +1,15 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using EcoEarnServer.Rewards.Dtos;
 using Volo.Abp.Application.Dtos;
+using FilterItemDto = EcoEarnServer.Rewards.Dtos.FilterItemDto;
 
 namespace EcoEarnServer.Rewards;
 
 public interface IRewardsService
 {
     Task<PagedResultDto<RewardsListDto>> GetRewardsListAsync(GetRewardsListInput input);
-    Task<RewardsAggregationDto> GetRewardsAggregationAsync(GetRewardsAggregationInput input);
+    Task<List<RewardsAggregationDto>> GetRewardsAggregationAsync(GetRewardsAggregationInput input);
     Task<RewardsSignatureDto> RewardsWithdrawSignatureAsync(RewardsSignatureInput input);
     Task<string> RewardsWithdrawAsync(RewardsTransactionInput input);
 
@@ -20,4 +22,5 @@ public interface IRewardsService
     Task<string> LiquidityStakeAsync(RewardsTransactionInput input);
     Task<RewardsSignatureDto> RemoveLiquiditySignatureAsync(LiquiditySignatureInput input);
     Task<string> RemoveLiquidityAsync(RewardsTransactionInput input);
+    Task<List<FilterItemDto>> GetFilterItemsAsync();
 }

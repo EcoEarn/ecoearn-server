@@ -14,4 +14,7 @@ public class ProjectItem
     public string ProjectOwner { get; set; }
     public string Icon { get; set; }
     public bool IsOpenStake { get; set; }
+    public string PointsType { get; set; }
+    public string GainUrl { get; set; }
+    public List<string> RulesText { get; set; }
 }

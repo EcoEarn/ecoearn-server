@@ -6,18 +6,18 @@ public class PoolInfoConst
 {
     public static readonly Dictionary<string, string> PoolIndexSymbolDic = new()
     {
-        { "XPSGR-1", "FirstSymbolAmount" },
-        { "XPSGR-2", "SecondSymbolAmount" },
-        { "XPSGR-3", "ThirdSymbolAmount" },
-        { "XPSGR-4", "FourSymbolAmount" },
-        { "XPSGR-5", "FiveSymbolAmount" },
-        { "XPSGR-6", "SixSymbolAmount" },
-        { "XPSGR-7", "SevenSymbolAmount" },
-        { "XPSGR-8", "EightSymbolAmount" },
-        { "XPSGR-9", "NineSymbolAmount" },
-        { "XPSGR-10", "TenSymbolAmount" },
-        { "XPSGR-11", "ElevenSymbolAmount" },
-        { "XPSGR-12", "TwelveSymbolAmount" },
+        { "1", "FirstSymbolAmount" },
+        { "2", "SecondSymbolAmount" },
+        { "3", "ThirdSymbolAmount" },
+        { "4", "FourSymbolAmount" },
+        { "5", "FiveSymbolAmount" },
+        { "6", "SixSymbolAmount" },
+        { "7", "SevenSymbolAmount" },
+        { "8", "EightSymbolAmount" },
+        { "9", "NineSymbolAmount" },
+        { "10", "TenSymbolAmount" },
+        { "11", "ElevenSymbolAmount" },
+        { "12", "TwelveSymbolAmount" },
     };
 
     public static readonly Dictionary<string, string> SymbolPoolIndexDic = new()

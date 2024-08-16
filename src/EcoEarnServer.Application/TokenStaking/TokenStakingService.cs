@@ -17,9 +17,7 @@ using Google.Protobuf.Collections;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
-using Volo.Abp;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
@@ -44,6 +42,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
     private readonly LpPoolRateOptions _lpPoolRateOptions;
     private readonly PoolTextWordOptions _poolTextWordOptions;
     private readonly IRewardsProvider _rewardsProvider;
+    private readonly PoolInfoOptions _poolInfoOptions;
+    private readonly ProjectItemOptions _projectItemOptions;
 
     public TokenStakingService(ITokenStakingProvider tokenStakingProvider, IObjectMapper objectMapper,
         ILogger<TokenStakingService> logger, IOptions<RedisCacheOptions> optionsAccessor,
@@ -52,7 +52,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         IOptionsSnapshot<TokenPoolIconsOptions> tokenPoolIconsOptions,
         IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions,
         IOptionsSnapshot<PoolTextWordOptions> poolTextWordOptions,
-        IRewardsProvider rewardsProvider) : base(optionsAccessor)
+        IRewardsProvider rewardsProvider, IOptionsSnapshot<PoolInfoOptions> poolInfoOptions,
+        IOptionsSnapshot<ProjectItemOptions> projectItemOptions) : base(optionsAccessor)
     {
         _tokenStakingProvider = tokenStakingProvider;
         _objectMapper = objectMapper;
@@ -61,6 +62,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         _contractProvider = contractProvider;
         _priceProvider = priceProvider;
         _rewardsProvider = rewardsProvider;
+        _projectItemOptions = projectItemOptions.Value;
+        _poolInfoOptions = poolInfoOptions.Value;
         _poolTextWordOptions = poolTextWordOptions.Value;
         _lpPoolRateOptions = lpPoolRateOptions.Value;
         _tokenPoolIconsOptions = tokenPoolIconsOptions.Value;
@@ -68,6 +71,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 
     public async Task<TokenPoolsResult> GetTokenPoolsAsync(GetTokenPoolsInput input)
     {
+        var poolInfoDic = _poolInfoOptions.PoolInfoDic;
         if (string.IsNullOrEmpty(input.Address))
         {
             await ConnectAsync();
@@ -77,16 +81,18 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 return _serializer.Deserialize<TokenPoolsResult>(redisValue);
             }
         }
-        
+
         var tokenPoolsIndexerDtos = await _tokenStakingProvider.GetTokenPoolsAsync(input);
         var poolIds = tokenPoolsIndexerDtos.Select(x => x.PoolId).Distinct().ToList();
         var addressStakedInPoolDic = await _tokenStakingProvider.GetAddressStakedInPoolDicAsync(poolIds, input.Address);
-
+        var dappIdDic = _projectItemOptions.ProjectItems.ToDictionary(x => x.DappId, x => x);
         var tokenPoolsList = new List<TokenPoolsDto>();
         foreach (var tokenPoolsIndexerDto in tokenPoolsIndexerDtos)
         {
             var currencyPair = $"{tokenPoolsIndexerDto.TokenPoolConfig.StakingToken.ToUpper()}_USDT";
-            var usdtRate = await _priceProvider.GetGateIoPriceAsync($"{tokenPoolsIndexerDto.TokenPoolConfig.RewardToken.ToUpper()}_USDT");
+            var usdtRate =
+                await _priceProvider.GetGateIoPriceAsync(
+                    $"{tokenPoolsIndexerDto.TokenPoolConfig.RewardToken.ToUpper()}_USDT");
 
             var feeRate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(
                 tokenPoolsIndexerDto.TokenPoolConfig.StakeTokenContract,
@@ -98,6 +104,12 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 : await _priceProvider.GetLpPriceAsync(tokenPoolsIndexerDto.TokenPoolConfig.StakingToken, feeRate);
 
             var tokenPoolsDto = _objectMapper.Map<TokenPoolsIndexerDto, TokenPoolsDto>(tokenPoolsIndexerDto);
+            tokenPoolsDto.ProjectOwner =
+                dappIdDic.TryGetValue(tokenPoolsIndexerDto.DappId, out var projectItem) ? projectItem.DappName : "";
+            
+            tokenPoolsDto.SupportEarlyStake = poolInfoDic.TryGetValue(tokenPoolsIndexerDto.PoolId, out var poolInfo) &&
+                                              poolInfo.SupportEarlyStake;
+            tokenPoolsDto.Sort = poolInfo!.Sort;
             var tokenPoolStakedSumLong = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
                 { PoolId = tokenPoolsDto.PoolId, ChainId = input.ChainId });
 
@@ -122,7 +134,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             if (addressStakedInPoolDic.TryGetValue(tokenPoolsDto.PoolId, out var stakedInfos))
             {
                 var rewardsListIndexerResult =
-                    await _rewardsProvider.GetRewardsListAsync(input.PoolType, input.Address, 0, 1);
+                    await _rewardsProvider.GetRewardsListAsync(input.PoolType, input.Address, 0, 1,
+                        poolIds: new List<string> { tokenPoolsDto.PoolId });
                 tokenPoolsDto.LatestClaimTime = !rewardsListIndexerResult.Data.IsNullOrEmpty()
                     ? rewardsListIndexerResult.Data.FirstOrDefault()!.ClaimedTime
                     : 0;
@@ -168,15 +181,17 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 
         var result = new TokenPoolsResult()
         {
-            Pools = tokenPoolsList,
+            Pools = tokenPoolsList.OrderBy(x => x.Sort).ToList(),
             TextNodes = JsonConvert.DeserializeObject<List<TextNodeDto>>(_poolTextWordOptions.PointsTextWord)
         };
-        
+
         if (string.IsNullOrEmpty(input.Address))
         {
-            await RedisDatabase.StringSetAsync(TokenPoolUnLoginListRedisKeyPrefix + input.PoolType, _serializer.Serialize(result),
+            await RedisDatabase.StringSetAsync(TokenPoolUnLoginListRedisKeyPrefix + input.PoolType,
+                _serializer.Serialize(result),
                 TimeSpan.FromHours(2));
         }
+
         return result;
     }
 
@@ -188,73 +203,87 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         return tokenPoolStakedInfoDto == null ? 0 : long.Parse(tokenPoolStakedInfoDto.TotalStakedAmount);
     }
 
-    public async Task<EarlyStakeInfoDto> GetStakedInfoAsync(GetEarlyStakeInfoInput input)
+    public async Task<List<EarlyStakeInfoDto>> GetStakedInfoAsync(GetEarlyStakeInfoInput input)
     {
+        var result = new List<EarlyStakeInfoDto>();
         var tokenName = input.TokenName;
         var address = input.Address;
         var chainId = input.ChainId;
         var poolType = input.PoolType;
         var rate = input.Rate;
-        var tokenPoolIndexerListDto = await _tokenStakingProvider.GetTokenPoolByTokenAsync(tokenName);
+        var tokenPoolIndexerListDto = await _tokenStakingProvider.GetTokenPoolByTokenAsync(tokenName, poolType);
 
-        TokenPoolsIndexerDto tokenPoolIndexerDto;
-        switch (poolType)
+        if (!string.IsNullOrEmpty(tokenName) && poolType == PoolTypeEnums.Token)
         {
-            case PoolTypeEnums.Token:
-                tokenPoolIndexerDto = tokenPoolIndexerListDto[0];
-                break;
-            case PoolTypeEnums.Lp:
-            {
-                var stakeTokenContract =
-                    _lpPoolRateOptions.LpPoolRateDic.First(entity => Math.Abs(entity.Value - rate) == 0).Key;
-                tokenPoolIndexerDto =
-                    tokenPoolIndexerListDto.First(x => x.TokenPoolConfig.StakeTokenContract == stakeTokenContract);
-                break;
-            }
-            default:
-                throw new UserFriendlyException("invalid pool type");
+            tokenPoolIndexerListDto = new List<TokenPoolsIndexerDto> { tokenPoolIndexerListDto[0] };
         }
 
-        var stakedInfoIndexerDtos = await _tokenStakingProvider.GetStakedInfoAsync(tokenName, address);
-        var yearlyRewards = YearlyBlocks * tokenPoolIndexerDto.TokenPoolConfig.RewardPerBlock;
-        var tokenPoolStakedSum = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
-            { PoolId = tokenPoolIndexerDto.PoolId, ChainId = chainId });
-        var usdtRate =
-            await _priceProvider.GetGateIoPriceAsync(
-                $"{tokenPoolIndexerDto.TokenPoolConfig.RewardToken.ToUpper()}_USDT");
-        var stakeInfoDto = new EarlyStakeInfoDto
+        if (!string.IsNullOrEmpty(tokenName) && poolType == PoolTypeEnums.Lp && rate != 0)
         {
-            StakeId = stakedInfoIndexerDtos.StakeId,
-            PoolId = tokenPoolIndexerDto.PoolId,
-            StakeSymbol = string.IsNullOrEmpty(stakedInfoIndexerDtos.StakingToken)
-                ? tokenName
-                : stakedInfoIndexerDtos.StakingToken,
-            UnlockTime = stakedInfoIndexerDtos.UnlockTime,
-            LastOperationTime = stakedInfoIndexerDtos.LastOperationTime,
-            StakingPeriod = stakedInfoIndexerDtos.StakingPeriod,
-            Staked = stakedInfoIndexerDtos.LockState == LockState.Unlock
-                ? "0"
-                : stakedInfoIndexerDtos.SubStakeInfos.Sum(x => x.StakedAmount + x.EarlyStakedAmount).ToString(),
-            YearlyRewards = yearlyRewards,
-            FixedBoostFactor = tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor,
-            UnlockWindowDuration = tokenPoolIndexerDto.TokenPoolConfig.UnlockWindowDuration,
-            MinimumClaimAmount = tokenPoolIndexerDto.TokenPoolConfig.MinimumClaimAmount,
-            EarnedSymbol = tokenPoolIndexerDto.TokenPoolConfig.RewardToken,
-            UsdRate = usdtRate,
-            SubStakeInfos = stakedInfoIndexerDtos.SubStakeInfos.Select(dto =>
+            var stakeTokenContract =
+                _lpPoolRateOptions.LpPoolRateDic.First(entity => Math.Abs(entity.Value - rate) == 0).Key;
+            var tokenPoolsIndexerDto =
+                tokenPoolIndexerListDto.First(x => x.TokenPoolConfig.StakeTokenContract == stakeTokenContract);
+            tokenPoolIndexerListDto = new List<TokenPoolsIndexerDto> { tokenPoolsIndexerDto };
+        }
+
+        var poolIds = tokenPoolIndexerListDto.Select(x => x.PoolId).ToList();
+        var stakedInfoIndexerList = await _tokenStakingProvider.GetStakedInfoAsync(tokenName, address, poolIds);
+        var tokenStakedIndexerDtos = stakedInfoIndexerList.ToDictionary(x => x.PoolId, x => x);
+        foreach (var tokenPoolIndexerDto in tokenPoolIndexerListDto)
+        {
+            var yearlyRewards = YearlyBlocks * tokenPoolIndexerDto.TokenPoolConfig.RewardPerBlock;
+            var tokenPoolStakedSum = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
+                { PoolId = tokenPoolIndexerDto.PoolId, ChainId = chainId });
+            var usdtRate =
+                await _priceProvider.GetGateIoPriceAsync(
+                    $"{tokenPoolIndexerDto.TokenPoolConfig.RewardToken.ToUpper()}_USDT");
+
+            if (!tokenStakedIndexerDtos.TryGetValue(tokenPoolIndexerDto.PoolId, out var stakedInfoIndexerDtos))
             {
-                var subStakeInfoDto = _objectMapper.Map<SubStakeInfoIndexerDto, SubStakeInfoDto>(dto);
-                subStakeInfoDto.Apr = tokenPoolStakedSum == 0
-                    ? 0
-                    : (double)yearlyRewards / tokenPoolStakedSum * (1 + (double)dto.Period / 86400 /
-                        tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor);
-                return subStakeInfoDto;
-            }).ToList(),
-        };
-        stakeInfoDto.StakeApr = stakeInfoDto.SubStakeInfos.Count == 0
-            ? 0
-            : stakeInfoDto.SubStakeInfos.Sum(x => x.Apr) / stakeInfoDto.SubStakeInfos.Count;
-        return stakeInfoDto;
+                stakedInfoIndexerDtos = new TokenStakedIndexerDto()
+                {
+                    StakingToken = tokenPoolIndexerDto.TokenPoolConfig.StakingToken
+                };
+            }
+
+            var stakeInfoDto = new EarlyStakeInfoDto
+            {
+                StakeId = stakedInfoIndexerDtos.StakeId,
+                PoolId = tokenPoolIndexerDto.PoolId,
+                StakeSymbol = string.IsNullOrEmpty(stakedInfoIndexerDtos.StakingToken)
+                    ? tokenName
+                    : stakedInfoIndexerDtos.StakingToken,
+                UnlockTime = stakedInfoIndexerDtos.UnlockTime,
+                LastOperationTime = stakedInfoIndexerDtos.LastOperationTime,
+                StakingPeriod = stakedInfoIndexerDtos.StakingPeriod,
+                Staked = stakedInfoIndexerDtos.LockState == LockState.Unlock
+                    ? "0"
+                    : stakedInfoIndexerDtos.SubStakeInfos.Sum(x => x.StakedAmount + x.EarlyStakedAmount).ToString(),
+                YearlyRewards = yearlyRewards,
+                FixedBoostFactor = tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor,
+                UnlockWindowDuration = tokenPoolIndexerDto.TokenPoolConfig.UnlockWindowDuration,
+                MinimumClaimAmount = tokenPoolIndexerDto.TokenPoolConfig.MinimumClaimAmount,
+                EarnedSymbol = tokenPoolIndexerDto.TokenPoolConfig.RewardToken,
+                UsdRate = usdtRate,
+                SubStakeInfos = stakedInfoIndexerDtos.SubStakeInfos.Select(dto =>
+                {
+                    var subStakeInfoDto = _objectMapper.Map<SubStakeInfoIndexerDto, SubStakeInfoDto>(dto);
+                    subStakeInfoDto.Apr = tokenPoolStakedSum == 0
+                        ? 0
+                        : (double)yearlyRewards / tokenPoolStakedSum * (1 + (double)dto.Period / 86400 /
+                            tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor);
+                    return subStakeInfoDto;
+                }).ToList(),
+            };
+            stakeInfoDto.StakeApr = stakeInfoDto.SubStakeInfos.Count == 0
+                ? 0
+                : stakeInfoDto.SubStakeInfos.Sum(x => x.Apr) / stakeInfoDto.SubStakeInfos.Count;
+
+            result.Add(stakeInfoDto);
+        }
+
+        return result;
     }
 
 

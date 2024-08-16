@@ -11,6 +11,7 @@ using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.Rewards.Provider;
 using GraphQL;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver.Linq;
 using Nest;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -19,15 +20,16 @@ namespace EcoEarnServer.PointsStaking.Provider;
 
 public interface IPointsStakingProvider
 {
-    Task<List<PointsSnapshotIndex>> GetProjectItemAggDataAsync(string snapshotDate, int skipCount, int maxResultCount);
-    Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name, List<string> poolIds = null);
+    Task<long> GetProjectItemAggDataAsync(string snapshotDate, string dappId);
+    Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name, string dappId = "", List<string> poolIds = null);
 
     Task<Dictionary<string, string>> GetPointsPoolStakeSumDicAsync(List<string> poolIds);
-    Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address);
-    Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address);
+    Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address, string dappId = "");
+    Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address, string dappId = "");
     Task<List<RewardsListIndexerDto>> GetRealClaimInfoListAsync(List<string> seeds, string address, string poolId);
     Task<List<PointsPoolClaimRecordIndex>> GetClaimingListAsync(string address, string poolId);
     Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string inputAddress);
+    Task<List<PointsPoolStakeSumIndex>> GetPointsPoolStakeSumAsync();
 }
 
 public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependency
@@ -36,6 +38,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
     private readonly INESTRepository<PointsPoolStakeSumIndex, string> _poolStakeSumRepository;
     private readonly INESTRepository<PointsPoolAddressStakeIndex, string> _addressStakeSumRepository;
     private readonly INESTRepository<PointsStakeRewardsSumIndex, string> _addressStakeRewardsRepository;
+    private readonly INESTRepository<PointsPoolStakeSumIndex, string> _stakeSumRepository;
     private readonly INESTRepository<PointsPoolClaimRecordIndex, string> _claimRecordRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly IGraphQlHelper _graphQlHelper;
@@ -47,7 +50,8 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         INESTRepository<PointsPoolStakeSumIndex, string> poolStakeSumRepository,
         INESTRepository<PointsPoolAddressStakeIndex, string> addressStakeSumRepository,
         INESTRepository<PointsStakeRewardsSumIndex, string> addressStakeRewardsRepository,
-        INESTRepository<PointsPoolClaimRecordIndex, string> claimRecordRepository)
+        INESTRepository<PointsPoolClaimRecordIndex, string> claimRecordRepository,
+        INESTRepository<PointsPoolStakeSumIndex, string> stakeSumRepository)
     {
         _pointsSnapshotRepository = pointsSnapshotRepository;
         _objectMapper = objectMapper;
@@ -57,30 +61,25 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         _addressStakeSumRepository = addressStakeSumRepository;
         _addressStakeRewardsRepository = addressStakeRewardsRepository;
         _claimRecordRepository = claimRecordRepository;
+        _stakeSumRepository = stakeSumRepository;
     }
 
-    public async Task<List<PointsSnapshotIndex>> GetProjectItemAggDataAsync(string snapshotDate, int skipCount,
-        int maxResultCount)
+    public async Task<long> GetProjectItemAggDataAsync(string snapshotDate, string dappId)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<PointsSnapshotIndex>, QueryContainer>>();
-
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.SnapshotDate).Value(snapshotDate)));
-
-        QueryContainer Filter(QueryContainerDescriptor<PointsSnapshotIndex> f) => f.Bool(b => b.Must(mustQuery));
-        var (total, list) = await _pointsSnapshotRepository.GetListAsync(Filter,
-            skip: skipCount, limit: maxResultCount);
-        return list;
+        var list = await GetAllStakeInfoAsync(dappId);
+        return list.Select(x => x.Address).Distinct().Count();
     }
 
-    public async Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name, List<string> poolIds = null)
+    public async Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name, string dappId = "",
+        List<string> poolIds = null)
     {
         try
         {
             var indexerResult = await _graphQlHelper.QueryAsync<PointsPoolsQuery>(new GraphQLRequest
             {
                 Query =
-                    @"query($name:String!, $poolIds:[String!]!, $skipCount:Int!,$maxResultCount:Int!){
-                    getPointsPoolList(input: {name:$name,poolIds:$poolIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    @"query($name:String!, $dappId:String!, $poolIds:[String!]!, $skipCount:Int!,$maxResultCount:Int!){
+                    getPointsPoolList(input: {name:$name,dappId:$dappId,poolIds:$poolIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
                         dappId,
@@ -94,7 +93,8 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
             }",
                 Variables = new
                 {
-                    name = string.IsNullOrEmpty(name) ? "" : name, poolIds = poolIds ?? new List<string>(),
+                    name = string.IsNullOrEmpty(name) ? "" : name, dappId = dappId,
+                    poolIds = poolIds ?? new List<string>(),
                     skipCount = 0, maxResultCount = 5000
                 }
             });
@@ -121,7 +121,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         return list.ToDictionary(x => x.PoolId, x => x.StakeAmount);
     }
 
-    public async Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address)
+    public async Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address, string dappId = "")
     {
         if (string.IsNullOrEmpty(address))
         {
@@ -131,6 +131,10 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         var mustQuery = new List<Func<QueryContainerDescriptor<PointsPoolAddressStakeIndex>, QueryContainer>>();
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
+        if (!string.IsNullOrEmpty(dappId))
+        {
+            mustQuery.Add(q => q.Term(i => i.Field(f => f.DappId).Value(dappId)));
+        }
 
         QueryContainer Filter(QueryContainerDescriptor<PointsPoolAddressStakeIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
@@ -141,7 +145,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         return list.ToDictionary(x => GuidHelper.GenerateId(x.Address, x.PoolId), x => x.StakeAmount);
     }
 
-    public async Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address)
+    public async Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address, string dappId = "")
     {
         if (string.IsNullOrEmpty(address))
         {
@@ -151,6 +155,10 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         var mustQuery = new List<Func<QueryContainerDescriptor<PointsStakeRewardsSumIndex>, QueryContainer>>();
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
+        if (!string.IsNullOrEmpty(dappId))
+        {
+            mustQuery.Add(q => q.Term(i => i.Field(f => f.DappId).Value(dappId)));
+        }
 
         QueryContainer Filter(QueryContainerDescriptor<PointsStakeRewardsSumIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
@@ -226,7 +234,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.PoolId).Value(poolId)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.ClaimStatus).Value(ClaimStatus.Claiming)));
- 
+
         QueryContainer Filter(QueryContainerDescriptor<PointsPoolClaimRecordIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
@@ -237,7 +245,6 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
 
     public async Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string address)
     {
-        
         if (string.IsNullOrEmpty(address))
         {
             return new List<PointsStakeRewardsSumIndex>();
@@ -246,12 +253,49 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         var mustQuery = new List<Func<QueryContainerDescriptor<PointsStakeRewardsSumIndex>, QueryContainer>>();
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
- 
+
         QueryContainer Filter(QueryContainerDescriptor<PointsStakeRewardsSumIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
         var (total, list) = await _addressStakeRewardsRepository.GetListAsync(Filter, skip: 0, limit: 5000);
 
         return list;
+    }
+
+    public async Task<List<PointsPoolStakeSumIndex>> GetPointsPoolStakeSumAsync()
+    {
+        var (total, list) = await _stakeSumRepository.GetListAsync();
+        return list;
+    }
+
+    private async Task<List<PointsPoolAddressStakeIndex>> GetAllStakeInfoAsync(string dappId)
+    {
+        var res = new List<PointsPoolAddressStakeIndex>();
+        var skipCount = 0;
+        var maxResultCount = 5000;
+        List<PointsPoolAddressStakeIndex> list;
+        do
+        {
+            var mustQuery = new List<Func<QueryContainerDescriptor<PointsPoolAddressStakeIndex>, QueryContainer>>();
+
+            mustQuery.Add(q => q.Term(i => i.Field(f => f.DappId).Value(dappId)));
+
+            QueryContainer Filter(QueryContainerDescriptor<PointsPoolAddressStakeIndex> f) =>
+                f.Bool(b => b.Must(mustQuery));
+
+            var result = await _addressStakeSumRepository.GetListAsync(Filter, skip: skipCount, limit: maxResultCount);
+
+            list = result.Item2;
+            var count = list.Count;
+            res.AddRange(list);
+            if (list.IsNullOrEmpty() || count < maxResultCount)
+            {
+                break;
+            }
+
+            skipCount += count;
+        } while (!list.IsNullOrEmpty());
+
+        return res;
     }
 }
