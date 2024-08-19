@@ -172,6 +172,8 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             throw new UserFriendlyException("generating signature.");
         }
 
+        var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("", "", new List<string> { poolId });
+        var dappId = pointsPoolsIndexerDtos.First()?.DappId;
         var today = DateTime.UtcNow.ToString("yyyyMMdd");
         var id = GuidHelper.GenerateId(address, poolId, today);
         var pointsPoolClaimRecordGrain = _clusterClient.GetGrain<IPointsPoolClaimRecordGrain>(id);
@@ -180,6 +182,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         {
             _logger.LogWarning(
                 "already generated signature. id: {id}", id);
+            await ClearStakeRewardsCacheAsync(address, dappId);
             return new ClaimAmountSignatureDto
             {
                 Seed = HashHelper.ComputeFrom(record.Seed).ToHex(),
@@ -258,6 +261,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         await _distributedEventBus.PublishAsync(
             _objectMapper.Map<PointsPoolClaimRecordDto, PointsPoolClaimRecordEto>(saveResult.Data));
 
+        await ClearStakeRewardsCacheAsync(address, dappId);
         return new ClaimAmountSignatureDto
         {
             Seed = HashHelper.ComputeFrom(seed).ToHex(),
@@ -320,6 +324,12 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
 
         return transactionOutput.TransactionId;
+    }
+
+    private async Task ClearStakeRewardsCacheAsync(string address, string dappId)
+    {
+        await ConnectAsync();
+        await RedisDatabase.KeyDeleteAsync(PointsPoolStakeRewardsRedisKeyPrefix + address + ":" + dappId);
     }
 
     public async Task<List<EarlyStakeInfoDto>> GetEarlyStakeInfoAsync(GetEarlyStakeInfoInput input)
@@ -416,9 +426,9 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         {
             return _serializer.Deserialize<Dictionary<string, ProjectItemAggDto>>(redisValue);
         }
-        
+
         var pointsPoolStakeSumList = await _pointsStakingProvider.GetPointsPoolStakeSumAsync();
-        
+
         var projectItemAggDataDic = pointsPoolStakeSumList.GroupBy(x => x.DappId)
             .ToDictionary(g => g.Key, g =>
             {
@@ -472,7 +482,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
 
         var result = await _pointsStakingProvider.GetAddressStakeRewardsDicAsync(address, dappId);
         await RedisDatabase.StringSetAsync(PointsPoolStakeRewardsRedisKeyPrefix + address + ":" + dappId,
-            _serializer.Serialize(result), TimeSpan.FromMinutes(1));
+            _serializer.Serialize(result), TimeSpan.FromMinutes(10));
         return result;
     }
 
