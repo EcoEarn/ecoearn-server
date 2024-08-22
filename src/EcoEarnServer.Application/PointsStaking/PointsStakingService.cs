@@ -352,7 +352,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         };
     }
 
-    public async Task<string> GetRewardsAsync(GetAddressRewardsInput input)
+    public async Task<AddressRewardsSumDto> GetRewardsAsync(GetAddressRewardsInput input)
     {
         var pointsStakeRewardsList = await GetAllPointsStakeRewardsList(input.Address, input.DappId);
         var rewardsInfoIndexerDtos = await GetAllPointsClaimedRewardsList(input.Address, input.DappId);
@@ -360,7 +360,10 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             (current, pointsStakeRewardsSumIndex) => current + BigInteger.Parse(pointsStakeRewardsSumIndex.Rewards));
         var claimedRewardsSum = rewardsInfoIndexerDtos.Aggregate(BigInteger.Zero,
             (current, rewardsInfoIndexerDto) => current + BigInteger.Parse(rewardsInfoIndexerDto.ClaimedAmount));
-        return (stakeRewardsSum + claimedRewardsSum).ToString();
+        return new AddressRewardsSumDto()
+        {
+            TotalReward = (stakeRewardsSum + claimedRewardsSum).ToString(),
+        };
     }
 
 

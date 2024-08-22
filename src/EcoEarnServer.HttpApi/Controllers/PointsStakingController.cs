@@ -57,7 +57,7 @@ public class PointsStakingController : EcoEarnServerController
     }
     
     [HttpPost("rewards")]
-    public async Task<string> GetRewardsAsync(GetAddressRewardsInput input)
+    public async Task<AddressRewardsSumDto> GetRewardsAsync(GetAddressRewardsInput input)
     {
         return await _pointsStakingService.GetRewardsAsync(input);
     }
