@@ -14,12 +14,15 @@ public class PointsSnapshotOptions
     public int BatchQueryCount { get; set; } = 5000;
 
     public string PointsServerBaseUrl { get; set; }
+    public string SchrodingerServerBaseUrl { get; set; }
     public string DappId { get; set; }
     public int SettleRewardsBeforeDays { get; set; } = -1;
     public int UpdatePoolStakeSumWorkerDelayPeriod { get; set; } = 10000;
     public bool SettleRewards { get; set; }
 
     public Dictionary<string, ElevenSymbolSubAddressDto> ElevenSymbolSubAddressDic { get; set; } 
+    public bool SchrodingerUnBoundPointsSwitch { get; set; } 
+    public string SchrodingerDappId { get; set; } 
     public List<string> NineSymbolContractAddressList { get; set; } 
 }
 
