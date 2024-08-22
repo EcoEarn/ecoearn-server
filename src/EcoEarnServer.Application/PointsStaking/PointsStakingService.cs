@@ -356,13 +356,13 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
     {
         var pointsStakeRewardsList = await GetAllPointsStakeRewardsList(input.Address, input.DappId);
         var rewardsInfoIndexerDtos = await GetAllPointsClaimedRewardsList(input.Address, input.DappId);
-        var stakeRewardsSum = pointsStakeRewardsList.Aggregate(BigInteger.Zero,
-            (current, pointsStakeRewardsSumIndex) => current + BigInteger.Parse(pointsStakeRewardsSumIndex.Rewards));
+        var stakeRewardsSum = pointsStakeRewardsList.Sum(x => decimal.Parse(x.Rewards));
         var claimedRewardsSum = rewardsInfoIndexerDtos.Aggregate(BigInteger.Zero,
             (current, rewardsInfoIndexerDto) => current + BigInteger.Parse(rewardsInfoIndexerDto.ClaimedAmount));
+        var claimedRewardsSumStr = decimal.Parse((claimedRewardsSum / new BigInteger(100000000)).ToString());
         return new AddressRewardsSumDto()
         {
-            TotalReward = (stakeRewardsSum + claimedRewardsSum).ToString(),
+            TotalReward = (stakeRewardsSum + claimedRewardsSumStr).ToString(CultureInfo.InvariantCulture),
         };
     }
 
