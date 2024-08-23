@@ -21,6 +21,7 @@ public class PointsSnapshotOptions
     public bool SettleRewards { get; set; }
 
     public Dictionary<string, ElevenSymbolSubAddressDto> ElevenSymbolSubAddressDic { get; set; } 
+    public Dictionary<string, List<NoSettleInfoDto>> NoSettleInfoDic { get; set; } 
     public bool SchrodingerUnBoundPointsSwitch { get; set; } 
     public string SchrodingerDappId { get; set; } 
     public List<string> NineSymbolContractAddressList { get; set; } 
@@ -30,4 +31,10 @@ public class ElevenSymbolSubAddressDto
 {
     public string Address { get; set; } 
     public string Amount { get; set; } 
+}
+
+public class NoSettleInfoDto
+{
+    public string Address { get; set; } 
+    public string Domain { get; set; } 
 }

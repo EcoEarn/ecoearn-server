@@ -29,15 +29,18 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
     private readonly IDistributedCacheSerializer _serializer;
     private readonly IHttpProvider _httpProvider;
     private readonly LpPoolRateOptions _lpPoolRateOptions;
+    private readonly HamsterServerOptions _hamsterServerOptions;
 
     public PriceProvider(IOptions<RedisCacheOptions> optionsAccessor, ILogger<PriceProvider> logger,
         IDistributedCacheSerializer serializer, IHttpProvider httpProvider,
-        IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions) : base(
+        IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions,
+        IOptionsSnapshot<HamsterServerOptions> hamsterServerOptions) : base(
         optionsAccessor)
     {
         _logger = logger;
         _serializer = serializer;
         _httpProvider = httpProvider;
+        _hamsterServerOptions = hamsterServerOptions.Value;
         _lpPoolRateOptions = lpPoolRateOptions.Value;
     }
 
@@ -49,6 +52,7 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
         {
             currencyPair = mappingSymbol + "_" + split[1];
         }
+
         await ConnectAsync();
         var redisValue = await RedisDatabase.StringGetAsync(currencyPair);
         if (redisValue.HasValue)
@@ -70,6 +74,10 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
         catch (Exception e)
         {
             _logger.LogWarning("[PriceDataProvider][GateIo] Parse response error.");
+            if (currencyPair.ToUpper().Contains(_hamsterServerOptions.Symbol))
+            {
+                price = await GetHamsterSymbolUsdPriceAsync();
+            }
         }
 
         await RedisDatabase.StringSetAsync(currencyPair, _serializer.Serialize(price), TimeSpan.FromMinutes(2));
@@ -124,5 +132,23 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
             _logger.LogError("[PriceDataProvider][GetLpPriceAsync] Parse response error.");
             return 0;
         }
+    }
+
+    private async Task<double> GetHamsterSymbolUsdPriceAsync()
+    {
+        var apiInfo = new ApiInfo(HttpMethod.Get, "api/app/hamster-pass/price");
+        var usdPrice = 0d;
+        try
+        {
+            var resp = await _httpProvider.InvokeAsync<CommonResponseDto<HamsterPriceDataDto>>(
+                _hamsterServerOptions.BaseUrl, apiInfo);
+            usdPrice = resp.Data.AcornsInUsd;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "get hamster symbol usd price fail.");
+        }
+
+        return usdPrice;
     }
 }

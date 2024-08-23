@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using EcoEarnServer.Background.Options;
 using EcoEarnServer.Background.Provider;
 using EcoEarnServer.Background.Provider.Dtos;
+using EcoEarnServer.Common;
 using EcoEarnServer.Grains.Grain.PointsPool;
 using EcoEarnServer.PointsSnapshot;
 using EcoEarnServer.PointsStaking.Provider;
@@ -154,7 +154,14 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             var elevenSum = BigInteger.Zero;
             var twelveSum = BigInteger.Zero;
             var dappId = snapshotList.DappId;
-            foreach (var pointsSnapshot in snapshotList.Rewards)
+
+            var noSettleInfoDic = _pointsSnapshotOptions.NoSettleInfoDic;
+            var noSettleInfos = noSettleInfoDic.GetOrDefault(dappId) ?? new List<NoSettleInfoDto>();
+            var ids = noSettleInfos
+                .Select(x => GuidHelper.GenerateId(x.Domain, x.Address))
+                .ToList();
+            foreach (var pointsSnapshot in snapshotList.Rewards.Where(pointsSnapshot =>
+                         !ids.Contains(GuidHelper.GenerateId(pointsSnapshot.Domain, pointsSnapshot.Address))))
             {
                 firstSum += BigInteger.Parse(pointsSnapshot.FirstSymbolAmount);
                 secondSum += BigInteger.Parse(pointsSnapshot.SecondSymbolAmount);
