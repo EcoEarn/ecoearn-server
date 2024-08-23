@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\common.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RootNamespace>EcoEarnServer</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\EcoEarnServer.Application\EcoEarnServer.Application.csproj" />
+    <ProjectReference Include="..\..\src\EcoEarnServer.EntityEventHandler\EcoEarnServer.EntityEventHandler.csproj" />
+    <ProjectReference Include="..\EcoEarnServer.Domain.Tests\EcoEarnServer.Domain.Tests.csproj" />
+    <ProjectReference Include="..\EcoEarnServer.Orleans.TestBase\EcoEarnServer.Orleans.TestBase.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
+    <PackageReference Include="Moq" Version="4.18.4" />
+    <PackageReference Include="coverlet.collector" Version="3.1.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+
+</Project>

@@ -1,1 +1,1 @@
-# ecoearn-server
+# EcoEarnServer
