@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using EcoEarnServer.Common.Dtos;
 using EcoEarnServer.Rewards.Dtos;
 using Volo.Abp.Application.Dtos;
 using FilterItemDto = EcoEarnServer.Rewards.Dtos.FilterItemDto;
@@ -23,4 +24,5 @@ public interface IRewardsService
     Task<RewardsSignatureDto> RemoveLiquiditySignatureAsync(LiquiditySignatureInput input);
     Task<string> RemoveLiquidityAsync(RewardsTransactionInput input);
     Task<List<FilterItemDto>> GetFilterItemsAsync();
+    Task TransactionRecordAsync(TransactionRecordDto input);
 }

@@ -5,6 +5,7 @@ using EcoEarnServer.PointsPool;
 using EcoEarnServer.PointsSnapshot;
 using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.Rewards;
+using EcoEarnServer.TransactionRecord;
 using EcoEarnServer.Users;
 using EcoEarnServer.Users.Eto;
 
@@ -25,5 +26,6 @@ public class EcoEarnServerEventHandlerAutoMapperProfile : Profile
         CreateMap<ClaimInfoDto, ClaimInfo>();
         CreateMap<BizMetricsEto, BizMetricsIndex>();
         CreateMap<UserInformationEto, UserIndex>();
+        CreateMap<TransactionRecordEto, TransactionRecordIndex>();
     }
 }

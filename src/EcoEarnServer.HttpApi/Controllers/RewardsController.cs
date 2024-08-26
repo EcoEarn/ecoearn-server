@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using EcoEarnServer.Common.Dtos;
 using EcoEarnServer.Rewards;
 using EcoEarnServer.Rewards.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -75,7 +76,7 @@ public class RewardsController : EcoEarnServerController
     {
         return await _rewardsService.CancelSignatureAsync(input);
     }
-    
+
     [HttpPost("liquidity/stake/signature")]
     public async Task<RewardsSignatureDto> LiquidityStakeSignatureAsync(LiquiditySignatureInput input)
     {
@@ -87,7 +88,7 @@ public class RewardsController : EcoEarnServerController
     {
         return await _rewardsService.LiquidityStakeAsync(input);
     }
-    
+
     [HttpPost("remove/liquidity/signature")]
     public async Task<RewardsSignatureDto> RemoveLiquiditySignatureAsync(LiquiditySignatureInput input)
     {
@@ -99,10 +100,16 @@ public class RewardsController : EcoEarnServerController
     {
         return await _rewardsService.RemoveLiquidityAsync(input);
     }
-    
+
     [HttpGet("filter/items")]
     public async Task<List<FilterItemDto>> GetFilterItemsAsync()
     {
         return await _rewardsService.GetFilterItemsAsync();
+    }
+
+    [HttpPost("transaction/record")]
+    public async Task TransactionRecordAsync(TransactionRecordDto input)
+    {
+        await _rewardsService.TransactionRecordAsync(input);
     }
 }
