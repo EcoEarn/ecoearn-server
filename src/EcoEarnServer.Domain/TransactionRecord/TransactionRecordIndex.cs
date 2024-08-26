@@ -10,6 +10,7 @@ public class TransactionRecordIndex : AbstractEntity<string>, IIndexBuild
     public TransactionType TransactionType { get; set; }
     [Keyword] public string Amount { get; set; }
     public long CreateTime { get; set; }
+    public bool IsFirstTransaction { get; set; }
 }
 
 public enum TransactionType

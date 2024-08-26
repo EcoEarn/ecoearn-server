@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using EcoEarnServer.TransactionRecord;
 using Microsoft.Extensions.Logging;
+using Nest;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
@@ -30,6 +32,7 @@ public class TransactionRecordHandler : IDistributedEventHandler<TransactionReco
         try
         {
             var index = _objectMapper.Map<TransactionRecordEto, TransactionRecordIndex>(eventData);
+            index.IsFirstTransaction = await IsFirstTransaction(eventData.Address);
             await _repository.AddOrUpdateAsync(index);
             _logger.LogDebug("HandleEventAsync TransactionRecordEto success.");
         }
@@ -38,5 +41,16 @@ public class TransactionRecordHandler : IDistributedEventHandler<TransactionReco
             _logger.LogError(ex, "HandleEventAsync TransactionRecordEto fail. {Message}",
                 JsonConvert.SerializeObject(eventData));
         }
+    }
+
+    private async Task<bool> IsFirstTransaction(string address)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<TransactionRecordIndex>, QueryContainer>>();
+
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.Address).Terms(address)));
+
+        QueryContainer Filter(QueryContainerDescriptor<TransactionRecordIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var countResponse = await _repository.CountAsync(Filter);
+        return countResponse.Count == 0;
     }
 }
