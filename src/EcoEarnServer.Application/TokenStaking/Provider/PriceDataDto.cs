@@ -13,6 +13,12 @@ public class LpPriceDto
     public List<LpPriceItemDto> Items { get; set; }
 }
 
+public class HamsterPriceDataDto
+{
+    public double AcornsInElf { get; set; }
+    public double ElfInUsd { get; set; }
+    public double AcornsInUsd { get; set; }
+}
 public class LpPriceItemDto
 {
     public double Price { get; set; }

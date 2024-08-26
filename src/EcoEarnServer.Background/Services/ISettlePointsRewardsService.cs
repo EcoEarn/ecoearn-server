@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using EcoEarnServer.Background.Options;
 using EcoEarnServer.Background.Provider;
 using EcoEarnServer.Background.Provider.Dtos;
+using EcoEarnServer.Common;
 using EcoEarnServer.Grains.Grain.PointsPool;
 using EcoEarnServer.PointsSnapshot;
 using EcoEarnServer.PointsStaking.Provider;
@@ -14,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NUglify.Helpers;
+using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.ObjectMapping;
@@ -152,7 +154,14 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             var elevenSum = BigInteger.Zero;
             var twelveSum = BigInteger.Zero;
             var dappId = snapshotList.DappId;
-            foreach (var pointsSnapshot in snapshotList.Rewards)
+
+            var noSettleInfoDic = _pointsSnapshotOptions.NoSettleInfoDic;
+            var noSettleInfos = noSettleInfoDic?.GetOrDefault(dappId) ?? new List<NoSettleInfoDto>();
+            var ids = noSettleInfos
+                .Select(x => GuidHelper.GenerateId(x.Domain, x.Address))
+                .ToList();
+            foreach (var pointsSnapshot in snapshotList.Rewards.Where(pointsSnapshot =>
+                         !ids.Contains(GuidHelper.GenerateId(pointsSnapshot.Domain, pointsSnapshot.Address))))
             {
                 firstSum += BigInteger.Parse(pointsSnapshot.FirstSymbolAmount);
                 secondSum += BigInteger.Parse(pointsSnapshot.SecondSymbolAmount);
@@ -166,6 +175,22 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
                 tenSum += BigInteger.Parse(pointsSnapshot.TenSymbolAmount);
                 elevenSum += BigInteger.Parse(pointsSnapshot.ElevenSymbolAmount);
                 twelveSum += BigInteger.Parse(pointsSnapshot.TwelveSymbolAmount);
+            }
+
+            if (dappId == _pointsSnapshotOptions.SchrodingerDappId &&
+                _pointsSnapshotOptions.SchrodingerUnBoundPointsSwitch)
+            {
+                try
+                {
+                    var unboundEvmAddressPoints = await _settlePointsRewardsProvider.GetUnboundEvmAddressPointsAsync();
+                    tenSum += new BigInteger(Convert.ToDecimal(unboundEvmAddressPoints));
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "get un bound evm address amount fail.");
+                    await _larkAlertProvider.SendLarkFailAlertAsync(e.Message);
+                    throw new UserFriendlyException("get un bound evm address amount fail.");
+                }
             }
 
             foreach (var pointsPoolStakeSumDto in poolStakeDic.Values.Where(x => x.DappId == dappId))
