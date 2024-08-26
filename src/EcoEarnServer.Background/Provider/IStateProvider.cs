@@ -43,7 +43,7 @@ public class StateProvider : AbpRedisCache, IStateProvider, ISingletonDependency
         var stateDto = _serializer.Deserialize<StateDto>(redisValue);
         if (isSettle)
         {
-            return stateDto.State && DateTime.UtcNow.ToUtcMilliSeconds() - stateDto.FinishTime > 5 * 60 * 1000;
+            return stateDto.State && DateTime.UtcNow.ToUtcMilliSeconds() - stateDto.FinishTime > 1 * 60 * 1000;
         }
         return stateDto.State;
     }

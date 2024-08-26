@@ -17,6 +17,8 @@ using EcoEarnServer.PointsPool;
 using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.PointsStaking.Provider;
+using EcoEarnServer.Rewards.Dtos;
+using EcoEarnServer.Rewards.Provider;
 using EcoEarnServer.TokenStaking;
 using Google.Protobuf;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
@@ -59,6 +61,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
     private readonly IAbpDistributedLock _distributedLock;
     private readonly PoolTextWordOptions _poolTextWordOptions;
     private readonly IDistributedCacheSerializer _serializer;
+    private readonly IRewardsProvider _rewardsProvider;
 
     public PointsStakingService(IOptionsSnapshot<ProjectItemOptions> projectItemOptions, IObjectMapper objectMapper,
         IPointsStakingProvider pointsStakingProvider, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
@@ -67,7 +70,8 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         ITokenStakingService tokenStakingService, IOptionsSnapshot<ChainOption> chainOption,
         ISecretProvider secretProvider, IAbpDistributedLock distributedLock,
         IOptionsSnapshot<PoolTextWordOptions> poolTextWordOptions,
-        IOptions<RedisCacheOptions> optionsAccessor, IDistributedCacheSerializer serializer) : base(optionsAccessor)
+        IOptions<RedisCacheOptions> optionsAccessor, IDistributedCacheSerializer serializer,
+        IRewardsProvider rewardsProvider) : base(optionsAccessor)
     {
         _objectMapper = objectMapper;
         _pointsStakingProvider = pointsStakingProvider;
@@ -79,6 +83,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         _secretProvider = secretProvider;
         _distributedLock = distributedLock;
         _serializer = serializer;
+        _rewardsProvider = rewardsProvider;
         _poolTextWordOptions = poolTextWordOptions.Value;
         _chainOption = chainOption.Value;
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
@@ -172,7 +177,8 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             throw new UserFriendlyException("generating signature.");
         }
 
-        var pointsPoolsIndexerDtos = await _pointsStakingProvider.GetPointsPoolsAsync("", "", new List<string> { poolId });
+        var pointsPoolsIndexerDtos =
+            await _pointsStakingProvider.GetPointsPoolsAsync("", "", new List<string> { poolId });
         var dappId = pointsPoolsIndexerDtos.First()?.DappId;
         var today = DateTime.UtcNow.ToString("yyyyMMdd");
         var id = GuidHelper.GenerateId(address, poolId, today);
@@ -339,11 +345,87 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
 
     public async Task<AddressRewardsDto> GetAddressRewardsAsync(GetAddressRewardsInput input)
     {
-        var pointsStakeRewardsList = await _pointsStakingProvider.GetAddressRewardsAsync(input.Address);
+        var pointsStakeRewardsList = await GetAllPointsStakeRewardsList(input.Address, input.DappId);
         return new AddressRewardsDto
         {
-            Reward = pointsStakeRewardsList.ToDictionary(x => x.PoolName, x => x.Rewards)
+            Reward = pointsStakeRewardsList.ToDictionary(x => x.PoolName,
+                x => (decimal.Parse(x.Rewards) * decimal.Parse("0.9")).ToString(CultureInfo.InvariantCulture))
         };
+    }
+
+    public async Task<AddressRewardsSumDto> GetRewardsAsync(GetAddressRewardsInput input)
+    {
+        var pointsStakeRewardsList = await GetAllPointsStakeRewardsList(input.Address, input.DappId);
+        var rewardsInfoIndexerDtos = await GetAllPointsClaimedRewardsList(input.Address, input.DappId);
+        var stakeRewardsSum = pointsStakeRewardsList.Sum(x => decimal.Parse(x.Rewards));
+        var claimedRewardsSum = rewardsInfoIndexerDtos.Aggregate(BigInteger.Zero,
+            (current, rewardsInfoIndexerDto) => current + BigInteger.Parse(rewardsInfoIndexerDto.ClaimedAmount));
+        var claimedRewardsSumStr = decimal.Parse((claimedRewardsSum / new BigInteger(100000000)).ToString());
+        return new AddressRewardsSumDto()
+        {
+            TotalReward =
+                ((stakeRewardsSum + claimedRewardsSumStr) * decimal.Parse("0.9"))
+                .ToString(CultureInfo.InvariantCulture),
+        };
+    }
+
+
+    private async Task<List<PointsStakeRewardsSumIndex>> GetAllPointsStakeRewardsList(string address, string dappId)
+    {
+        if (string.IsNullOrEmpty(address) || string.IsNullOrEmpty(dappId))
+        {
+            return new List<PointsStakeRewardsSumIndex>();
+        }
+
+        var res = new List<PointsStakeRewardsSumIndex>();
+        var skipCount = 0;
+        var maxResultCount = 5000;
+        List<PointsStakeRewardsSumIndex> list;
+        do
+        {
+            var rewardsListIndexerResult =
+                await _pointsStakingProvider.GetAddressRewardsAsync(address, dappId, skipCount, maxResultCount);
+            list = rewardsListIndexerResult;
+            var count = list.Count;
+            res.AddRange(list);
+            if (list.IsNullOrEmpty() || count < maxResultCount)
+            {
+                break;
+            }
+
+            skipCount += count;
+        } while (!list.IsNullOrEmpty());
+
+        return res;
+    }
+
+    private async Task<List<RewardsInfoIndexerDto>> GetAllPointsClaimedRewardsList(string address, string dappId)
+    {
+        if (string.IsNullOrEmpty(address) || string.IsNullOrEmpty(dappId))
+        {
+            return new List<RewardsInfoIndexerDto>();
+        }
+
+        var res = new List<RewardsInfoIndexerDto>();
+        var skipCount = 0;
+        var maxResultCount = 5000;
+        List<RewardsInfoIndexerDto> list;
+        do
+        {
+            var rewardsListIndexerResult = await _rewardsProvider.GetRewardsInfoListAsync(PoolTypeEnums.Points, address,
+                dappId, skipCount, maxResultCount);
+            list = rewardsListIndexerResult.Data;
+            var count = list.Count;
+            res.AddRange(list);
+            if (list.IsNullOrEmpty() || count < maxResultCount)
+            {
+                break;
+            }
+
+            skipCount += count;
+        } while (!list.IsNullOrEmpty());
+
+        return res;
     }
 
     private async Task UpdateClaimStatusAsync(string address, string poolId, string oldId, string date)

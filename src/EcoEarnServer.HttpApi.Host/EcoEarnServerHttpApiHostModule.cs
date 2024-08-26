@@ -65,6 +65,7 @@ namespace EcoEarnServer
             Configure<LpPoolRateOptions>(configuration.GetSection("LpPoolRate"));
             Configure<EcoEarnContractOptions>(configuration.GetSection("EcoEarnContract"));
             Configure<SecurityServerOptions>(configuration.GetSection("SecurityServer"));
+            Configure<HamsterServerOptions>(configuration.GetSection("HamsterServer"));
             Configure<PoolInfoOptions>(configuration.GetSection("PoolInfo"));
 
             ConfigureConventionalControllers();

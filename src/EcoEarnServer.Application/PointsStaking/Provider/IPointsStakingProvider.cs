@@ -11,7 +11,6 @@ using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.Rewards.Provider;
 using GraphQL;
 using Microsoft.Extensions.Logging;
-using MongoDB.Driver.Linq;
 using Nest;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -28,7 +27,7 @@ public interface IPointsStakingProvider
     Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address, string dappId = "");
     Task<List<RewardsListIndexerDto>> GetRealClaimInfoListAsync(List<string> seeds, string address, string poolId);
     Task<List<PointsPoolClaimRecordIndex>> GetClaimingListAsync(string address, string poolId);
-    Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string inputAddress);
+    Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string address, string dappId, int skipCount, int maxResultCount);
     Task<List<PointsPoolStakeSumIndex>> GetPointsPoolStakeSumAsync();
 }
 
@@ -243,7 +242,8 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         return list;
     }
 
-    public async Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string address)
+    public async Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string address, string dappId, 
+        int skipCount, int maxResultCount)
     {
         if (string.IsNullOrEmpty(address))
         {
@@ -253,11 +253,13 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         var mustQuery = new List<Func<QueryContainerDescriptor<PointsStakeRewardsSumIndex>, QueryContainer>>();
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Address).Value(address)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.DappId).Value(dappId)));
 
         QueryContainer Filter(QueryContainerDescriptor<PointsStakeRewardsSumIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
-        var (total, list) = await _addressStakeRewardsRepository.GetListAsync(Filter, skip: 0, limit: 5000);
+        var (total, list) = await _addressStakeRewardsRepository.GetListAsync(Filter, skip: skipCount,
+            limit: maxResultCount, sortType: SortOrder.Descending, sortExp: o => o.CreateTime);
 
         return list;
     }
