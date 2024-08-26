@@ -156,7 +156,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
             var dappId = snapshotList.DappId;
 
             var noSettleInfoDic = _pointsSnapshotOptions.NoSettleInfoDic;
-            var noSettleInfos = noSettleInfoDic.GetOrDefault(dappId) ?? new List<NoSettleInfoDto>();
+            var noSettleInfos = noSettleInfoDic?.GetOrDefault(dappId) ?? new List<NoSettleInfoDto>();
             var ids = noSettleInfos
                 .Select(x => GuidHelper.GenerateId(x.Domain, x.Address))
                 .ToList();
