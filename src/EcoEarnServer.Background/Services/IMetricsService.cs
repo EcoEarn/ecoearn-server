@@ -82,13 +82,13 @@ public class MetricsService : IMetricsService, ISingletonDependency
         var now = today.ToUtcMilliSeconds();
         var nowDate = nowDateTime.ToString("yyyy-MM-dd");
         var allTokenStakedList = await _tokenStakingProvider.GetTokenPoolStakedInfoListAsync(new List<string>());
-        var rewardsToken = "";
+        var rewardsToken = new List<string>();
 
         var allPools = await _tokenStakingProvider.GetTokenPoolsAsync(new GetTokenPoolsInput
         {
             PoolType = PoolTypeEnums.All
         });
-        rewardsToken = allPools.First().TokenPoolConfig.RewardToken;
+        rewardsToken = allPools.Select(x => x.TokenPoolConfig.RewardToken).Distinct().ToList();
         var poolIdDic = allPools.GroupBy(x => x.PoolId).ToDictionary(g => g.Key, g => g.First());
         var stakePriceDtoList = new List<StakePriceDto>();
         foreach (var tokenPoolStakedInfoDto in allTokenStakedList)
@@ -118,11 +118,14 @@ public class MetricsService : IMetricsService, ISingletonDependency
             }
 
             rateDic.TryAdd(key, rate);
+            var balance =
+                await _metricsProvider.GetBalanceAsync(poolInfo.TokenPoolConfig.StakeTokenContract, poolInfo.TokenPoolConfig.StakingToken,
+                    _metricsGenerateOptions.ChainId);
             var dto = new StakePriceDto()
             {
                 PoolId = tokenPoolStakedInfoDto.PoolId,
-                Amount = tokenPoolStakedInfoDto.TotalStakedAmount,
-                UsdAmount = long.Parse(tokenPoolStakedInfoDto.TotalStakedAmount) * rate,
+                Amount = balance,
+                UsdAmount = double.Parse(balance) * rate,
                 Rate = rate.ToString(CultureInfo.InvariantCulture)
             };
             stakePriceDtoList.Add(dto);
@@ -261,7 +264,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
         evenDataList.Add(platformStakeAmount);
         evenDataList.Add(registerCount);
         var addressBalance =
-            await _metricsProvider.GetBalanceAsync(_metricsGenerateOptions.Address, rewardsToken,
+            await _metricsProvider.BatchGetBalanceAsync(_metricsGenerateOptions.Address, rewardsToken,
                 _metricsGenerateOptions.ChainId);
         var platformEarning = new BizMetricsEto()
         {
