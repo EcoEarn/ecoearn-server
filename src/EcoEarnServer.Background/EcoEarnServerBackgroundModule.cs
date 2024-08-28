@@ -64,6 +64,7 @@ public class EcoEarnServerBackgroundModule : AbpModule
         Configure<LarkAlertOptions>(configuration.GetSection("LarkAlert"));
         Configure<LpPoolRateOptions>(configuration.GetSection("LpPoolRate"));
         Configure<MetricsGenerateOptions>(configuration.GetSection("MetricsGenerate"));
+        Configure<HamsterServerOptions>(configuration.GetSection("HamsterServer"));
         context.Services.AddSingleton<IPointsSnapshotService, PointsSnapshotService>();
         context.Services.AddSingleton<IPointsSnapshotProvider, PointsSnapshotProvider>();
         context.Services.AddSingleton<IStateProvider, StateProvider>();
@@ -167,8 +168,8 @@ public class EcoEarnServerBackgroundModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        context.AddBackgroundWorkerAsync<PointsSnapshotWorker>();
-        context.AddBackgroundWorkerAsync<SettlePointsRewardsWorker>();
+        //context.AddBackgroundWorkerAsync<PointsSnapshotWorker>();
+        //context.AddBackgroundWorkerAsync<SettlePointsRewardsWorker>();
         context.AddBackgroundWorkerAsync<MetricsWorker>();
         InitRecurringJob(context.ServiceProvider);
         StartOrleans(context.ServiceProvider);

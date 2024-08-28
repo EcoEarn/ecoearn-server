@@ -228,7 +228,8 @@ public class MetricsService : IMetricsService, ISingletonDependency
 
                 var sum = tokenStakedIndexerDto.SubStakeInfos.Sum(x => x.StakedAmount + x.EarlyStakedAmount) /
                           100000000;
-                lpStakeUsdAmount += sum * rate;
+                var sumUsd = sum * rate;
+                lpStakeUsdAmount += sumUsd;
             }
 
             var lpStakedAddressCount = new BizMetricsEto()
