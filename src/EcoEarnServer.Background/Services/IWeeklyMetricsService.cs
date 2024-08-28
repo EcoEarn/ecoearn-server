@@ -192,8 +192,10 @@ public class WeeklyMetricsService : IWeeklyMetricsService, ISingletonDependency
             skipCount += count;
         } while (!list.IsNullOrEmpty());
 
-        var dauSum = res.Select(x => x.Address).Distinct().Count();
-
+        var groupedRecords = res
+            .GroupBy(record => DateTimeOffset.FromUnixTimeMilliseconds(record.CreateTime).Date)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        var dauSum = groupedRecords.Select(x => x.Value.Select(i => i.Address).Distinct().Count()).Sum();
         return (decimal.Parse(dauSum.ToString()) / decimal.Parse("7")).ToString(CultureInfo.InvariantCulture);
     }
 
