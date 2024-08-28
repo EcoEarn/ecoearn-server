@@ -11,6 +11,7 @@ public class WeeklyBizMetricsListEto
 
 public class WeeklyBizMetricsEto
 {
+    public string Id { get; set; }
     public double BizNumber { get; set; }
     public long CreateTime { get; set; }
     public WeeklyBizType WeeklyBizType { get; set; }

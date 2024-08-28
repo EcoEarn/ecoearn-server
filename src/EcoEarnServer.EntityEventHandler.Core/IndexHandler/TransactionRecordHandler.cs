@@ -33,6 +33,7 @@ public class TransactionRecordHandler : IDistributedEventHandler<TransactionReco
         {
             var index = _objectMapper.Map<TransactionRecordEto, TransactionRecordIndex>(eventData);
             index.IsFirstTransaction = await IsFirstTransaction(eventData.Address);
+            index.Id = Guid.NewGuid().ToString();
             await _repository.AddOrUpdateAsync(index);
             _logger.LogDebug("HandleEventAsync TransactionRecordEto success.");
         }

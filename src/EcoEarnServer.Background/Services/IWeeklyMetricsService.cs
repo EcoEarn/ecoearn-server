@@ -4,11 +4,15 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using EcoEarnServer.Background.Provider;
 using EcoEarnServer.Common;
 using EcoEarnServer.Metrics;
 using EcoEarnServer.TransactionRecord;
+using Microsoft.Extensions.Logging;
 using Nest;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.DistributedLocking;
+using Volo.Abp.EventBus.Distributed;
 
 namespace EcoEarnServer.Background.Services;
 
@@ -19,26 +23,74 @@ public interface IWeeklyMetricsService
 
 public class WeeklyMetricsService : IWeeklyMetricsService, ISingletonDependency
 {
+    private const string LockKeyPrefix = "EcoEarnServer:WeeklyMetrics:Lock:";
+
     private readonly INESTRepository<BizMetricsIndex, string> _bizMetricsRepository;
     private readonly INESTRepository<TransactionRecordIndex, string> _transactionRecordRepository;
+    private readonly IAbpDistributedLock _distributedLock;
+    private readonly IDistributedEventBus _distributedEventBus;
+    private readonly ILogger<WeeklyMetricsService> _logger;
+    private readonly IStateProvider _stateProvider;
+    private readonly ILarkAlertProvider _larkAlertProvider;
 
     public WeeklyMetricsService(INESTRepository<BizMetricsIndex, string> bizMetricsRepository,
-        INESTRepository<TransactionRecordIndex, string> transactionRecordRepository)
+        INESTRepository<TransactionRecordIndex, string> transactionRecordRepository,
+        IAbpDistributedLock distributedLock, IDistributedEventBus distributedEventBus,
+        ILogger<WeeklyMetricsService> logger, IStateProvider stateProvider, ILarkAlertProvider larkAlertProvider)
     {
         _bizMetricsRepository = bizMetricsRepository;
         _transactionRecordRepository = transactionRecordRepository;
+        _distributedLock = distributedLock;
+        _distributedEventBus = distributedEventBus;
+        _logger = logger;
+        _stateProvider = stateProvider;
+        _larkAlertProvider = larkAlertProvider;
     }
 
     public async Task ExecuteAsync()
     {
+        await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix);
+
+        if (handle == null)
+        {
+            _logger.LogWarning("do not get lock, keys already exits.");
+            return;
+        }
+
+        if (await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateWeeklyMetricsKey()))
+        {
+            _logger.LogInformation("has already generate weekly metrics.");
+            return;
+        }
+
+        try
+        {
+            await GenerateWeeklyMetricsAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "CreatePointsSnapshot fail.");
+            await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateWeeklyMetricsKey(), false);
+            await _larkAlertProvider.SendLarkFailAlertAsync("generate weekly metrics fail.");
+        }
+
+        await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateSnapshotKey(), true, 169);
+    }
+
+    private async Task GenerateWeeklyMetricsAsync()
+    {
+        var now = DateTime.UtcNow;
+        var today = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc).ToUtcMilliSeconds();
+        var nowDate = now.ToString("yyyy-MM-dd");
+
         var (startTime, endTime) = GetDateRange();
         var lastWeekPlatformEarning = await GetLastWeekPlatformEarningAsync(startTime, endTime);
         var lastWeekDau = await GetLastWeekDauAsync(startTime, endTime);
         var lastWeekRegisters = await GetLastWeekRegistersAsync(startTime, endTime);
         var lastWeekTvl = await GetLastWeekTvlAsync(startTime, endTime);
-        var today = DateTime.UtcNow.ToUtcMilliSeconds();
         var earningUsdAmountEto = new WeeklyBizMetricsEto
         {
+            Id = GuidHelper.GenerateId(nowDate, BizType.PlatformStakedUsdAmount.ToString()),
             BizNumber = double.Parse(lastWeekPlatformEarning),
             WeeklyBizType = WeeklyBizType.EarningUsdAmount,
             CreateTime = today
@@ -69,17 +121,19 @@ public class WeeklyMetricsService : IWeeklyMetricsService, ISingletonDependency
             CreateTime = today
         };
 
-        var etos = new List<WeeklyBizMetricsEto>();
-        etos.Add(earningUsdAmountEto);
-        etos.Add(dauEto);
-        etos.Add(registerAvgEto);
-        etos.Add(tvlEto);
-        etos.Add(tvlGrowthEto);
+        var etos = new List<WeeklyBizMetricsEto>
+        {
+            earningUsdAmountEto,
+            dauEto,
+            registerAvgEto,
+            tvlEto,
+            tvlGrowthEto
+        };
 
-        var a = new WeeklyBizMetricsListEto()
+        await _distributedEventBus.PublishAsync(new WeeklyBizMetricsListEto()
         {
             EventDataList = etos
-        };
+        });
     }
 
     private async Task<string> GetLastWeekRegistersAsync(long startTime, long endTime)

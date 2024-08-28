@@ -14,7 +14,7 @@ namespace EcoEarnServer.Background.Provider;
 public interface IStateProvider
 {
     Task<bool> CheckStateAsync(string key, bool isSettle = false);
-    Task SetStateAsync(string key, bool state);
+    Task SetStateAsync(string key, bool state, int hours = 25);
 }
 
 public class StateProvider : AbpRedisCache, IStateProvider, ISingletonDependency
@@ -48,7 +48,7 @@ public class StateProvider : AbpRedisCache, IStateProvider, ISingletonDependency
         return stateDto.State;
     }
 
-    public async Task SetStateAsync(string key, bool state)
+    public async Task SetStateAsync(string key, bool state, int hours = 25)
     {
         await ConnectAsync();
         var stateDto = new StateDto
@@ -56,7 +56,7 @@ public class StateProvider : AbpRedisCache, IStateProvider, ISingletonDependency
             State = state,
             FinishTime = DateTime.UtcNow.ToUtcMilliSeconds()
         };
-        await RedisDatabase.StringSetAsync(key, _serializer.Serialize(stateDto), TimeSpan.FromHours(25));
+        await RedisDatabase.StringSetAsync(key, _serializer.Serialize(stateDto), TimeSpan.FromHours(hours));
         _logger.LogInformation("set snapshot state success");
     }
 }
