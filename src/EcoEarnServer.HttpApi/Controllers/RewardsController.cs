@@ -108,8 +108,9 @@ public class RewardsController : EcoEarnServerController
     }
 
     [HttpPost("transaction/record")]
-    public async Task TransactionRecordAsync(TransactionRecordDto input)
+    public async Task<bool> TransactionRecordAsync(TransactionRecordDto input)
     {
         await _rewardsService.TransactionRecordAsync(input);
+        return true;
     }
 }
