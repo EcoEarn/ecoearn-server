@@ -84,7 +84,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
         var rateDic = new Dictionary<string, double>();
         var evenDataList = new List<BizMetricsEto>();
         var nowDateTime = DateTime.UtcNow;
-        var today = new DateTime(nowDateTime.Year, nowDateTime.Month, nowDateTime.Day, 13, 0, 0, DateTimeKind.Utc);
+        var today = new DateTime(nowDateTime.Year, nowDateTime.Month, nowDateTime.Day, 8, 0, 0, DateTimeKind.Utc);
         var now = today.ToUtcMilliSeconds();
         var nowDate = nowDateTime.ToString("yyyy-MM-dd");
         var allTokenStakedList = await _tokenStakingProvider.GetTokenPoolStakedInfoListAsync(new List<string>());
@@ -317,9 +317,9 @@ public class MetricsService : IMetricsService, ISingletonDependency
     {
         var nowDateTime = DateTime.UtcNow;
         var today = new DateTime(nowDateTime.Year, nowDateTime.Month, nowDateTime.Day, 0, 0, 0, DateTimeKind.Utc);
-        var yesterday = today.AddDays(-1);
-        var startTime = yesterday.ToUtcMilliSeconds();
-        var endTime = today.ToUtcMilliSeconds();
+        var tomorrow = today.AddDays(1);
+        var startTime = today.ToUtcMilliSeconds();
+        var endTime = tomorrow.ToUtcMilliSeconds();
         var res = new List<TransactionRecordIndex>();
         var skipCount = 0;
         var maxResultCount = 5000;
@@ -352,9 +352,9 @@ public class MetricsService : IMetricsService, ISingletonDependency
     {
         var nowDateTime = DateTime.UtcNow;
         var today = new DateTime(nowDateTime.Year, nowDateTime.Month, nowDateTime.Day, 0, 0, 0, DateTimeKind.Utc);
-        var yesterday = today.AddDays(-1);
-        var startTime = yesterday.ToUtcMilliSeconds();
-        var endTime = today.ToUtcMilliSeconds();
+        var tomorrow = today.AddDays(1);
+        var startTime = today.ToUtcMilliSeconds();
+        var endTime = tomorrow.ToUtcMilliSeconds();
         var res = new List<TransactionRecordIndex>();
         var skipCount = 0;
         var maxResultCount = 5000;
