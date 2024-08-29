@@ -23,4 +23,6 @@ public enum BizType
     LpStakedAmount,
     LpStakedUsdAmount,
     PlatformStakedAmount,
+    DailyDau,
+    DailyRegister,
 }

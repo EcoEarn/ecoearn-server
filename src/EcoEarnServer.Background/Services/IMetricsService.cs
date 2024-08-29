@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using EcoEarnServer.Background.Options;
 using EcoEarnServer.Background.Provider;
 using EcoEarnServer.Background.Services.Dtos;
@@ -12,9 +13,11 @@ using EcoEarnServer.Options;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
+using EcoEarnServer.TransactionRecord;
 using EcoEarnServer.Users;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nest;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
@@ -40,12 +43,14 @@ public class MetricsService : IMetricsService, ISingletonDependency
     private readonly IStateProvider _stateProvider;
     private readonly IMetricsProvider _metricsProvider;
     private readonly MetricsGenerateOptions _metricsGenerateOptions;
+    private readonly INESTRepository<TransactionRecordIndex, string> _transactionRecordRepository;
 
     public MetricsService(ITokenStakingProvider tokenStakingProvider, IPriceProvider priceProvider,
         IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions, IDistributedEventBus distributedEventBus,
         IUserInformationProvider userInformationProvider, ILogger<MetricsService> logger,
         IAbpDistributedLock distributedLock, IStateProvider stateProvider, IMetricsProvider metricsProvider,
-        IOptionsSnapshot<MetricsGenerateOptions> metricsGenerateOptions)
+        IOptionsSnapshot<MetricsGenerateOptions> metricsGenerateOptions,
+        INESTRepository<TransactionRecordIndex, string> transactionRecordRepository)
     {
         _tokenStakingProvider = tokenStakingProvider;
         _priceProvider = priceProvider;
@@ -55,6 +60,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
         _distributedLock = distributedLock;
         _stateProvider = stateProvider;
         _metricsProvider = metricsProvider;
+        _transactionRecordRepository = transactionRecordRepository;
         _metricsGenerateOptions = metricsGenerateOptions.Value;
         _lpPoolRateOptions = lpPoolRateOptions.Value;
     }
@@ -119,7 +125,8 @@ public class MetricsService : IMetricsService, ISingletonDependency
 
             rateDic.TryAdd(key, rate);
             var balance =
-                await _metricsProvider.GetBalanceAsync(poolInfo.TokenPoolConfig.StakeTokenContract, poolInfo.TokenPoolConfig.StakingToken,
+                await _metricsProvider.GetBalanceAsync(poolInfo.TokenPoolConfig.StakeTokenContract,
+                    poolInfo.TokenPoolConfig.StakingToken,
                     _metricsGenerateOptions.ChainId);
             var dto = new StakePriceDto()
             {
@@ -149,7 +156,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
             BizType = BizType.PlatformStakedAmount
         };
 
-        
+
         var userCount = await _userInformationProvider.GetUserCount();
         var registerCount = new BizMetricsEto()
         {
@@ -275,6 +282,28 @@ public class MetricsService : IMetricsService, ISingletonDependency
             BizType = BizType.PlatformEarning
         };
         evenDataList.Add(platformEarning);
+        
+        var dailyDauNumber = await GetDailyDauAsync();
+        var dailyDauEto = new BizMetricsEto()
+        {
+            Id = GuidHelper.GenerateId(nowDate, BizType.DailyDau.ToString()),
+            BizNumber = dailyDauNumber,
+            CreateTime = now,
+            BizType = BizType.DailyDau
+        };
+        evenDataList.Add(dailyDauEto);
+        
+        var dailyRegisterNumber = await GetDailyRegisterAsync();
+        var dailyRegisterEto = new BizMetricsEto()
+        {
+            Id = GuidHelper.GenerateId(nowDate, BizType.DailyRegister.ToString()),
+            BizNumber = dailyRegisterNumber,
+            CreateTime = now,
+            BizType = BizType.DailyRegister
+        };
+        evenDataList.Add(dailyRegisterEto);
+
+
         await _distributedEventBus.PublishAsync(new BizMetricsListEto
         {
             EventDataList = evenDataList
@@ -283,6 +312,76 @@ public class MetricsService : IMetricsService, ISingletonDependency
         //await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateMetricsKey(), true);
     }
 
+
+    private async Task<double> GetDailyRegisterAsync()
+    {
+        var nowDateTime = DateTime.UtcNow;
+        var today = new DateTime(nowDateTime.Year, nowDateTime.Month, nowDateTime.Day, 0, 0, 0, DateTimeKind.Utc);
+        var yesterday = today.AddDays(-1);
+        var startTime = yesterday.ToUtcMilliSeconds();
+        var endTime = today.ToUtcMilliSeconds();
+        var res = new List<TransactionRecordIndex>();
+        var skipCount = 0;
+        var maxResultCount = 5000;
+        List<TransactionRecordIndex> list;
+        var mustQuery = new List<Func<QueryContainerDescriptor<TransactionRecordIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsFirstTransaction).Value(true)));
+        mustQuery.Add(q => q.LongRange(i => i.Field(f => f.CreateTime).LessThan(endTime)));
+        mustQuery.Add(q => q.LongRange(i => i.Field(f => f.CreateTime).GreaterThanOrEquals(startTime)));
+        QueryContainer Filter(QueryContainerDescriptor<TransactionRecordIndex> f) => f.Bool(b => b.Must(mustQuery));
+        do
+        {
+            var result =
+                await _transactionRecordRepository.GetListAsync(Filter, skip: skipCount, limit: maxResultCount);
+            list = result.Item2;
+            var count = list.Count;
+            res.AddRange(list);
+            if (list.IsNullOrEmpty() || count < maxResultCount)
+            {
+                break;
+            }
+
+            skipCount += count;
+        } while (!list.IsNullOrEmpty());
+
+        var registerSum = res.Select(x => x.Address).Distinct().Count();
+
+        return registerSum;
+    }
+    private async Task<double> GetDailyDauAsync()
+    {
+        var nowDateTime = DateTime.UtcNow;
+        var today = new DateTime(nowDateTime.Year, nowDateTime.Month, nowDateTime.Day, 0, 0, 0, DateTimeKind.Utc);
+        var yesterday = today.AddDays(-1);
+        var startTime = yesterday.ToUtcMilliSeconds();
+        var endTime = today.ToUtcMilliSeconds();
+        var res = new List<TransactionRecordIndex>();
+        var skipCount = 0;
+        var maxResultCount = 5000;
+        List<TransactionRecordIndex> list;
+        var mustQuery = new List<Func<QueryContainerDescriptor<TransactionRecordIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.LongRange(i => i.Field(f => f.CreateTime).LessThan(endTime)));
+        mustQuery.Add(q => q.LongRange(i => i.Field(f => f.CreateTime).GreaterThanOrEquals(startTime)));
+        QueryContainer Filter(QueryContainerDescriptor<TransactionRecordIndex> f) => f.Bool(b => b.Must(mustQuery));
+        do
+        {
+            var result =
+                await _transactionRecordRepository.GetListAsync(Filter, skip: skipCount, limit: maxResultCount);
+            list = result.Item2;
+            var count = list.Count;
+            res.AddRange(list);
+            if (list.IsNullOrEmpty() || count < maxResultCount)
+            {
+                break;
+            }
+
+            skipCount += count;
+        } while (!list.IsNullOrEmpty());
+
+        var dauSum = res.Select(x => x.Address).Distinct().Count();
+
+        return dauSum;
+    }
 
     private async Task<List<TokenStakedIndexerDto>> GetAllStakeInfoList()
     {
