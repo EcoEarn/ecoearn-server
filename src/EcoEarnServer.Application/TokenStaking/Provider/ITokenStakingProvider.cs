@@ -62,10 +62,13 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                             maximumStakeDuration
                             rewardTokenContract
                             stakeTokenContract
+                            swapContract
                             minimumClaimAmount
                             releasePeriods
                             mergeInterval
                             minimumAddLiquidityAmount
+                            stakeAddress
+                            rewardAddress
                         },
     					createTime,
     					poolType
@@ -134,10 +137,13 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
                             maximumStakeDuration
                             rewardTokenContract
                             stakeTokenContract
+                            swapContract
                             minimumClaimAmount
                             releasePeriods
                             mergeInterval
                             minimumAddLiquidityAmount
+                            stakeAddress
+                            rewardAddress
                         },
     					createTime,
     					poolType

@@ -1,5 +1,7 @@
 using System.Globalization;
 using AutoMapper;
+using EcoEarnServer.Common.Dtos;
+using EcoEarnServer.Common.TransactionRecord;
 using EcoEarnServer.Farm.Dtos;
 using EcoEarnServer.Farm.Provider;
 using EcoEarnServer.Grains.Grain.PointsPool;
@@ -15,6 +17,7 @@ using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.Rewards.Provider;
 using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
+using EcoEarnServer.TransactionRecord;
 using EcoEarnServer.Users;
 using EcoEarnServer.Users.Eto;
 
@@ -25,6 +28,7 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
     public EcoEarnServerApplicationAutoMapperProfile()
     {
         CreateMap<UserGrainDto, UserInformationEto>().ReverseMap();
+        CreateMap<TransactionRecordDto, TransactionRecordEto>().ReverseMap();
         CreateMap<ProjectItem, ProjectItemListDto>().ReverseMap();
         CreateMap<PointsPoolsIndexerDto, PointsPoolsDto>()
             .ForMember(t => t.PoolName, m => m.MapFrom(f => f.PointsName))

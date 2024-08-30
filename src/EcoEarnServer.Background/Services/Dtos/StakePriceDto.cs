@@ -1,3 +1,5 @@
+using EcoEarnServer.Rewards.Dtos;
+
 namespace EcoEarnServer.Background.Services.Dtos;
 
 public class StakePriceDto
@@ -6,4 +8,5 @@ public class StakePriceDto
     public string PoolId { get; set; }
     public double UsdAmount { get; set; }
     public string Rate { get; set; }
+    public PoolTypeEnums PoolType { get; set; }
 }

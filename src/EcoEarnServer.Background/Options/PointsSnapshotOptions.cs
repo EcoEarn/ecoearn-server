@@ -5,6 +5,7 @@ namespace EcoEarnServer.Background.Options;
 public class PointsSnapshotOptions
 {
     public string CreateSnapshotCorn { get; set; } = "0 0 0 * * ?";
+    public string WeeklyMetricsCorn { get; set; } = "0 0 0 * * 6";
     public int CheckSnapshotPeriod { get; set; } = 1;
     public int SettlePointsRewardsPeriod { get; set; } = 20;
     public int GenerateMetricsPeriod { get; set; } = 5;
