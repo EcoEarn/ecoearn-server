@@ -99,7 +99,8 @@ public class MetricsService : IMetricsService, ISingletonDependency
         var stakePriceDtoList = new List<StakePriceDto>();
         foreach (var tokenPoolStakedInfoDto in allTokenStakedList)
         {
-            if (!poolIdDic.TryGetValue(tokenPoolStakedInfoDto.PoolId, out var poolInfo))
+            var poolId = tokenPoolStakedInfoDto.PoolId;
+            if (!poolIdDic.TryGetValue(poolId, out var poolInfo))
             {
                 continue;
             }
@@ -124,13 +125,24 @@ public class MetricsService : IMetricsService, ISingletonDependency
             }
 
             rateDic.TryAdd(key, rate);
-            var balance =
-                await _metricsProvider.GetBalanceAsync(poolInfo.TokenPoolConfig.StakeTokenContract,
-                    poolInfo.TokenPoolConfig.StakingToken,
-                    _metricsGenerateOptions.ChainId);
+            var stakeAddress = poolInfo.TokenPoolConfig.StakeAddress;
+            if (string.IsNullOrEmpty(stakeAddress))
+            {
+                var addressInfo = await _metricsProvider.GetAddressInfoAsync(poolId, _metricsGenerateOptions.ChainId);
+                stakeAddress = addressInfo.StakeAddress;
+            }
+
+            var contractAddress = poolInfo.PoolType == PoolTypeEnums.Lp
+                ? !string.IsNullOrEmpty(poolInfo.TokenPoolConfig.SwapContract)
+                    ? poolInfo.TokenPoolConfig.SwapContract
+                    : _metricsGenerateOptions.SwapContractAddress
+                : poolInfo.TokenPoolConfig.StakeTokenContract;
+
+            var balance = await _metricsProvider.GetBalanceAsync(stakeAddress, poolInfo.TokenPoolConfig.StakingToken,
+                _metricsGenerateOptions.ChainId, contractAddress);
             var dto = new StakePriceDto()
             {
-                PoolId = tokenPoolStakedInfoDto.PoolId,
+                PoolId = poolId,
                 Amount = balance,
                 UsdAmount = double.Parse(balance) * rate,
                 Rate = rate.ToString(CultureInfo.InvariantCulture)
@@ -282,7 +294,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
             BizType = BizType.PlatformEarning
         };
         evenDataList.Add(platformEarning);
-        
+
         var dailyDauNumber = await GetDailyDauAsync();
         var dailyDauEto = new BizMetricsEto()
         {
@@ -292,7 +304,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
             BizType = BizType.DailyDau
         };
         evenDataList.Add(dailyDauEto);
-        
+
         var dailyRegisterNumber = await GetDailyRegisterAsync();
         var dailyRegisterEto = new BizMetricsEto()
         {
@@ -348,6 +360,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
 
         return registerSum;
     }
+
     private async Task<double> GetDailyDauAsync()
     {
         var nowDateTime = DateTime.UtcNow;

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Threading.Tasks;
 using AElf.Contracts.MultiToken;
 using AElf.Types;
+using EcoEarn.Contracts.Tokens;
 using EcoEarnServer.Background.Provider.Dtos;
 using EcoEarnServer.Common;
 using EcoEarnServer.Common.AElfSdk;
@@ -20,13 +21,15 @@ namespace EcoEarnServer.Background.Provider;
 public interface IMetricsProvider
 {
     public Task<string> BatchGetBalanceAsync(string address, List<string> symbol, string chainId);
-    public Task<string> GetBalanceAsync(string address, string symbol, string chainId);
+    public Task<string> GetBalanceAsync(string address, string symbol, string chainId, string contractAddress);
+    public Task<PoolAddressInfoDto> GetAddressInfoAsync(string poolId, string chainId);
 }
 
 public class MetricsProvider : AbpRedisCache, IMetricsProvider, ISingletonDependency
 {
     private const string BatchBalanceRedisKeyPrefix = "EcoEarnServer:BatchBalance:";
     private const string BalanceRedisKeyPrefix = "EcoEarnServer:Balance:";
+    private const string PoolAddressRedisKeyPrefix = "EcoEarnServer:PoolAddressInfo:";
 
 
     private readonly ILogger<MetricsProvider> _logger;
@@ -87,7 +90,7 @@ public class MetricsProvider : AbpRedisCache, IMetricsProvider, ISingletonDepend
         return balance.ToString(CultureInfo.InvariantCulture);
     }
 
-    public async Task<string> GetBalanceAsync(string address, string symbol, string chainId)
+    public async Task<string> GetBalanceAsync(string address, string symbol, string chainId, string contractAddress)
     {
         await ConnectAsync();
         var redisValue = await RedisDatabase.StringGetAsync(BalanceRedisKeyPrefix + symbol + ":" + address);
@@ -105,7 +108,7 @@ public class MetricsProvider : AbpRedisCache, IMetricsProvider, ISingletonDepend
         try
         {
             var transaction = _contractProvider
-                .CreateTransaction(chainId, ContractConstants.SenderName, ContractConstants.TokenContractName,
+                .CreateTransactionByContract(chainId, ContractConstants.SenderName, contractAddress,
                     ContractConstants.GetBalance, input)
                 .Result
                 .transaction;
@@ -119,6 +122,41 @@ public class MetricsProvider : AbpRedisCache, IMetricsProvider, ISingletonDepend
         {
             _logger.LogError("get balance fail.{symbol}", symbol);
             return "0";
+        }
+    }
+
+    public async Task<PoolAddressInfoDto> GetAddressInfoAsync(string poolId, string chainId)
+    {
+        await ConnectAsync();
+        var redisValue = await RedisDatabase.StringGetAsync(PoolAddressRedisKeyPrefix + poolId);
+        if (redisValue.HasValue)
+        {
+            _logger.LogInformation("get pool address info: {info}", redisValue);
+            return _serializer.Deserialize<PoolAddressInfoDto>(redisValue);
+        }
+
+        try
+        {
+            var transaction = _contractProvider
+                .CreateTransaction(chainId, ContractConstants.SenderName, ContractConstants.ContractName,
+                    ContractConstants.GetPoolAddressInfo, Hash.LoadFromHex(poolId))
+                .Result
+                .transaction;
+            var transactionResult =
+                await _contractProvider.CallTransactionAsync<PoolAddressInfo>(chainId, transaction);
+            var addressInfoDto = new PoolAddressInfoDto
+            {
+                StakeAddress = transactionResult.StakeAddress.ToBase58(),
+                RewardAddress = transactionResult.RewardAddress.ToBase58(),
+            };
+            await RedisDatabase.StringSetAsync(PoolAddressRedisKeyPrefix + poolId,
+                _serializer.Serialize(addressInfoDto), TimeSpan.FromDays(2));
+            return addressInfoDto;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("get pool address info.{poolId}", poolId);
+            return null;
         }
     }
 }

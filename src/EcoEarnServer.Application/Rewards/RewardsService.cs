@@ -417,7 +417,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         await _transactionRecordProvider.SaveTransactionRecordAsync(new TransactionRecordDto
         {
             Address = earlyStakeInput.StakeInput.Account.ToBase58(),
-            Amount = earlyStakeInput.StakeInput.Account.ToString(),
+            Amount = earlyStakeInput.StakeInput.Amount.ToString(),
             TransactionType = TransactionType.RewardsEarlyStake
         });
         return transactionOutput.TransactionId;

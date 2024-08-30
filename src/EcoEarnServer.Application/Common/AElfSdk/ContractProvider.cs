@@ -23,6 +23,10 @@ public interface IContractProvider
     Task<(Hash transactionId, Transaction transaction)> CreateTransaction(string chainId, string senderName,
         string contractName, string methodName,
         IMessage param);
+    
+    Task<(Hash transactionId, Transaction transaction)> CreateTransactionByContract(string chainId, string senderName,
+        string contractAddress, string methodName,
+        IMessage param);
 
     Task<SendTransactionOutput> SendTransactionAsync(string chainId, Transaction transaction);
 
@@ -186,6 +190,32 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         {
             From = account.Address,
             To = Address.FromBase58(address),
+            MethodName = methodName,
+            Params = param.ToByteString(),
+            RefBlockNumber = height,
+            RefBlockPrefix = ByteString.CopyFrom(Hash.LoadFromHex(blockHash).Value.Take(4).ToArray())
+        };
+
+        var transactionId = HashHelper.ComputeFrom(transaction.ToByteArray());
+        transaction.Signature = account.GetSignatureWith(transactionId.ToByteArray());
+        return (transactionId, transaction);
+    }
+    
+    public async Task<(Hash transactionId, Transaction transaction)> CreateTransactionByContract(string chainId,
+        string senderName, string contractAddress, string methodName,
+        IMessage param)
+    {
+        var client = Client(chainId);
+        var status = await client.GetChainStatusAsync();
+        var height = status.BestChainHeight;
+        var blockHash = status.BestChainHash;
+        var account = Account(senderName);
+
+        // create raw transaction
+        var transaction = new Transaction
+        {
+            From = account.Address,
+            To = Address.FromBase58(contractAddress),
             MethodName = methodName,
             Params = param.ToByteString(),
             RefBlockNumber = height,
