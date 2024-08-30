@@ -184,15 +184,20 @@ public class MetricsService : IMetricsService, ISingletonDependency
             .ToDictionary(g => g.Key, g => g.ToList());
         if (poolTypeStakeInfoDic.TryGetValue(PoolTypeEnums.Token, out var tokenStakedInfo))
         {
-            var tokenStakeAddressCount = tokenStakedInfo.Select(x => x.Account).Distinct().Count();
-            var tokenStakeAmount = tokenStakedInfo.SelectMany(x => x.SubStakeInfos)
-                .Sum(x => x.StakedAmount + x.EarlyStakedAmount) / 100000000;
             var tokenStakeUsdAmount = 0d;
-            var key = GuidHelper.GenerateId(PoolTypeEnums.Token.ToString(),
-                $"{tokenStakedInfo.First().StakingToken.ToUpper()}_USDT");
-            if (rateDic.TryGetValue(key, out var rate))
+            var tokenStakeSumAmount = 0d;
+            var tokenStakeAddressCount = tokenStakedInfo.Select(x => x.Account).Distinct().Count();
+            foreach (var tokenStakedIndexerDto in tokenStakedInfo)
             {
-                tokenStakeUsdAmount = double.Parse(tokenStakeAmount.ToString()) * rate;
+                var tokenStakeAmount = tokenStakedIndexerDto.SubStakeInfos
+                    .Sum(x => x.StakedAmount + x.EarlyStakedAmount) / 100000000;
+                tokenStakeSumAmount += tokenStakeAmount;
+                var key = GuidHelper.GenerateId(PoolTypeEnums.Token.ToString(),
+                    $"{tokenStakedIndexerDto.StakingToken.ToUpper()}_USDT");
+                if (rateDic.TryGetValue(key, out var rate))
+                {
+                    tokenStakeUsdAmount += double.Parse(tokenStakeAmount.ToString()) * rate;
+                }
             }
 
             var tokenStakedAddressCount = new BizMetricsEto()
@@ -206,7 +211,7 @@ public class MetricsService : IMetricsService, ISingletonDependency
             var tokenStakedAmount = new BizMetricsEto()
             {
                 Id = GuidHelper.GenerateId(nowDate, BizType.TokenStakedAmount.ToString()),
-                BizNumber = tokenStakeAmount,
+                BizNumber = tokenStakeSumAmount,
                 CreateTime = now,
                 BizType = BizType.TokenStakedAmount
             };
@@ -218,7 +223,6 @@ public class MetricsService : IMetricsService, ISingletonDependency
                 CreateTime = now,
                 BizType = BizType.TokenStakedUsdAmount
             };
-
             evenDataList.Add(tokenStakedAddressCount);
             evenDataList.Add(tokenStakedAmount);
             evenDataList.Add(tokenStakedUsdAmount);
