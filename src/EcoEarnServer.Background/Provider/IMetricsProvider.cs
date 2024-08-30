@@ -114,9 +114,10 @@ public class MetricsProvider : AbpRedisCache, IMetricsProvider, ISingletonDepend
                 .transaction;
             var transactionResult =
                 await _contractProvider.CallTransactionAsync<BalanceDto>(chainId, transaction);
+            var balance = (decimal.Parse(transactionResult.Balance) + decimal.Parse(transactionResult.Amount)).ToString(CultureInfo.InvariantCulture);
             await RedisDatabase.StringSetAsync(BalanceRedisKeyPrefix + symbol + ":" + address,
-                _serializer.Serialize(transactionResult.Balance), TimeSpan.FromMinutes(5));
-            return transactionResult.Balance;
+                _serializer.Serialize(balance), TimeSpan.FromMinutes(5));
+            return balance;
         }
         catch (Exception e)
         {
