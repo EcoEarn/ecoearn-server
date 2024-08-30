@@ -10,6 +10,8 @@ using AElf.Types;
 using EcoEarn.Contracts.Points;
 using EcoEarnServer.Common;
 using EcoEarnServer.Common.AElfSdk;
+using EcoEarnServer.Common.Dtos;
+using EcoEarnServer.Common.TransactionRecord;
 using EcoEarnServer.Grains.Grain.PointsPool;
 using EcoEarnServer.Grains.Grain.PointsStakeRewards;
 using EcoEarnServer.Options;
@@ -20,6 +22,7 @@ using EcoEarnServer.PointsStaking.Provider;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.Rewards.Provider;
 using EcoEarnServer.TokenStaking;
+using EcoEarnServer.TransactionRecord;
 using Google.Protobuf;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
@@ -62,6 +65,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
     private readonly PoolTextWordOptions _poolTextWordOptions;
     private readonly IDistributedCacheSerializer _serializer;
     private readonly IRewardsProvider _rewardsProvider;
+    private readonly ITransactionRecordProvider _transactionRecordProvider;
 
     public PointsStakingService(IOptionsSnapshot<ProjectItemOptions> projectItemOptions, IObjectMapper objectMapper,
         IPointsStakingProvider pointsStakingProvider, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
@@ -71,7 +75,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         ISecretProvider secretProvider, IAbpDistributedLock distributedLock,
         IOptionsSnapshot<PoolTextWordOptions> poolTextWordOptions,
         IOptions<RedisCacheOptions> optionsAccessor, IDistributedCacheSerializer serializer,
-        IRewardsProvider rewardsProvider) : base(optionsAccessor)
+        IRewardsProvider rewardsProvider, ITransactionRecordProvider transactionRecordProvider) : base(optionsAccessor)
     {
         _objectMapper = objectMapper;
         _pointsStakingProvider = pointsStakingProvider;
@@ -84,6 +88,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         _distributedLock = distributedLock;
         _serializer = serializer;
         _rewardsProvider = rewardsProvider;
+        _transactionRecordProvider = transactionRecordProvider;
         _poolTextWordOptions = poolTextWordOptions.Value;
         _chainOption = chainOption.Value;
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
@@ -328,7 +333,13 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         await SettleRewardsAsync(address, poolId,
             -decimal.Parse(claimInput.Amount.ToString()) / decimal.Parse("100000000"));
         await UpdateClaimStatusAsync(address, poolId, "", DateTime.UtcNow.ToString("yyyyMMdd"));
-
+        
+        await _transactionRecordProvider.SaveTransactionRecordAsync(new TransactionRecordDto
+        {
+            Address = address,
+            Amount = claimInput.Amount.ToString(),
+            TransactionType = TransactionType.PointsClaim
+        });
         return transactionOutput.TransactionId;
     }
 

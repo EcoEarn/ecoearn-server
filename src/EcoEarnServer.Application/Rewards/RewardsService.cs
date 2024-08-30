@@ -12,6 +12,8 @@ using AElf.Types;
 using EcoEarn.Contracts.Rewards;
 using EcoEarnServer.Common;
 using EcoEarnServer.Common.AElfSdk;
+using EcoEarnServer.Common.Dtos;
+using EcoEarnServer.Common.TransactionRecord;
 using EcoEarnServer.Farm.Dtos;
 using EcoEarnServer.Farm.Provider;
 using EcoEarnServer.Grains.Grain.Rewards;
@@ -21,11 +23,11 @@ using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.Rewards.Provider;
 using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
+using EcoEarnServer.TransactionRecord;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
@@ -61,6 +63,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
     private readonly IPriceProvider _priceProvider;
     private readonly PoolInfoOptions _poolInfoOptions;
     private readonly ProjectItemOptions _projectItemOptions;
+    private readonly ITransactionRecordProvider _transactionRecordProvider;
 
     public RewardsService(IRewardsProvider rewardsProvider, IObjectMapper objectMapper, ILogger<RewardsService> logger,
         IOptionsSnapshot<TokenPoolIconsOptions> tokenPoolIconsOptions, IPointsStakingProvider pointsStakingProvider,
@@ -69,7 +72,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
         IOptionsSnapshot<ProjectKeyPairInfoOptions> projectKeyPairInfoOptions, ISecretProvider secretProvider,
         IDistributedEventBus distributedEventBus, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
         ContractProvider contractProvider, IFarmProvider farmProvider, IPriceProvider priceProvider,
-        IOptionsSnapshot<PoolInfoOptions> poolInfoOptions, IOptionsSnapshot<ProjectItemOptions> projectItemOptions)
+        IOptionsSnapshot<PoolInfoOptions> poolInfoOptions, IOptionsSnapshot<ProjectItemOptions> projectItemOptions,
+        ITransactionRecordProvider transactionRecordProvider)
     {
         _rewardsProvider = rewardsProvider;
         _objectMapper = objectMapper;
@@ -83,6 +87,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         _contractProvider = contractProvider;
         _farmProvider = farmProvider;
         _priceProvider = priceProvider;
+        _transactionRecordProvider = transactionRecordProvider;
         _projectItemOptions = projectItemOptions.Value;
         _poolInfoOptions = poolInfoOptions.Value;
         _earnContractOptions = earnContractOptions.Value;
@@ -103,7 +108,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         {
             return new PagedResultDto<RewardsListDto>();
         }
-        
+
 
         var poolsIdDic = await GetPoolIdDicAsync(result);
         var dappIdDic = _projectItemOptions.ProjectItems.ToDictionary(x => x.DappId, x => x.DappName);
@@ -332,6 +337,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }
 
         await UpdateOperationStatusAsync(withdrawInput.Account.ToBase58(), withdrawInput.ClaimIds);
+        await _transactionRecordProvider.SaveTransactionRecordAsync(new TransactionRecordDto
+        {
+            Address = withdrawInput.Account.ToBase58(),
+            Amount = withdrawInput.Amount.ToString(),
+            TransactionType = TransactionType.RewardsWithdraw
+        });
         return transactionOutput.TransactionId;
     }
 
@@ -403,6 +414,12 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         await UpdateOperationStatusAsync(earlyStakeInput.StakeInput.Account.ToBase58(),
             earlyStakeInput.StakeInput.ClaimIds);
+        await _transactionRecordProvider.SaveTransactionRecordAsync(new TransactionRecordDto
+        {
+            Address = earlyStakeInput.StakeInput.Account.ToBase58(),
+            Amount = earlyStakeInput.StakeInput.Amount.ToString(),
+            TransactionType = TransactionType.RewardsEarlyStake
+        });
         return transactionOutput.TransactionId;
     }
 
@@ -476,6 +493,14 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         await UpdateOperationStatusAsync(addLiquidityAndStakeInput.StakeInput.Account.ToBase58(),
             addLiquidityAndStakeInput.StakeInput.ClaimIds);
+        
+        await _transactionRecordProvider.SaveTransactionRecordAsync(new TransactionRecordDto
+        {
+            Address = addLiquidityAndStakeInput.StakeInput.Account.ToBase58(),
+            Amount = addLiquidityAndStakeInput.StakeInput.Account.ToString(),
+            TransactionType = TransactionType.LpAddLiquidityAndStake
+        });
+        
         return transactionOutput.TransactionId;
     }
 
@@ -582,6 +607,14 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         await UpdateOperationStatusAsync(ExecuteType.LiquidityStake.ToString(),
             stakeLiquidityInput.LiquidityInput.LiquidityIds);
+        
+        await _transactionRecordProvider.SaveTransactionRecordAsync(new TransactionRecordDto
+        {
+            Address = transaction.From.ToBase58(),
+            Amount = stakeLiquidityInput.LiquidityInput.LpAmount.ToString(),
+            TransactionType = TransactionType.LpLiquidityStake
+        });
+        
         return transactionOutput.TransactionId;
     }
 
@@ -655,6 +688,14 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         await UpdateOperationStatusAsync(ExecuteType.LiquidityRemove.ToString(),
             removeLiquidityInput.LiquidityInput.LiquidityIds);
+        
+        await _transactionRecordProvider.SaveTransactionRecordAsync(new TransactionRecordDto
+        {
+            Address = transaction.From.ToBase58(),
+            Amount = removeLiquidityInput.LiquidityInput.LpAmount.ToString(),
+            TransactionType = TransactionType.LpLiquidityRemove
+        });
+        
         return transactionOutput.TransactionId;
     }
 
@@ -667,6 +708,11 @@ public class RewardsService : IRewardsService, ISingletonDependency
             PoolType = x.Value.PoolType.ToString(),
             Sort = x.Value.Sort
         }).OrderBy(x => x.Sort).ToList();
+    }
+
+    public async Task TransactionRecordAsync(TransactionRecordDto input)
+    {
+        await _transactionRecordProvider.SaveTransactionRecordAsync(input);
     }
 
 
@@ -1022,7 +1068,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         var operationRewardsInfo =
             await GetOperationRewardsAsync(unWithdrawList, address, poolIds, poolType: poolType, true, dappIds);
-        
+
         var nowRewards = operationRewardsInfo.NowRewards;
         var nextReward = operationRewardsInfo.NextRewards;
         var operationClaimInfos = operationRewardsInfo.OperationClaimInfos;
@@ -1061,7 +1107,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         _logger.LogInformation(
             "resultList : {resultList}, withdrawClaimIds: {withdrawClaimIds}, includeClaimIds: {includeClaimIds}, amount: {amount}, operationAmount: {operationAmount}",
-            resultList.Count,withdrawClaimIds.Count,JsonConvert.SerializeObject(includeClaimIds), amount, operationAmount);
+            resultList.Count, withdrawClaimIds.Count, JsonConvert.SerializeObject(includeClaimIds), amount,
+            operationAmount);
         return checkResult;
     }
 

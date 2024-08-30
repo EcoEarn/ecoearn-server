@@ -9,6 +9,7 @@ public class ContractConstants
     public const string SenderName = "QueryTokenPoolStakedSumAccount";
     public const string UpdateStakeInfoSenderName = "UpdateStakeInfo";
     public const string GetBalance = "GetBalance";
+    public const string GetPoolAddressInfo = "GetPoolAddressInfo";
 }
 
 public static class TransactionState

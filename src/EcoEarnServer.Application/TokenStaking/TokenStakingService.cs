@@ -109,7 +109,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             
             tokenPoolsDto.SupportEarlyStake = poolInfoDic.TryGetValue(tokenPoolsIndexerDto.PoolId, out var poolInfo) &&
                                               poolInfo.SupportEarlyStake;
-            tokenPoolsDto.Sort = poolInfo!.Sort;
+            tokenPoolsDto.Sort = poolInfo?.Sort ?? 0;
             var tokenPoolStakedSumLong = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
                 { PoolId = tokenPoolsDto.PoolId, ChainId = input.ChainId });
 

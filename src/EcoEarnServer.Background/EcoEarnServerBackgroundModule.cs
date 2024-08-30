@@ -64,6 +64,7 @@ public class EcoEarnServerBackgroundModule : AbpModule
         Configure<LarkAlertOptions>(configuration.GetSection("LarkAlert"));
         Configure<LpPoolRateOptions>(configuration.GetSection("LpPoolRate"));
         Configure<MetricsGenerateOptions>(configuration.GetSection("MetricsGenerate"));
+        Configure<HamsterServerOptions>(configuration.GetSection("HamsterServer"));
         context.Services.AddSingleton<IPointsSnapshotService, PointsSnapshotService>();
         context.Services.AddSingleton<IPointsSnapshotProvider, PointsSnapshotProvider>();
         context.Services.AddSingleton<IStateProvider, StateProvider>();

@@ -25,5 +25,7 @@ public class InitJobsService : IInitJobsService, ISingletonDependency
     {
         _recurringJobs.AddOrUpdate<IPointsSnapshotService>("IPointsSnapshotService",
             x => x.ExecuteAsync(), _options.CreateSnapshotCorn);
+        _recurringJobs.AddOrUpdate<IWeeklyMetricsService>("IWeeklyMetricsService",
+            x => x.ExecuteAsync(), _options.WeeklyMetricsCorn);
     }
 }
