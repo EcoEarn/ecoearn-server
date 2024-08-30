@@ -145,14 +145,22 @@ public class MetricsService : IMetricsService, ISingletonDependency
                 PoolId = poolId,
                 Amount = balance,
                 UsdAmount = double.Parse(balance) * rate,
-                Rate = rate.ToString(CultureInfo.InvariantCulture)
+                Rate = rate.ToString(CultureInfo.InvariantCulture),
+                PoolType = poolInfo.PoolType
             };
             stakePriceDtoList.Add(dto);
         }
 
         var usdAmount = stakePriceDtoList.Sum(x => x.UsdAmount) / 100000000;
         var amount = stakePriceDtoList.Sum(x => double.Parse(x.Amount)) / 100000000;
-
+        var tokenStakeUsdAmount = stakePriceDtoList
+            .Where(x => x.PoolType == PoolTypeEnums.Token).Sum(x => x.UsdAmount) / 100000000;
+        var tokenStakeSumAmount = stakePriceDtoList
+            .Where(x => x.PoolType == PoolTypeEnums.Token).Sum(x => double.Parse(x.Amount)) / 100000000;
+        var lpStakeUsdAmount = stakePriceDtoList
+            .Where(x => x.PoolType == PoolTypeEnums.Lp).Sum(x => x.UsdAmount) / 100000000;
+        var lpStakeSumAmount = stakePriceDtoList
+            .Where(x => x.PoolType == PoolTypeEnums.Lp).Sum(x => double.Parse(x.Amount)) / 100000000;
         var platformStakedUsdAmount = new BizMetricsEto()
         {
             Id = GuidHelper.GenerateId(nowDate, BizType.PlatformStakedUsdAmount.ToString()),
@@ -168,6 +176,38 @@ public class MetricsService : IMetricsService, ISingletonDependency
             BizType = BizType.PlatformStakedAmount
         };
 
+        var tokenStakedAmount = new BizMetricsEto()
+        {
+            Id = GuidHelper.GenerateId(nowDate, BizType.TokenStakedAmount.ToString()),
+            BizNumber = tokenStakeSumAmount,
+            CreateTime = now,
+            BizType = BizType.TokenStakedAmount
+        };
+
+        var tokenStakedUsdAmount = new BizMetricsEto()
+        {
+            Id = GuidHelper.GenerateId(nowDate, BizType.TokenStakedUsdAmount.ToString()),
+            BizNumber = tokenStakeUsdAmount,
+            CreateTime = now,
+            BizType = BizType.TokenStakedUsdAmount
+        };
+
+        var lpStakedAmount = new BizMetricsEto()
+        {
+            Id = GuidHelper.GenerateId(nowDate, BizType.LpStakedAmount.ToString()),
+            BizNumber = lpStakeSumAmount,
+            CreateTime = now,
+            BizType = BizType.LpStakedAmount
+        };
+
+        var lpStakedUsdAmount = new BizMetricsEto()
+        {
+            Id = GuidHelper.GenerateId(nowDate, BizType.LpStakedUsdAmount.ToString()),
+            BizNumber = lpStakeUsdAmount,
+            CreateTime = now,
+            BizType = BizType.LpStakedUsdAmount
+        };
+
 
         var userCount = await _userInformationProvider.GetUserCount();
         var registerCount = new BizMetricsEto()
@@ -179,111 +219,31 @@ public class MetricsService : IMetricsService, ISingletonDependency
         };
 
         var allStakeInfoList = await GetAllStakeInfoList();
-        var poolTypeStakeInfoDic = allStakeInfoList
-            .GroupBy(x => x.PoolType)
-            .ToDictionary(g => g.Key, g => g.ToList());
-        if (poolTypeStakeInfoDic.TryGetValue(PoolTypeEnums.Token, out var tokenStakedInfo))
+
+        var tokenStakedAddressCount = new BizMetricsEto()
         {
-            var tokenStakeUsdAmount = 0d;
-            var tokenStakeSumAmount = 0d;
-            var tokenStakeAddressCount = tokenStakedInfo.Select(x => x.Account).Distinct().Count();
-            foreach (var tokenStakedIndexerDto in tokenStakedInfo)
-            {
-                var tokenStakeAmount = tokenStakedIndexerDto.SubStakeInfos
-                    .Sum(x => x.StakedAmount + x.EarlyStakedAmount) / 100000000;
-                tokenStakeSumAmount += tokenStakeAmount;
-                var key = GuidHelper.GenerateId(PoolTypeEnums.Token.ToString(),
-                    $"{tokenStakedIndexerDto.StakingToken.ToUpper()}_USDT");
-                if (rateDic.TryGetValue(key, out var rate))
-                {
-                    tokenStakeUsdAmount += double.Parse(tokenStakeAmount.ToString()) * rate;
-                }
-            }
+            Id = GuidHelper.GenerateId(nowDate, BizType.TokenStakedAddressCount.ToString()),
+            BizNumber = allStakeInfoList.Where(x => x.PoolType == PoolTypeEnums.Token)
+                .Select(x => x.Account).Distinct().Count(),
+            CreateTime = now,
+            BizType = BizType.TokenStakedAddressCount
+        };
 
-            var tokenStakedAddressCount = new BizMetricsEto()
-            {
-                Id = GuidHelper.GenerateId(nowDate, BizType.TokenStakedAddressCount.ToString()),
-                BizNumber = tokenStakeAddressCount,
-                CreateTime = now,
-                BizType = BizType.TokenStakedAddressCount
-            };
-
-            var tokenStakedAmount = new BizMetricsEto()
-            {
-                Id = GuidHelper.GenerateId(nowDate, BizType.TokenStakedAmount.ToString()),
-                BizNumber = tokenStakeSumAmount,
-                CreateTime = now,
-                BizType = BizType.TokenStakedAmount
-            };
-
-            var tokenStakedUsdAmount = new BizMetricsEto()
-            {
-                Id = GuidHelper.GenerateId(nowDate, BizType.TokenStakedUsdAmount.ToString()),
-                BizNumber = tokenStakeUsdAmount,
-                CreateTime = now,
-                BizType = BizType.TokenStakedUsdAmount
-            };
-            evenDataList.Add(tokenStakedAddressCount);
-            evenDataList.Add(tokenStakedAmount);
-            evenDataList.Add(tokenStakedUsdAmount);
-        }
-
-        if (poolTypeStakeInfoDic.TryGetValue(PoolTypeEnums.Lp, out var lpStakedInfo))
+        var lpStakedAddressCount = new BizMetricsEto()
         {
-            var lpStakeAddressCount = lpStakedInfo.Select(x => x.Account).Distinct().Count();
-            var lpStakeAmount = lpStakedInfo.SelectMany(x => x.SubStakeInfos)
-                .Sum(x => x.StakedAmount + x.EarlyStakedAmount) / 100000000;
-            double lpStakeUsdAmount = 0;
+            Id = GuidHelper.GenerateId(nowDate, BizType.LpStakedAddressCount.ToString()),
+            BizNumber = allStakeInfoList.Where(x => x.PoolType == PoolTypeEnums.Lp)
+                .Select(x => x.Account).Distinct().Count(),
+            CreateTime = now,
+            BizType = BizType.LpStakedAddressCount
+        };
 
-            foreach (var tokenStakedIndexerDto in lpStakedInfo)
-            {
-                if (!poolIdDic.TryGetValue(tokenStakedIndexerDto.PoolId, out var poolInfo))
-                {
-                    continue;
-                }
-
-                var key = GuidHelper.GenerateId(PoolTypeEnums.Lp.ToString(), tokenStakedIndexerDto.StakingToken,
-                    poolInfo.TokenPoolConfig.StakeTokenContract);
-                if (!rateDic.TryGetValue(key, out var rate))
-                {
-                    continue;
-                }
-
-                var sum = tokenStakedIndexerDto.SubStakeInfos.Sum(x => x.StakedAmount + x.EarlyStakedAmount) /
-                          100000000;
-                var sumUsd = sum * rate;
-                lpStakeUsdAmount += sumUsd;
-            }
-
-            var lpStakedAddressCount = new BizMetricsEto()
-            {
-                Id = GuidHelper.GenerateId(nowDate, BizType.LpStakedAddressCount.ToString()),
-                BizNumber = lpStakeAddressCount,
-                CreateTime = now,
-                BizType = BizType.LpStakedAddressCount
-            };
-
-            var lpStakedAmount = new BizMetricsEto()
-            {
-                Id = GuidHelper.GenerateId(nowDate, BizType.LpStakedAmount.ToString()),
-                BizNumber = lpStakeAmount,
-                CreateTime = now,
-                BizType = BizType.LpStakedAmount
-            };
-
-            var lpStakedUsdAmount = new BizMetricsEto()
-            {
-                Id = GuidHelper.GenerateId(nowDate, BizType.LpStakedUsdAmount.ToString()),
-                BizNumber = lpStakeUsdAmount,
-                CreateTime = now,
-                BizType = BizType.LpStakedUsdAmount
-            };
-
-            evenDataList.Add(lpStakedAddressCount);
-            evenDataList.Add(lpStakedAmount);
-            evenDataList.Add(lpStakedUsdAmount);
-        }
-
+        evenDataList.Add(tokenStakedAddressCount);
+        evenDataList.Add(tokenStakedAmount);
+        evenDataList.Add(tokenStakedUsdAmount);
+        evenDataList.Add(lpStakedAddressCount);
+        evenDataList.Add(lpStakedAmount);
+        evenDataList.Add(lpStakedUsdAmount);
         evenDataList.Add(platformStakedUsdAmount);
         evenDataList.Add(platformStakeAmount);
         evenDataList.Add(registerCount);
