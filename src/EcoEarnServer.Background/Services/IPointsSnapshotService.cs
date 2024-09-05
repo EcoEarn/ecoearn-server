@@ -67,11 +67,11 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
             return;
         }
         
-        // if (!await _stateProvider.CheckStateAsync(StateGeneratorHelper.StakingPointsKey(), true))
-        // {
-        //     _logger.LogInformation("today staking points has not ready.");
-        //     return;
-        // }
+        if (!await _stateProvider.CheckStateAsync(StateGeneratorHelper.StakingPointsKey(), true))
+        {
+            _logger.LogInformation("today staking points has not ready.");
+            return;
+        }
 
         if (await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateSnapshotKey()))
         {
