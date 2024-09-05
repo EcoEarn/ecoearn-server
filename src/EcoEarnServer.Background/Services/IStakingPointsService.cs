@@ -22,6 +22,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
@@ -35,6 +36,7 @@ public interface IStakingPointsService
 public class StakingPointsService : IStakingPointsService, ITransientDependency
 {
     private const string DailyPeriod = "86400";
+    private const string LockKeyPrefix = "EcoEarnServer:StakingPoints:Lock:";
 
     private readonly ITokenStakingProvider _tokenStakingProvider;
     private readonly IPriceProvider _priceProvider;
@@ -47,12 +49,16 @@ public class StakingPointsService : IStakingPointsService, ITransientDependency
     private readonly ILarkAlertProvider _larkAlertProvider;
     private readonly PointsSnapshotOptions _pointsSnapshotOptions;
     private readonly IContractProvider _contractProvider;
+    private readonly IStateProvider _stateProvider;
+    private readonly IAbpDistributedLock _distributedLock;
+
 
     public StakingPointsService(ITokenStakingProvider tokenStakingProvider, IPriceProvider priceProvider,
         IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions, IStakingPointsProvider stakingPointsProvider,
         IClusterClient clusterClient, IObjectMapper objectMapper, ILogger<StakingPointsService> logger,
         IDistributedEventBus distributedEventBus, ILarkAlertProvider larkAlertProvider,
-        IOptionsSnapshot<PointsSnapshotOptions> pointsSnapshotOptions, IContractProvider contractProvider)
+        IOptionsSnapshot<PointsSnapshotOptions> pointsSnapshotOptions, IContractProvider contractProvider,
+        IStateProvider stateProvider, IAbpDistributedLock distributedLock)
     {
         _tokenStakingProvider = tokenStakingProvider;
         _priceProvider = priceProvider;
@@ -63,39 +69,68 @@ public class StakingPointsService : IStakingPointsService, ITransientDependency
         _distributedEventBus = distributedEventBus;
         _larkAlertProvider = larkAlertProvider;
         _contractProvider = contractProvider;
+        _stateProvider = stateProvider;
+        _distributedLock = distributedLock;
         _pointsSnapshotOptions = pointsSnapshotOptions.Value;
         _lpPoolRateOptions = lpPoolRateOptions.Value;
     }
 
     public async Task ExecuteAsync()
     {
-        var addressStakingSettlePointsList = await GetAddressStakingSettlePointsListAsync();
+        await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix);
 
-        var failInfos = new List<string>();
-        var listEto = new List<AddressStakingSettlePointsEto>();
-        foreach (var addressStakingSettlePointsDto in addressStakingSettlePointsList)
+        if (handle == null)
         {
-            var id = addressStakingSettlePointsDto.Id;
-            var addressStakingSettlePointsGrain = _clusterClient.GetGrain<IAddressStakingSettlePointsGrain>(id);
-            var result = await addressStakingSettlePointsGrain.CreateOrUpdateAsync(addressStakingSettlePointsDto);
-
-            if (!result.Success)
-            {
-                _logger.LogError("address settle staking points fail, message:{message}, id: {id}", result.Message, id);
-                failInfos.Add(JsonConvert.SerializeObject(addressStakingSettlePointsDto));
-            }
-
-            listEto.Add(_objectMapper.Map<AddressStakingSettlePointsDto, AddressStakingSettlePointsEto>(result.Data));
+            _logger.LogWarning("do not get lock, keys already exits.");
+            return;
         }
 
-        await _distributedEventBus.PublishAsync(listEto);
-
-        var transactionFailMessages = await BatchSettleAsync(listEto);
-        failInfos.AddRange(transactionFailMessages);
-
-        if (failInfos.Count > 0)
+        if (await _stateProvider.CheckStateAsync(StateGeneratorHelper.StakingPointsKey()))
         {
-            await _larkAlertProvider.SendLarkFailAlertAsync(JsonConvert.ToString(failInfos));
+            _logger.LogInformation("today has already created points snapshot.");
+            return;
+        }
+
+        try
+        {
+            var addressStakingSettlePointsList = await GetAddressStakingSettlePointsListAsync();
+
+            var failInfos = new List<string>();
+            var listEto = new List<AddressStakingSettlePointsEto>();
+            foreach (var addressStakingSettlePointsDto in addressStakingSettlePointsList)
+            {
+                var id = addressStakingSettlePointsDto.Id;
+                var addressStakingSettlePointsGrain = _clusterClient.GetGrain<IAddressStakingSettlePointsGrain>(id);
+                var result = await addressStakingSettlePointsGrain.CreateOrUpdateAsync(addressStakingSettlePointsDto);
+
+                if (!result.Success)
+                {
+                    _logger.LogError("address settle staking points fail, message:{message}, id: {id}", result.Message,
+                        id);
+                    failInfos.Add(JsonConvert.SerializeObject(addressStakingSettlePointsDto));
+                }
+
+                listEto.Add(
+                    _objectMapper.Map<AddressStakingSettlePointsDto, AddressStakingSettlePointsEto>(result.Data));
+            }
+
+            await _distributedEventBus.PublishAsync(listEto);
+
+            var transactionFailMessages = await BatchSettleAsync(listEto);
+            failInfos.AddRange(transactionFailMessages);
+
+            if (failInfos.Count > 0)
+            {
+                await _larkAlertProvider.SendLarkFailAlertAsync(JsonConvert.ToString(failInfos));
+            }
+
+            await _stateProvider.SetStateAsync(StateGeneratorHelper.StakingPointsKey(), true);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "StakingPoints fail.");
+            await _stateProvider.SetStateAsync(StateGeneratorHelper.StakingPointsKey(), false);
+            await _larkAlertProvider.SendLarkFailAlertAsync(e.Message);
         }
     }
 

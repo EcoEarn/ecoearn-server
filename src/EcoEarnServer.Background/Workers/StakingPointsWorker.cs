@@ -14,21 +14,23 @@ public class StakingPointsWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly ILogger<StakingPointsWorker> _logger;
     private readonly PointsSnapshotOptions _options;
+    private readonly IStakingPointsService _stakingPointsService;
 
     public StakingPointsWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IOptionsSnapshot<PointsSnapshotOptions> options, ILogger<StakingPointsWorker> logger,
-        IMetricsService metricsService) : base(timer,
+        IStakingPointsService stakingPointsService) : base(timer,
         serviceScopeFactory)
     {
         _logger = logger;
+        _stakingPointsService = stakingPointsService;
         _options = options.Value;
         timer.Period = options.Value.GenerateMetricsPeriod * 60 * 1000;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        _logger.LogInformation("begin execute MetricsWorker. begin time: {time}", DateTime.UtcNow);
-        //await _metricsService.GenerateMetricsAsync();
-        _logger.LogInformation("finish execute MetricsWorker. finish time: {time}", DateTime.UtcNow);
+        _logger.LogInformation("begin execute StakingPointsWorker. begin time: {time}", DateTime.UtcNow);
+        await _stakingPointsService.ExecuteAsync();
+        _logger.LogInformation("finish execute StakingPointsWorker. finish time: {time}", DateTime.UtcNow);
     }
-} 
+}

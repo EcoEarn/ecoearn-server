@@ -72,6 +72,7 @@ public class EcoEarnServerBackgroundModule : AbpModule
         context.Services.AddSingleton<ISettlePointsRewardsProvider, SettlePointsRewardsProvider>();
         context.Services.AddSingleton<ILarkAlertProvider, LarkAlertProvider>();
         context.Services.AddSingleton<IMetricsService, MetricsService>();
+        context.Services.AddSingleton<IStakingPointsService, StakingPointsService>();
         context.Services.AddSingleton<IMetricsProvider, MetricsProvider>();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
         ConfigureRedis(context, configuration, hostingEnvironment);
