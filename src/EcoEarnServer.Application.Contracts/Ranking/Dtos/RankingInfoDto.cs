@@ -11,7 +11,7 @@ public class RankingInfoDto
 public class OwnerRankingDto
 {
     public string Address { get; set; }
-    public string Points { get; set; }
+    public decimal Points { get; set; }
     public long Ranking { get; set; }
 }
 
@@ -24,6 +24,6 @@ public class RankingListDto
 public class RankingDto
 {
     public string Address { get; set; }
-    public string Points { get; set; }
+    public decimal Points { get; set; }
     public bool IsOwner { get; set; }
 }

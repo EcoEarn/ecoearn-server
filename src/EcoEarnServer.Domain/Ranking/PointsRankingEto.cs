@@ -13,6 +13,6 @@ public class PointsRankingEto
 {
     public string Id { get; set; }
     public string Address { get; set; }
-    public string Points { get; set; }
+    public decimal Points { get; set; }
     public long UpdateTime { get; set; }
 }

@@ -36,7 +36,7 @@ public class RankingService : IRankingService, ISingletonDependency
                 {
                     Address = pointsRankingIndex.Address,
                     Points = pointsRankingIndex.Points,
-                    Ranking = i + 1
+                    Ranking = i > 99 ? 0 : i + 1
                 };
             }
 
@@ -46,23 +46,26 @@ public class RankingService : IRankingService, ISingletonDependency
         if (ownerRankingDto == null)
         {
             var ownerRankingPoints = await _rankingProvider.GetOwnerRankingPointsAsync(input.Address);
-            var topList = await _rankingProvider.GetPointsRankingListAsync(0, 100);
-            var top = topList.Item2.Select(x => x.Address).ToList();
-            var ranking = 0;
-            for (var i = 0; i < top.Count; i++)
+            if (ownerRankingPoints != null)
             {
-                if (input.Address == top[i])
+                var topList = await _rankingProvider.GetPointsRankingListAsync(0, 100);
+                var top = topList.Item2.Select(x => x.Address).ToList();
+                var ranking = 0;
+                for (var i = 0; i < top.Count; i++)
                 {
-                    ranking = i;
+                    if (input.Address == top[i])
+                    {
+                        ranking = i + 1;
+                    }
                 }
-            }
 
-            ownerRankingDto = new OwnerRankingDto
-            {
-                Address = ownerRankingPoints.Address,
-                Points = ownerRankingPoints.Points,
-                Ranking = ranking
-            };
+                ownerRankingDto = new OwnerRankingDto
+                {
+                    Address = ownerRankingPoints.Address,
+                    Points = ownerRankingPoints.Points,
+                    Ranking = ranking
+                };
+            }
         }
 
         return new RankingInfoDto

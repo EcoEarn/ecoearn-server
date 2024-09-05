@@ -82,9 +82,14 @@ public class SnapshotGeneratorService : ISnapshotGeneratorService, ITransientDep
             {
                 Id = GuidHelper.GenerateId(dto.Address, dto.DappId),
                 Address = dto.Address,
-                Points = dto.FiveSymbolAmount,
+                Points = decimal.Parse(dto.FirstSymbolAmount) / decimal.Parse("100000000"),
                 UpdateTime = now
             }).ToList();
+
+        if (etoList.Count == 0)
+        {
+            return;
+        }
 
         await _distributedEventBus.PublishAsync(new PointsRankingListEto
         {

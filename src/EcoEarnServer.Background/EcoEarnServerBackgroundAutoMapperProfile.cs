@@ -28,8 +28,8 @@ public class EcoEarnServerBackgroundAutoMapperProfile : Profile
         CreateMap<PointsPoolStakeSumDto, PointsPoolStakeSumEto>().ReverseMap();
         CreateMap<PointsListDto, PointsSnapshotEto>().ReverseMap();
         CreateMap<AddressStakingPointsDto, AddressStakingSettlePointsDto>()
-            .ForMember(t => t.Id, m => m.MapFrom(f => f.Points.ToString(CultureInfo.InvariantCulture)))
-            .ForMember(t => t.Points, m => m.MapFrom(f => GuidHelper.GenerateId(f.Address)))
+            .ForMember(t => t.Points, m => m.MapFrom(f => f.Points.ToString(CultureInfo.InvariantCulture)))
+            .ForMember(t => t.Id, m => m.MapFrom(f => GuidHelper.GenerateId(f.Address)))
             .ReverseMap();
         CreateMap<StakingPointsDto, StakingSettlePointsDto>()
             .ForMember(t => t.Points, m => m.MapFrom(f => f.Points.ToString(CultureInfo.InvariantCulture)))

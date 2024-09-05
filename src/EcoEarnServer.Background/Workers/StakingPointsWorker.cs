@@ -24,7 +24,7 @@ public class StakingPointsWorker : AsyncPeriodicBackgroundWorkerBase
         _logger = logger;
         _stakingPointsService = stakingPointsService;
         _options = options.Value;
-        timer.Period = options.Value.GenerateMetricsPeriod * 60 * 1000;
+        timer.Period = 1000;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)

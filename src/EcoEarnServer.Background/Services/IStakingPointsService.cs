@@ -114,7 +114,10 @@ public class StakingPointsService : IStakingPointsService, ITransientDependency
                     _objectMapper.Map<AddressStakingSettlePointsDto, AddressStakingSettlePointsEto>(result.Data));
             }
 
-            await _distributedEventBus.PublishAsync(listEto);
+            await _distributedEventBus.PublishAsync(new AddressStakingSettlePointsListEto
+            {
+                EventDataList = listEto
+            });
 
             var transactionFailMessages = await BatchSettleAsync(listEto);
             failInfos.AddRange(transactionFailMessages);
@@ -142,8 +145,8 @@ public class StakingPointsService : IStakingPointsService, ITransientDependency
         var recurCount = settlePointsList.Count / _pointsSnapshotOptions.BatchStakingPointsSettleCount + 1;
         for (var i = 0; i < recurCount; i++)
         {
-            var skipCount = _pointsSnapshotOptions.BatchSnapshotCount * i;
-            var list = settlePointsList.Skip(skipCount).Take(_pointsSnapshotOptions.BatchSnapshotCount).ToList();
+            var skipCount = _pointsSnapshotOptions.BatchStakingPointsSettleCount * i;
+            var list = settlePointsList.Skip(skipCount).Take(_pointsSnapshotOptions.BatchStakingPointsSettleCount).ToList();
 
             if (list.IsNullOrEmpty()) return failMessages;
 
@@ -160,8 +163,8 @@ public class StakingPointsService : IStakingPointsService, ITransientDependency
                 UserPointsList = { userPoints }
             };
             var transaction = _contractProvider
-                .CreateTransaction(chainId, ContractConstants.SenderName, ContractConstants.ContractName,
-                    ContractConstants.StakedRewardsMethodName, batchSettleInput)
+                .CreateTransaction(chainId, ContractConstants.BatchSettleSenderName, ContractConstants.RewardsContractName,
+                    ContractConstants.BatchSettleMethodName, batchSettleInput)
                 .Result
                 .transaction;
             var transactionOutput = await _contractProvider.SendTransactionAsync(chainId, transaction);
@@ -221,8 +224,8 @@ public class StakingPointsService : IStakingPointsService, ITransientDependency
                 var stakeAmount = subStakeInfoIndexerDto.StakedAmount + subStakeInfoIndexerDto.EarlyStakedAmount;
                 var k = 1 + decimal.Parse(subStakeInfoIndexerDto.Period.ToString()) / decimal.Parse(DailyPeriod) /
                     decimal.Parse(poolInfo.TokenPoolConfig.FixedBoostFactor.ToString());
-                points += decimal.Parse(stakeAmount.ToString()) *
-                          decimal.Parse(rate.ToString(CultureInfo.InvariantCulture)) * k;
+                points += decimal.Parse(stakeAmount.ToString()) / 100000000 *
+                          Convert.ToDecimal(rate.ToString("F10")) * k;
             }
 
             stakingPointsDtos.Add(new StakingPointsDto

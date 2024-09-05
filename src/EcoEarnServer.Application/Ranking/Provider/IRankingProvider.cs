@@ -56,6 +56,7 @@ public class RankingProvider : AbpRedisCache, IRankingProvider, ISingletonDepend
             }
 
             await RedisDatabase.KeyDeleteAsync(JoinCheckStatusRedisKeyPrefix + address);
+            return false;
         }
 
         var isJoin = await GetJoinRecordAsync(chainId, address);

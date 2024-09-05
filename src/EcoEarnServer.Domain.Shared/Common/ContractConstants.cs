@@ -8,10 +8,12 @@ public class ContractConstants
     public const string RewardsContractName = "EcoEarnRewards";
     public const string TokenContractName = "AElfTokenContractAddress";
     public const string SenderName = "QueryTokenPoolStakedSumAccount";
+    public const string BatchSettleSenderName = "BatchSettlePoints";
     public const string UpdateStakeInfoSenderName = "UpdateStakeInfo";
     public const string GetBalance = "GetBalance";
     public const string GetPoolAddressInfo = "GetPoolAddressInfo";
     public const string GetJoinRecord = "GetJoinRecord";
+    public const string BatchSettleMethodName = "BatchSettle";
 }
 
 public static class TransactionState

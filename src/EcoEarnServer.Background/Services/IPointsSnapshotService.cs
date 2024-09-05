@@ -66,6 +66,12 @@ public class PointsSnapshotService : IPointsSnapshotService, ISingletonDependenc
             _logger.LogWarning("do not get lock, keys already exits.");
             return;
         }
+        
+        // if (!await _stateProvider.CheckStateAsync(StateGeneratorHelper.StakingPointsKey(), true))
+        // {
+        //     _logger.LogInformation("today staking points has not ready.");
+        //     return;
+        // }
 
         if (await _stateProvider.CheckStateAsync(StateGeneratorHelper.GenerateSnapshotKey()))
         {
