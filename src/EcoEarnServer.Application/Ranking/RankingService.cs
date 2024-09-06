@@ -33,13 +33,14 @@ public class RankingService : IRankingService, ISingletonDependency
             var rankingDto = _objectMapper.Map<PointsRankingIndex, RankingDto>(pointsRankingIndex);
             var isOwner = rankingDto.Address == input.Address;
             rankingDto.IsOwner = isOwner;
+            var rank = i + input.SkipCount;
             if (isOwner)
             {
                 ownerRankingDto = new OwnerRankingDto
                 {
                     Address = pointsRankingIndex.Address,
                     Points = pointsRankingIndex.Points,
-                    Ranking = i > 99 ? 0 : i + 1
+                    Ranking = rank > 99 ? 0 : rank + 1
                 };
             }
 
