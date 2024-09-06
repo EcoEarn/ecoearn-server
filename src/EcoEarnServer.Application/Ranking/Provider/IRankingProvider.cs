@@ -74,6 +74,11 @@ public class RankingProvider : AbpRedisCache, IRankingProvider, ISingletonDepend
 
     public async Task<PointsRankingIndex> GetOwnerRankingPointsAsync(string address)
     {
+        if (string.IsNullOrEmpty(address))
+        {
+            return null;
+        }
+
         var mustQuery = new List<Func<QueryContainerDescriptor<PointsRankingIndex>, QueryContainer>>();
 
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.Address).Terms(address)));
