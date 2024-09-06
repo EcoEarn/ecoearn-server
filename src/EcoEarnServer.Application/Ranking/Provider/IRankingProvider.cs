@@ -49,19 +49,16 @@ public class RankingProvider : AbpRedisCache, IRankingProvider, ISingletonDepend
         var redisValue = await RedisDatabase.StringGetAsync(JoinCheckStatusRedisKeyPrefix + address);
         if (redisValue.HasValue)
         {
-            var result = _serializer.Deserialize<bool>(redisValue);
-            if (result)
-            {
-                return true;
-            }
-
-            await RedisDatabase.KeyDeleteAsync(JoinCheckStatusRedisKeyPrefix + address);
-            return false;
+            return _serializer.Deserialize<bool>(redisValue);
         }
 
         var isJoin = await GetJoinRecordAsync(chainId, address);
-        await RedisDatabase.StringSetAsync(JoinCheckStatusRedisKeyPrefix + address,
-            _serializer.Serialize(isJoin), TimeSpan.FromDays(30));
+        if (isJoin)
+        {
+            await RedisDatabase.StringSetAsync(JoinCheckStatusRedisKeyPrefix + address,
+                _serializer.Serialize(true), TimeSpan.FromDays(30));
+        }
+
         return isJoin;
     }
 
@@ -96,8 +93,8 @@ public class RankingProvider : AbpRedisCache, IRankingProvider, ISingletonDepend
             .transaction;
         try
         {
-            var transactionOutput = await _contractProvider.CallTransactionAsync<BoolValue>(chainId, transaction);
-            return transactionOutput.Value;
+            var transactionOutput = await _contractProvider.CallTransactionAsync(chainId, transaction);
+            return bool.Parse(transactionOutput);
         }
         catch (Exception e)
         {
