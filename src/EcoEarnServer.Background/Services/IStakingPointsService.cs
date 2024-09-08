@@ -97,6 +97,7 @@ public class StakingPointsService : IStakingPointsService, ITransientDependency
 
             var failInfos = new List<string>();
             var listEto = new List<AddressStakingSettlePointsEto>();
+            var settleListEto = new List<AddressStakingSettlePointsEto>();
             foreach (var addressStakingSettlePointsDto in addressStakingSettlePointsList)
             {
                 var id = addressStakingSettlePointsDto.Id;
@@ -109,7 +110,8 @@ public class StakingPointsService : IStakingPointsService, ITransientDependency
                         id);
                     failInfos.Add(JsonConvert.SerializeObject(addressStakingSettlePointsDto));
                 }
-
+                settleListEto.Add(
+                    _objectMapper.Map<AddressStakingSettlePointsDto, AddressStakingSettlePointsEto>(addressStakingSettlePointsDto));
                 listEto.Add(
                     _objectMapper.Map<AddressStakingSettlePointsDto, AddressStakingSettlePointsEto>(result.Data));
             }
@@ -119,7 +121,7 @@ public class StakingPointsService : IStakingPointsService, ITransientDependency
                 EventDataList = listEto
             });
 
-            var transactionFailMessages = await BatchSettleAsync(listEto);
+            var transactionFailMessages = await BatchSettleAsync(settleListEto);
             failInfos.AddRange(transactionFailMessages);
 
             if (failInfos.Count > 0)
