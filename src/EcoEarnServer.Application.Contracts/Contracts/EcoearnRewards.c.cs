@@ -242,6 +242,63 @@ namespace EcoEarn.Contracts.Rewards {
     }
   }
 
+  public partial class Joined : aelf::IEvent<Joined>
+  {
+    public global::System.Collections.Generic.IEnumerable<Joined> GetIndexed()
+    {
+      return new List<Joined>
+      {
+      };
+    }
+
+    public Joined GetNonIndexed()
+    {
+      return new Joined
+      {
+        Domain = Domain,
+        Registrant = Registrant,
+      };
+    }
+  }
+
+  public partial class ReferralAccepted : aelf::IEvent<ReferralAccepted>
+  {
+    public global::System.Collections.Generic.IEnumerable<ReferralAccepted> GetIndexed()
+    {
+      return new List<ReferralAccepted>
+      {
+      };
+    }
+
+    public ReferralAccepted GetNonIndexed()
+    {
+      return new ReferralAccepted
+      {
+        Referrer = Referrer,
+        Invitee = Invitee,
+      };
+    }
+  }
+
+  public partial class PointsContractConfigSet : aelf::IEvent<PointsContractConfigSet>
+  {
+    public global::System.Collections.Generic.IEnumerable<PointsContractConfigSet> GetIndexed()
+    {
+      return new List<PointsContractConfigSet>
+      {
+      };
+    }
+
+    public PointsContractConfigSet GetNonIndexed()
+    {
+      return new PointsContractConfigSet
+      {
+        PointsContract = PointsContract,
+        Config = Config,
+      };
+    }
+  }
+
   #endregion
   public static partial class EcoEarnRewardsContractContainer
   {
@@ -266,6 +323,11 @@ namespace EcoEarn.Contracts.Rewards {
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.RemoveLiquidityInput> __Marshaller_RemoveLiquidityInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.RemoveLiquidityInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.StakeLiquidityInput> __Marshaller_StakeLiquidityInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.StakeLiquidityInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.LiquidityInfo> __Marshaller_LiquidityInfo = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.LiquidityInfo.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.AcceptReferralInput> __Marshaller_AcceptReferralInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.AcceptReferralInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.BatchSettleInput> __Marshaller_BatchSettleInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.BatchSettleInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.SetPointsContractConfigInput> __Marshaller_SetPointsContractConfigInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.SetPointsContractConfigInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.GetPointsContractConfigOutput> __Marshaller_GetPointsContractConfigOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.GetPointsContractConfigOutput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Google.Protobuf.WellKnownTypes.BoolValue> __Marshaller_google_protobuf_BoolValue = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Google.Protobuf.WellKnownTypes.BoolValue.Parser.ParseFrom);
     #endregion
 
     #region Methods
@@ -395,6 +457,55 @@ namespace EcoEarn.Contracts.Rewards {
         __Marshaller_aelf_Hash,
         __Marshaller_LiquidityInfo);
 
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty> __Method_Join = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "Join",
+        __Marshaller_google_protobuf_Empty,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::EcoEarn.Contracts.Rewards.AcceptReferralInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AcceptReferral = new aelf::Method<global::EcoEarn.Contracts.Rewards.AcceptReferralInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "AcceptReferral",
+        __Marshaller_AcceptReferralInput,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::EcoEarn.Contracts.Rewards.BatchSettleInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_BatchSettle = new aelf::Method<global::EcoEarn.Contracts.Rewards.BatchSettleInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "BatchSettle",
+        __Marshaller_BatchSettleInput,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty> __Method_JoinFor = new aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "JoinFor",
+        __Marshaller_aelf_Address,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::EcoEarn.Contracts.Rewards.SetPointsContractConfigInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetPointsContractConfig = new aelf::Method<global::EcoEarn.Contracts.Rewards.SetPointsContractConfigInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "SetPointsContractConfig",
+        __Marshaller_SetPointsContractConfigInput,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::EcoEarn.Contracts.Rewards.GetPointsContractConfigOutput> __Method_GetPointsContractConfig = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::EcoEarn.Contracts.Rewards.GetPointsContractConfigOutput>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetPointsContractConfig",
+        __Marshaller_google_protobuf_Empty,
+        __Marshaller_GetPointsContractConfigOutput);
+
+    static readonly aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.BoolValue> __Method_GetJoinRecord = new aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.BoolValue>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetJoinRecord",
+        __Marshaller_aelf_Address,
+        __Marshaller_google_protobuf_BoolValue);
+
     #endregion
 
     #region Descriptors
@@ -509,6 +620,41 @@ namespace EcoEarn.Contracts.Rewards {
     //     throw new global::System.NotImplementedException();
     //   }
     //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Join(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty AcceptReferral(global::EcoEarn.Contracts.Rewards.AcceptReferralInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty BatchSettle(global::EcoEarn.Contracts.Rewards.BatchSettleInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty JoinFor(global::AElf.Types.Address input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetPointsContractConfig(global::EcoEarn.Contracts.Rewards.SetPointsContractConfigInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::EcoEarn.Contracts.Rewards.GetPointsContractConfigOutput GetPointsContractConfig(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.BoolValue GetJoinRecord(global::AElf.Types.Address input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
     // }
     //
     // public static aelf::ServerServiceDefinition BindService(EcoEarnRewardsContractBase serviceImpl)
@@ -532,7 +678,14 @@ namespace EcoEarn.Contracts.Rewards {
     //       .AddMethod(__Method_AddLiquidityAndStake, serviceImpl.AddLiquidityAndStake)
     //       .AddMethod(__Method_RemoveLiquidity, serviceImpl.RemoveLiquidity)
     //       .AddMethod(__Method_StakeLiquidity, serviceImpl.StakeLiquidity)
-    //       .AddMethod(__Method_GetLiquidityInfo, serviceImpl.GetLiquidityInfo).Build();
+    //       .AddMethod(__Method_GetLiquidityInfo, serviceImpl.GetLiquidityInfo)
+    //       .AddMethod(__Method_Join, serviceImpl.Join)
+    //       .AddMethod(__Method_AcceptReferral, serviceImpl.AcceptReferral)
+    //       .AddMethod(__Method_BatchSettle, serviceImpl.BatchSettle)
+    //       .AddMethod(__Method_JoinFor, serviceImpl.JoinFor)
+    //       .AddMethod(__Method_SetPointsContractConfig, serviceImpl.SetPointsContractConfig)
+    //       .AddMethod(__Method_GetPointsContractConfig, serviceImpl.GetPointsContractConfig)
+    //       .AddMethod(__Method_GetJoinRecord, serviceImpl.GetJoinRecord).Build();
     // }
 
   }

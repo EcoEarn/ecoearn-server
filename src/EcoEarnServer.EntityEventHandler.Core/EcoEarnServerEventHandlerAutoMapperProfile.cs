@@ -4,7 +4,9 @@ using EcoEarnServer.Metrics;
 using EcoEarnServer.PointsPool;
 using EcoEarnServer.PointsSnapshot;
 using EcoEarnServer.PointsStakeRewards;
+using EcoEarnServer.Ranking;
 using EcoEarnServer.Rewards;
+using EcoEarnServer.StakingSettlePoints;
 using EcoEarnServer.TransactionRecord;
 using EcoEarnServer.Users;
 using EcoEarnServer.Users.Eto;
@@ -27,5 +29,8 @@ public class EcoEarnServerEventHandlerAutoMapperProfile : Profile
         CreateMap<BizMetricsEto, BizMetricsIndex>();
         CreateMap<UserInformationEto, UserIndex>();
         CreateMap<TransactionRecordEto, TransactionRecordIndex>();
+        CreateMap<AddressStakingSettlePointsEto, AddressStakingSettlePointsIndex>();
+        CreateMap<StakingSettlePointsDto, StakingSettlePoints.StakingSettlePoints>();
+        CreateMap<PointsRankingEto, PointsRankingIndex>();
     }
 }

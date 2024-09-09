@@ -1,6 +1,7 @@
 using EcoEarnServer.Grains;
 using EcoEarnServer.PointsStaking;
 using EcoEarnServer.PointsStaking.Provider;
+using EcoEarnServer.Ranking.Provider;
 using EcoEarnServer.TokenStaking;
 using EcoEarnServer.TokenStaking.Provider;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,6 +36,7 @@ public class EcoEarnServerApplicationModule : AbpModule
         context.Services.AddSingleton<IPointsStakingService, PointsStakingService>();
         context.Services.AddSingleton<ISecretProvider, SecretProvider>();
         context.Services.AddSingleton<IPriceProvider, PriceProvider>();
+        context.Services.AddSingleton<IRankingProvider, RankingProvider>();
         context.Services.AddHttpClient();
     }
 }

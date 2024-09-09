@@ -388,6 +388,25 @@ namespace EcoEarn.Contracts.Tokens {
     }
   }
 
+  public partial class StakeOnBehalfPermissionSet : aelf::IEvent<StakeOnBehalfPermissionSet>
+  {
+    public global::System.Collections.Generic.IEnumerable<StakeOnBehalfPermissionSet> GetIndexed()
+    {
+      return new List<StakeOnBehalfPermissionSet>
+      {
+      };
+    }
+
+    public StakeOnBehalfPermissionSet GetNonIndexed()
+    {
+      return new StakeOnBehalfPermissionSet
+      {
+        DappId = DappId,
+        Status = Status,
+      };
+    }
+  }
+
   #endregion
   public static partial class EcoEarnTokensContractContainer
   {
@@ -427,6 +446,7 @@ namespace EcoEarn.Contracts.Tokens {
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Tokens.IsInUnlockWindowInput> __Marshaller_IsInUnlockWindowInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Tokens.IsInUnlockWindowInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Google.Protobuf.WellKnownTypes.BoolValue> __Marshaller_google_protobuf_BoolValue = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Google.Protobuf.WellKnownTypes.BoolValue.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Tokens.SetDappConfigInput> __Marshaller_SetDappConfigInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Tokens.SetDappConfigInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Tokens.StakeOnBehalfPermission> __Marshaller_StakeOnBehalfPermission = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Tokens.StakeOnBehalfPermission.Parser.ParseFrom);
     #endregion
 
     #region Methods
@@ -661,6 +681,20 @@ namespace EcoEarn.Contracts.Tokens {
         __Marshaller_SetDappConfigInput,
         __Marshaller_google_protobuf_Empty);
 
+    static readonly aelf::Method<global::EcoEarn.Contracts.Tokens.StakeOnBehalfPermission, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetStakeOnBehalfPermission = new aelf::Method<global::EcoEarn.Contracts.Tokens.StakeOnBehalfPermission, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "SetStakeOnBehalfPermission",
+        __Marshaller_StakeOnBehalfPermission,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::EcoEarn.Contracts.Tokens.StakeOnBehalfPermission> __Method_GetStakeOnBehalfPermission = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::EcoEarn.Contracts.Tokens.StakeOnBehalfPermission>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetStakeOnBehalfPermission",
+        __Marshaller_google_protobuf_Empty,
+        __Marshaller_StakeOnBehalfPermission);
+
     #endregion
 
     #region Descriptors
@@ -850,6 +884,16 @@ namespace EcoEarn.Contracts.Tokens {
     //     throw new global::System.NotImplementedException();
     //   }
     //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetStakeOnBehalfPermission(global::EcoEarn.Contracts.Tokens.StakeOnBehalfPermission input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::EcoEarn.Contracts.Tokens.StakeOnBehalfPermission GetStakeOnBehalfPermission(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
     // }
     //
     // public static aelf::ServerServiceDefinition BindService(EcoEarnTokensContractBase serviceImpl)
@@ -888,7 +932,9 @@ namespace EcoEarn.Contracts.Tokens {
     //       .AddMethod(__Method_GetAdmin, serviceImpl.GetAdmin)
     //       .AddMethod(__Method_StakeOnBehalf, serviceImpl.StakeOnBehalf)
     //       .AddMethod(__Method_IsInUnlockWindow, serviceImpl.IsInUnlockWindow)
-    //       .AddMethod(__Method_SetDappConfig, serviceImpl.SetDappConfig).Build();
+    //       .AddMethod(__Method_SetDappConfig, serviceImpl.SetDappConfig)
+    //       .AddMethod(__Method_SetStakeOnBehalfPermission, serviceImpl.SetStakeOnBehalfPermission)
+    //       .AddMethod(__Method_GetStakeOnBehalfPermission, serviceImpl.GetStakeOnBehalfPermission).Build();
     // }
 
   }

@@ -76,7 +76,8 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
             _logger.LogWarning("[PriceDataProvider][GateIo] Parse response error.");
             if (currencyPair.ToUpper().Contains(_hamsterServerOptions.Symbol))
             {
-                price = await GetHamsterSymbolUsdPriceAsync();
+                var hamsterSymbolUsdPrice = await GetHamsterSymbolUsdPriceAsync();
+                price = Math.Round(double.Parse(hamsterSymbolUsdPrice), 10);
             }
         }
 
@@ -134,15 +135,15 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
         }
     }
 
-    private async Task<double> GetHamsterSymbolUsdPriceAsync()
+    private async Task<string> GetHamsterSymbolUsdPriceAsync()
     {
         var apiInfo = new ApiInfo(HttpMethod.Get, "api/app/hamster-pass/price");
-        var usdPrice = 0d;
+        var usdPrice = "0.0000000000";
         try
         {
             var resp = await _httpProvider.InvokeAsync<CommonResponseDto<HamsterPriceDataDto>>(
                 _hamsterServerOptions.BaseUrl, apiInfo);
-            usdPrice = resp.Data.AcornsInUsd;
+            usdPrice = double.Parse(resp.Data.AcornsInUsd.ToString(CultureInfo.InvariantCulture)).ToString("F10");
         }
         catch (Exception e)
         {
