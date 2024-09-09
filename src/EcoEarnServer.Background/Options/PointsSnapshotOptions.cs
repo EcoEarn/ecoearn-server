@@ -11,6 +11,7 @@ public class PointsSnapshotOptions
     public int GenerateMetricsPeriod { get; set; } = 5;
 
     public int BatchSnapshotCount { get; set; } = 100;
+    public int BatchStakingPointsSettleCount { get; set; } = 20;
     public int TaskDelayMilliseconds { get; set; } = 1000;
     public int BatchQueryCount { get; set; } = 5000;
 
@@ -25,7 +26,10 @@ public class PointsSnapshotOptions
     public Dictionary<string, List<NoSettleInfoDto>> NoSettleInfoDic { get; set; } 
     public bool SchrodingerUnBoundPointsSwitch { get; set; } 
     public string SchrodingerDappId { get; set; } 
-    public List<string> NineSymbolContractAddressList { get; set; } 
+    public string EcoEarnDappId { get; set; } 
+    public List<string> NineSymbolContractAddressList { get; set; }
+    public string ChainId { get; set; } = "tDVW";
+    public string StakingPointsActionName { get; set; } = "StakeEarnPoints";
 }
 
 public class ElevenSymbolSubAddressDto

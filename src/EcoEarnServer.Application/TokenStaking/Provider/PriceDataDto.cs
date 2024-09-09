@@ -17,7 +17,7 @@ public class HamsterPriceDataDto
 {
     public double AcornsInElf { get; set; }
     public double ElfInUsd { get; set; }
-    public double AcornsInUsd { get; set; }
+    public decimal AcornsInUsd { get; set; }
 }
 public class LpPriceItemDto
 {

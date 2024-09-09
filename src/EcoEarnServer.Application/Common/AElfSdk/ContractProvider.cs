@@ -23,7 +23,7 @@ public interface IContractProvider
     Task<(Hash transactionId, Transaction transaction)> CreateTransaction(string chainId, string senderName,
         string contractName, string methodName,
         IMessage param);
-    
+
     Task<(Hash transactionId, Transaction transaction)> CreateTransactionByContract(string chainId, string senderName,
         string contractAddress, string methodName,
         IMessage param);
@@ -31,6 +31,8 @@ public interface IContractProvider
     Task<SendTransactionOutput> SendTransactionAsync(string chainId, Transaction transaction);
 
     Task<T> CallTransactionAsync<T>(string chainId, Transaction transaction) where T : class;
+
+    Task<string> CallTransactionAsync(string chainId, Transaction transaction);
 
     Task<TransactionResultDto> QueryTransactionResult(string transactionId, string chainId);
 
@@ -200,7 +202,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         transaction.Signature = account.GetSignatureWith(transactionId.ToByteArray());
         return (transactionId, transaction);
     }
-    
+
     public async Task<(Hash transactionId, Transaction transaction)> CreateTransactionByContract(string chainId,
         string senderName, string contractAddress, string methodName,
         IMessage param)
@@ -251,6 +253,18 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         }
 
         return (T)JsonConvert.DeserializeObject(rawTransactionResult, typeof(T), _settings);
+    }
+
+    public async Task<string> CallTransactionAsync(string chainId, Transaction transaction)
+    {
+        var client = Client(chainId);
+        var rawTransactionResult = await client.ExecuteRawTransactionAsync(new ExecuteRawTransactionDto()
+        {
+            RawTransaction = transaction.ToByteArray().ToHex(),
+            Signature = transaction.Signature.ToHex()
+        });
+
+        return rawTransactionResult;
     }
 }
 

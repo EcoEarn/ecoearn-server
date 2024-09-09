@@ -8,6 +8,7 @@ public static class StateGeneratorHelper
     private const string SettleStateRedisKeyPrefix = "EcoEarnServer:SettleState:";
     private const string MetricsStateRedisKeyPrefix = "EcoEarnServer:MetricsState:";
     private const string WeeklyMetricsStateRedisKeyPrefix = "EcoEarnServer:WeeklyMetricsState:";
+    private const string StakingPointsRedisKeyPrefix = "EcoEarnServer:StakingPoints:";
 
     public static string GenerateSnapshotKey() => SnapshotStateRedisKeyPrefix + DateTime.UtcNow.ToString("yyyyMMdd");
 
@@ -17,6 +18,8 @@ public static class StateGeneratorHelper
     public static string GenerateMetricsKey() => MetricsStateRedisKeyPrefix + DateTime.UtcNow.ToString("yyyyMMdd");
 
     public static string GenerateWeeklyMetricsKey() => WeeklyMetricsStateRedisKeyPrefix + GetThisSaturday();
+    
+    public static string StakingPointsKey() => StakingPointsRedisKeyPrefix + DateTime.UtcNow.ToString("yyyyMMdd");
 
 
     private static string GetThisSaturday()

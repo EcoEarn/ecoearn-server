@@ -12,6 +12,8 @@ using EcoEarnServer.PointsPool;
 using EcoEarnServer.PointsStakeRewards;
 using EcoEarnServer.PointsStaking.Dtos;
 using EcoEarnServer.PointsStaking.Provider;
+using EcoEarnServer.Ranking;
+using EcoEarnServer.Ranking.Dtos;
 using EcoEarnServer.Rewards;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.Rewards.Provider;
@@ -35,7 +37,8 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.StakeTokenName, m => m.MapFrom(f => f.PointsName))
             .ForPath(t => t.RewardsTokenName, m => m.MapFrom(f => f.PointsPoolConfig.RewardToken))
             .ForPath(t => t.PoolDailyRewards,
-                m => m.MapFrom(f => decimal.Parse((f.PointsPoolConfig.RewardPerBlock * 86400).ToString()) / decimal.Parse("100000000")))
+                m => m.MapFrom(f =>
+                    decimal.Parse((f.PointsPoolConfig.RewardPerBlock * 86400).ToString()) / decimal.Parse("100000000")))
             .ForPath(t => t.ReleasePeriod, m => m.MapFrom(f => f.PointsPoolConfig.ReleasePeriod))
             ;
 
@@ -85,6 +88,9 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.Rewards, m => m.MapFrom(f => f.ClaimedAmount))
             .ForMember(t => t.Date, m => m.MapFrom(f => f.ClaimedTime))
             .ForMember(t => t.RewardsToken, m => m.MapFrom(f => f.ClaimedSymbol))
+            .ReverseMap();
+        CreateMap<PointsRankingIndex, RankingDto>()
+            .ForMember(t => t.Points, m => m.MapFrom(f => f.Points))
             .ReverseMap();
     }
 }
