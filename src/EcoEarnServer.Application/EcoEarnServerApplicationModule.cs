@@ -37,6 +37,7 @@ public class EcoEarnServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISecretProvider, SecretProvider>();
         context.Services.AddSingleton<IPriceProvider, PriceProvider>();
         context.Services.AddSingleton<IRankingProvider, RankingProvider>();
+        context.Services.AddSingleton<IMarketCapProvider, MarketCapProvider>();
         context.Services.AddHttpClient();
     }
 }

@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using EcoEarnServer.Common.GraphQL;
 using EcoEarnServer.Rewards.Dtos;
+using EcoEarnServer.StakingSettlePoints;
 using EcoEarnServer.TokenStaking.Dtos;
 using GraphQL;
 using Microsoft.Extensions.Logging;
@@ -22,17 +24,22 @@ public interface ITokenStakingProvider
 
     Task<List<TokenStakedIndexerDto>> GetStakedInfoListAsync(string tokenName, string address,
         List<string> pools, int skipCount = 0, int maxResultCount = 5000);
+
+    Task<List<StakeCountIndex>> GetStakeCountListAsync();
 }
 
 public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
 {
     private readonly IGraphQlHelper _graphQlHelper;
     private readonly ILogger<TokenStakingProvider> _logger;
+    private readonly INESTRepository<StakeCountIndex, string> _repository;
 
-    public TokenStakingProvider(IGraphQlHelper graphQlHelper, ILogger<TokenStakingProvider> logger)
+    public TokenStakingProvider(IGraphQlHelper graphQlHelper, ILogger<TokenStakingProvider> logger,
+        INESTRepository<StakeCountIndex, string> repository)
     {
         _graphQlHelper = graphQlHelper;
         _logger = logger;
+        _repository = repository;
     }
 
     public async Task<List<TokenPoolsIndexerDto>> GetTokenPoolsAsync(GetTokenPoolsInput input)
@@ -91,7 +98,8 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
         }
     }
 
-    public async Task<List<TokenStakedIndexerDto>> GetStakedInfoAsync(string tokenName, string address, List<string> poolIds)
+    public async Task<List<TokenStakedIndexerDto>> GetStakedInfoAsync(string tokenName, string address,
+        List<string> poolIds)
     {
         var list = await GetStakedInfoListAsync(tokenName, address, poolIds);
         return list;
@@ -253,5 +261,11 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             _logger.LogError(e, "getStakedInfoList Indexer error");
             return new List<TokenStakedIndexerDto>();
         }
+    }
+
+    public async Task<List<StakeCountIndex>> GetStakeCountListAsync()
+    {
+        var result = await _repository.GetListAsync();
+        return result.Item2;
     }
 }

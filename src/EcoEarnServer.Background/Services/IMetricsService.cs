@@ -11,6 +11,7 @@ using EcoEarnServer.Common;
 using EcoEarnServer.Metrics;
 using EcoEarnServer.Options;
 using EcoEarnServer.Rewards.Dtos;
+using EcoEarnServer.StakingSettlePoints;
 using EcoEarnServer.TokenStaking.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
 using EcoEarnServer.TransactionRecord;
@@ -284,6 +285,23 @@ public class MetricsService : IMetricsService, ISingletonDependency
         {
             EventDataList = evenDataList
         });
+
+
+        var poolIdStakeCountDic = allStakeInfoList
+            .GroupBy(x => x.PoolId)
+            .ToDictionary(g => g.Key, g => g.ToList().Count);
+        var stakeCountEtos = poolIdStakeCountDic
+            .Select(e => new StakeCountEto
+            {
+                PoolId = e.Key,
+                Count = e.Value
+            }).ToList();
+
+        await _distributedEventBus.PublishAsync(new StakeCountListEto
+        {
+            EventDataList = stakeCountEtos
+        });
+
 
         //await _stateProvider.SetStateAsync(StateGeneratorHelper.GenerateMetricsKey(), true);
     }

@@ -67,6 +67,7 @@ namespace EcoEarnServer
             Configure<SecurityServerOptions>(configuration.GetSection("SecurityServer"));
             Configure<HamsterServerOptions>(configuration.GetSection("HamsterServer"));
             Configure<PoolInfoOptions>(configuration.GetSection("PoolInfo"));
+            Configure<CoinMarketCapServerOptions>(configuration.GetSection("CoinMarketCapServer"));
 
             ConfigureConventionalControllers();
             // ConfigureAuthentication(context, configuration);
