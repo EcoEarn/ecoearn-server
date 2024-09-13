@@ -234,6 +234,13 @@ public class RewardsService : IRewardsService, ISingletonDependency
                     : 0,
                 SupportEarlyStake = hasPoolInfo && poolInfo.SupportEarlyStake,
                 PoolId = poolId,
+                TokenIcon =  _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(
+                    poolType == PoolTypeEnums.Points ? tokenPool.DappId : tokenPool.PoolId,
+                    out var icons)
+                    ? icons
+                    : poolType == PoolTypeEnums.Points
+                        ? new List<string> { }
+                        : new List<string> { "" },
                 RewardsTokenName = rewardsTokenName,
                 PoolType = poolType.ToString(),
                 PoolTypeEnums = poolType,
