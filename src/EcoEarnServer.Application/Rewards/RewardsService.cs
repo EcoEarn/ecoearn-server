@@ -365,7 +365,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         var transaction =
             Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
 
-        var earlyStakeInput = new EarlyStakeInput();
+        var earlyStakeInput = new EcoEarn.Contracts.Rewards.StakeRewardsInput();
         if (transaction.To.ToBase58() == _earnContractOptions.CAContractAddress &&
             transaction.MethodName == "ManagerForwardCall")
         {
@@ -374,13 +374,13 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 managerForwardCallInput.ContractAddress.ToBase58() ==
                 _earnContractOptions.EcoEarnRewardsContractAddress)
             {
-                earlyStakeInput = EarlyStakeInput.Parser.ParseFrom(managerForwardCallInput.Args);
+                earlyStakeInput = EcoEarn.Contracts.Rewards.StakeRewardsInput.Parser.ParseFrom(managerForwardCallInput.Args);
             }
         }
         else if (transaction.To.ToBase58() == _earnContractOptions.EcoEarnRewardsContractAddress &&
                  transaction.MethodName == "RewardsStaked")
         {
-            earlyStakeInput = EarlyStakeInput.Parser.ParseFrom(transaction.Params);
+            earlyStakeInput = EcoEarn.Contracts.Rewards.StakeRewardsInput.Parser.ParseFrom(transaction.Params);
         }
         else
         {
@@ -388,7 +388,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
         }
 
 
-        var computedHash = HashHelper.ComputeFrom(new EarlyStakeInput
+        var computedHash = HashHelper.ComputeFrom(new EcoEarn.Contracts.Rewards.StakeRewardsInput
         {
             StakeInput = earlyStakeInput.StakeInput,
         }.ToByteArray());
@@ -945,9 +945,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 ExpirationTime = expiredTime / 1000,
                 DappId = Hash.LoadFromHex(dappId)
             },
-            ExecuteType.EarlyStake => new EarlyStakeInput
+            ExecuteType.EarlyStake => new EcoEarn.Contracts.Rewards.StakeRewardsInput
             {
-                StakeInput = new StakeInput
+                StakeInput = new EcoEarn.Contracts.Rewards.StakeInput
                 {
                     ClaimIds = { repeatedField },
                     Account = Address.FromBase58(address),
