@@ -370,7 +370,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             transaction.MethodName == "ManagerForwardCall")
         {
             var managerForwardCallInput = ManagerForwardCallInput.Parser.ParseFrom(transaction.Params);
-            if (managerForwardCallInput.MethodName == "EarlyStake" &&
+            if (managerForwardCallInput.MethodName == "RewardsStaked" &&
                 managerForwardCallInput.ContractAddress.ToBase58() ==
                 _earnContractOptions.EcoEarnRewardsContractAddress)
             {
@@ -378,7 +378,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             }
         }
         else if (transaction.To.ToBase58() == _earnContractOptions.EcoEarnRewardsContractAddress &&
-                 transaction.MethodName == "EarlyStake")
+                 transaction.MethodName == "RewardsStaked")
         {
             earlyStakeInput = EarlyStakeInput.Parser.ParseFrom(transaction.Params);
         }
