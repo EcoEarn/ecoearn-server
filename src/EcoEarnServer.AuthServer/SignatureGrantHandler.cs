@@ -89,7 +89,11 @@ public class SignatureGrantHandler : ITokenExtensionGrant, ITransientDependency
             AssertHelper.IsTrue(CryptoHelper.RecoverPublicKey(signature,
                 HashHelper.ComputeFrom(Encoding.UTF8.GetBytes(string.Join("-", address, timestampVal)).ToHex()).ToByteArray(),
                 out var managerPublicKey), "Invalid signature.");
-            AssertHelper.IsTrue(managerPublicKey.ToHex() == publicKeyVal, "Invalid publicKey or signature.");
+            
+            AssertHelper.IsTrue(CryptoHelper.RecoverPublicKey(signature,
+                HashHelper.ComputeFrom(string.Join("-", address, timestampVal)).ToByteArray(),
+                out var managerPublicKeyOld), "Invalid signature.");
+            AssertHelper.IsTrue(managerPublicKey.ToHex() == publicKeyVal || managerPublicKeyOld.ToHex() == publicKeyVal, "Invalid publicKey or signature.");
 
             var time = DateTime.UnixEpoch.AddMilliseconds(timestamp);
             AssertHelper.IsTrue(
