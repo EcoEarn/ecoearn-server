@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Cryptography;
@@ -84,8 +85,9 @@ public class SignatureGrantHandler : ITokenExtensionGrant, ITransientDependency
             var caAddressMain = string.Empty;
             var caAddressSide = new Dictionary<string, string>();
 
+            
             AssertHelper.IsTrue(CryptoHelper.RecoverPublicKey(signature,
-                HashHelper.ComputeFrom(string.Join("-", address, timestampVal)).ToByteArray(),
+                HashHelper.ComputeFrom(Encoding.UTF8.GetBytes(string.Join("-", address, timestampVal)).ToHex()).ToByteArray(),
                 out var managerPublicKey), "Invalid signature.");
             AssertHelper.IsTrue(managerPublicKey.ToHex() == publicKeyVal, "Invalid publicKey or signature.");
 
