@@ -79,6 +79,13 @@ public class SignatureGrantHandler : ITokenExtensionGrant, ITransientDependency
             var signature = ByteArrayHelper.HexStringToByteArray(signatureVal);
             var signAddress = Address.FromPublicKey(publicKey);
 
+            
+            var newSignText = """
+                              Welcome to EcoEarn! Click to connect wallet to and accept its Terms of Service and Privacy Policy. This request will not trigger a blockchain transaction or cost any gas fees.
+
+                              signature:
+                              """+string.Join("-", address, timestampVal);
+            
             var managerAddress = Address.FromPublicKey(publicKey);
             var userName = string.Empty;
             var caHash = string.Empty;
@@ -87,7 +94,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant, ITransientDependency
 
             
             AssertHelper.IsTrue(CryptoHelper.RecoverPublicKey(signature,
-                HashHelper.ComputeFrom(Encoding.UTF8.GetBytes(string.Join("-", address, timestampVal)).ToHex()).ToByteArray(),
+                HashHelper.ComputeFrom(Encoding.UTF8.GetBytes(newSignText).ToHex()).ToByteArray(),
                 out var managerPublicKey), "Invalid signature.");
             
             AssertHelper.IsTrue(CryptoHelper.RecoverPublicKey(signature,
