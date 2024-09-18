@@ -83,7 +83,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant, ITransientDependency
             var newSignText = """
                               Welcome to EcoEarn! Click to connect wallet to and accept its Terms of Service and Privacy Policy. This request will not trigger a blockchain transaction or cost any gas fees.
 
-                              signature:
+                              signature: 
                               """+string.Join("-", address, timestampVal);
             
             var managerAddress = Address.FromPublicKey(publicKey);
