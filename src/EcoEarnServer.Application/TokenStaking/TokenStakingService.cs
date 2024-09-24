@@ -118,6 +118,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             tokenPoolsDto.MinimalStakePeriod = poolInfo.MinimalStakePeriod;
             tokenPoolsDto.ExtendStakePeriod = poolInfo.ExtendStakePeriod;
             tokenPoolsDto.MinimalStakeAmount = poolInfo.MinimalStakeAmount;
+            tokenPoolsDto.MinimalExtendStakeAmount = poolInfo.MinimalExtendStakeAmount;
             tokenPoolsDto.Sort = poolInfo?.Sort ?? 0;
             var tokenPoolStakedSumLong = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
                 { PoolId = tokenPoolsDto.PoolId, ChainId = input.ChainId });
