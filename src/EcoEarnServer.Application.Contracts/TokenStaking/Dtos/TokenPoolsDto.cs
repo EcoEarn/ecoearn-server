@@ -27,6 +27,9 @@ public class TokenPoolsDto
     public double Sort { get; set; }
     public long Stakers { get; set; }
     public decimal MarketCap { get; set; }
+    public long MinimalStakePeriod { get; set; }
+    public long ExtendStakePeriod { get; set; }
+    public long MinimalStakeAmount { get; set; }
     
     //stake info
     public string StakeId { get; set; }

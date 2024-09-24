@@ -234,7 +234,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
                     : 0,
                 SupportEarlyStake = hasPoolInfo && poolInfo.SupportEarlyStake,
                 PoolId = poolId,
-                TokenIcon =  _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(
+                TokenIcon = _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(
                     poolType == PoolTypeEnums.Points ? tokenPool.DappId : tokenPool.PoolId,
                     out var icons)
                     ? icons
@@ -374,7 +374,8 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 managerForwardCallInput.ContractAddress.ToBase58() ==
                 _earnContractOptions.EcoEarnRewardsContractAddress)
             {
-                earlyStakeInput = EcoEarn.Contracts.Rewards.StakeRewardsInput.Parser.ParseFrom(managerForwardCallInput.Args);
+                earlyStakeInput =
+                    EcoEarn.Contracts.Rewards.StakeRewardsInput.Parser.ParseFrom(managerForwardCallInput.Args);
             }
         }
         else if (transaction.To.ToBase58() == _earnContractOptions.EcoEarnRewardsContractAddress &&
@@ -500,14 +501,14 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         await UpdateOperationStatusAsync(addLiquidityAndStakeInput.StakeInput.Account.ToBase58(),
             addLiquidityAndStakeInput.StakeInput.ClaimIds);
-        
+
         await _transactionRecordProvider.SaveTransactionRecordAsync(new TransactionRecordDto
         {
             Address = addLiquidityAndStakeInput.StakeInput.Account.ToBase58(),
             Amount = addLiquidityAndStakeInput.StakeInput.Account.ToString(),
             TransactionType = TransactionType.LpAddLiquidityAndStake
         });
-        
+
         return transactionOutput.TransactionId;
     }
 
@@ -614,14 +615,14 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         await UpdateOperationStatusAsync(ExecuteType.LiquidityStake.ToString(),
             stakeLiquidityInput.LiquidityInput.LiquidityIds);
-        
+
         await _transactionRecordProvider.SaveTransactionRecordAsync(new TransactionRecordDto
         {
             Address = transaction.From.ToBase58(),
             Amount = stakeLiquidityInput.LiquidityInput.LpAmount.ToString(),
             TransactionType = TransactionType.LpLiquidityStake
         });
-        
+
         return transactionOutput.TransactionId;
     }
 
@@ -695,14 +696,14 @@ public class RewardsService : IRewardsService, ISingletonDependency
 
         await UpdateOperationStatusAsync(ExecuteType.LiquidityRemove.ToString(),
             removeLiquidityInput.LiquidityInput.LiquidityIds);
-        
+
         await _transactionRecordProvider.SaveTransactionRecordAsync(new TransactionRecordDto
         {
             Address = transaction.From.ToBase58(),
             Amount = removeLiquidityInput.LiquidityInput.LpAmount.ToString(),
             TransactionType = TransactionType.LpLiquidityRemove
         });
-        
+
         return transactionOutput.TransactionId;
     }
 
@@ -720,6 +721,11 @@ public class RewardsService : IRewardsService, ISingletonDependency
     public async Task TransactionRecordAsync(TransactionRecordDto input)
     {
         await _transactionRecordProvider.SaveTransactionRecordAsync(input);
+    }
+
+    public async Task<bool> TransactionResultAsync(long transactionBlockHeight, string chainId)
+    {
+        return await _rewardsProvider.GetConfirmBlockHeightAsync(chainId) <= transactionBlockHeight;
     }
 
 

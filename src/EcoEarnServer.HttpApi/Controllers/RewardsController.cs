@@ -113,4 +113,10 @@ public class RewardsController : EcoEarnServerController
         await _rewardsService.TransactionRecordAsync(input);
         return true;
     }
+    
+    [HttpGet("transaction/result")]
+    public async Task<bool> TransactionResultAsync(long transactionBlockHeight, string chainId)
+    {
+        return await _rewardsService.TransactionResultAsync(transactionBlockHeight, chainId);
+    }
 }

@@ -15,4 +15,7 @@ public class PoolInfoDto
     public PoolTypeEnums PoolType { get; set; }
     public double Sort { get; set; }
     public bool SupportEarlyStake { get; set; }
+    public long MinimalStakePeriod { get; set; }
+    public long ExtendStakePeriod { get; set; }
+    public long MinimalStakeAmount { get; set; }
 }
