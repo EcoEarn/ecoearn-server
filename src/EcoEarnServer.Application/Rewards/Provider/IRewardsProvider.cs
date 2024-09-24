@@ -308,7 +308,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    chainId = chainId
+                    chainId = chainId, filterType = BlockFilterType.LogEvent
                 }
             });
 

@@ -9,3 +9,11 @@ public class SyncStateDto
 {
     public long ConfirmedBlockHeight { get; set; }
 }
+
+
+public enum BlockFilterType
+{
+    Block,
+    Transaction,
+    LogEvent,
+}
