@@ -7,6 +7,7 @@ public class RewardsAggregationDto
     public string DappId { get; set; }
     public string PoolName { get; set; }
     public string PoolId { get; set; }
+    public List<string> TokenIcon { get; set; }
     public string RewardsTokenName { get; set; }
     public double Sort { get; set; }
     public double Rate { get; set; }

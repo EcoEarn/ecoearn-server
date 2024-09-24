@@ -25,6 +25,8 @@ public class TokenPoolsDto
     public long MinimumClaimAmount { get; set; }
     public bool SupportEarlyStake { get; set; }
     public double Sort { get; set; }
+    public long Stakers { get; set; }
+    public decimal MarketCap { get; set; }
     
     //stake info
     public string StakeId { get; set; }

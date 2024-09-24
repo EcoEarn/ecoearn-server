@@ -32,5 +32,8 @@ public class EcoEarnServerEventHandlerAutoMapperProfile : Profile
         CreateMap<AddressStakingSettlePointsEto, AddressStakingSettlePointsIndex>();
         CreateMap<StakingSettlePointsDto, StakingSettlePoints.StakingSettlePoints>();
         CreateMap<PointsRankingEto, PointsRankingIndex>();
+        CreateMap<StakeCountEto, StakeCountIndex>()
+            .ForPath(t => t.Id, m => m.MapFrom(f => f.PoolId))
+            .ReverseMap();
     }
 }

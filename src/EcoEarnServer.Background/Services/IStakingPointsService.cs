@@ -126,7 +126,7 @@ public class StakingPointsService : IStakingPointsService, ITransientDependency
 
             if (failInfos.Count > 0)
             {
-                await _larkAlertProvider.SendLarkFailAlertAsync(JsonConvert.ToString(failInfos));
+                await _larkAlertProvider.SendLarkFailAlertAsync(failInfos.ToString());
             }
 
             await _stateProvider.SetStateAsync(StateGeneratorHelper.StakingPointsKey(), true);

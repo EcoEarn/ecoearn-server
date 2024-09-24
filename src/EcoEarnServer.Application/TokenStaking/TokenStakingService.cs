@@ -44,6 +44,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
     private readonly IRewardsProvider _rewardsProvider;
     private readonly PoolInfoOptions _poolInfoOptions;
     private readonly ProjectItemOptions _projectItemOptions;
+    private readonly IMarketCapProvider _marketCapProvider;
 
     public TokenStakingService(ITokenStakingProvider tokenStakingProvider, IObjectMapper objectMapper,
         ILogger<TokenStakingService> logger, IOptions<RedisCacheOptions> optionsAccessor,
@@ -53,7 +54,8 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions,
         IOptionsSnapshot<PoolTextWordOptions> poolTextWordOptions,
         IRewardsProvider rewardsProvider, IOptionsSnapshot<PoolInfoOptions> poolInfoOptions,
-        IOptionsSnapshot<ProjectItemOptions> projectItemOptions) : base(optionsAccessor)
+        IOptionsSnapshot<ProjectItemOptions> projectItemOptions,
+        IMarketCapProvider marketCapProvider) : base(optionsAccessor)
     {
         _tokenStakingProvider = tokenStakingProvider;
         _objectMapper = objectMapper;
@@ -62,6 +64,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         _contractProvider = contractProvider;
         _priceProvider = priceProvider;
         _rewardsProvider = rewardsProvider;
+        _marketCapProvider = marketCapProvider;
         _projectItemOptions = projectItemOptions.Value;
         _poolInfoOptions = poolInfoOptions.Value;
         _poolTextWordOptions = poolTextWordOptions.Value;
@@ -82,6 +85,9 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             }
         }
 
+        var stakeCountList = await _tokenStakingProvider.GetStakeCountListAsync();
+        var poolIdStakeCountDic = stakeCountList.GroupBy(x => x.PoolId)
+            .ToDictionary(g => g.Key, g => g.First().Count);
         var tokenPoolsIndexerDtos = await _tokenStakingProvider.GetTokenPoolsAsync(input);
         var poolIds = tokenPoolsIndexerDtos.Select(x => x.PoolId).Distinct().ToList();
         var addressStakedInPoolDic = await _tokenStakingProvider.GetAddressStakedInPoolDicAsync(poolIds, input.Address);
@@ -106,7 +112,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             var tokenPoolsDto = _objectMapper.Map<TokenPoolsIndexerDto, TokenPoolsDto>(tokenPoolsIndexerDto);
             tokenPoolsDto.ProjectOwner =
                 dappIdDic.TryGetValue(tokenPoolsIndexerDto.DappId, out var projectItem) ? projectItem.DappName : "";
-            
+
             tokenPoolsDto.SupportEarlyStake = poolInfoDic.TryGetValue(tokenPoolsIndexerDto.PoolId, out var poolInfo) &&
                                               poolInfo.SupportEarlyStake;
             tokenPoolsDto.Sort = poolInfo?.Sort ?? 0;
@@ -176,6 +182,14 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             tokenPoolsDto.StakeApr = tokenPoolsDto.StakeInfos.Count == 0
                 ? 0
                 : tokenPoolsDto.StakeInfos.Sum(x => x.Apr) / tokenPoolsDto.StakeInfos.Count;
+
+            var symbolMarketCap =
+                await _marketCapProvider.GetSymbolMarketCapAsync(tokenPoolsIndexerDto.TokenPoolConfig.StakingToken
+                    .ToUpper());
+            tokenPoolsDto.MarketCap = symbolMarketCap;
+            
+            tokenPoolsDto.Stakers =
+                poolIdStakeCountDic.TryGetValue(tokenPoolsIndexerDto.PoolId, out var count) ? count : 0;
             tokenPoolsList.Add(tokenPoolsDto);
         }
 

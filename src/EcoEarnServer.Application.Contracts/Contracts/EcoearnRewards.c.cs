@@ -147,18 +147,18 @@ namespace EcoEarn.Contracts.Rewards {
     }
   }
 
-  public partial class EarlyStaked : aelf::IEvent<EarlyStaked>
+  public partial class RewardsStaked : aelf::IEvent<RewardsStaked>
   {
-    public global::System.Collections.Generic.IEnumerable<EarlyStaked> GetIndexed()
+    public global::System.Collections.Generic.IEnumerable<RewardsStaked> GetIndexed()
     {
-      return new List<EarlyStaked>
+      return new List<RewardsStaked>
       {
       };
     }
 
-    public EarlyStaked GetNonIndexed()
+    public RewardsStaked GetNonIndexed()
     {
-      return new EarlyStaked
+      return new RewardsStaked
       {
         ClaimIds = ClaimIds,
         Account = Account,
@@ -318,7 +318,7 @@ namespace EcoEarn.Contracts.Rewards {
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.ClaimInput> __Marshaller_ClaimInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.ClaimInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.ClaimInfo> __Marshaller_ClaimInfo = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.ClaimInfo.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.WithdrawInput> __Marshaller_WithdrawInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.WithdrawInput.Parser.ParseFrom);
-    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.EarlyStakeInput> __Marshaller_EarlyStakeInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.EarlyStakeInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.StakeRewardsInput> __Marshaller_StakeRewardsInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.StakeRewardsInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.AddLiquidityAndStakeInput> __Marshaller_AddLiquidityAndStakeInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.AddLiquidityAndStakeInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.RemoveLiquidityInput> __Marshaller_RemoveLiquidityInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.RemoveLiquidityInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.StakeLiquidityInput> __Marshaller_StakeLiquidityInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.StakeLiquidityInput.Parser.ParseFrom);
@@ -422,11 +422,11 @@ namespace EcoEarn.Contracts.Rewards {
         __Marshaller_WithdrawInput,
         __Marshaller_google_protobuf_Empty);
 
-    static readonly aelf::Method<global::EcoEarn.Contracts.Rewards.EarlyStakeInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_EarlyStake = new aelf::Method<global::EcoEarn.Contracts.Rewards.EarlyStakeInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+    static readonly aelf::Method<global::EcoEarn.Contracts.Rewards.StakeRewardsInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_StakeRewards = new aelf::Method<global::EcoEarn.Contracts.Rewards.StakeRewardsInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
-        "EarlyStake",
-        __Marshaller_EarlyStakeInput,
+        "StakeRewards",
+        __Marshaller_StakeRewardsInput,
         __Marshaller_google_protobuf_Empty);
 
     static readonly aelf::Method<global::EcoEarn.Contracts.Rewards.AddLiquidityAndStakeInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AddLiquidityAndStake = new aelf::Method<global::EcoEarn.Contracts.Rewards.AddLiquidityAndStakeInput, global::Google.Protobuf.WellKnownTypes.Empty>(
@@ -595,7 +595,7 @@ namespace EcoEarn.Contracts.Rewards {
     //     throw new global::System.NotImplementedException();
     //   }
     //
-    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty EarlyStake(global::EcoEarn.Contracts.Rewards.EarlyStakeInput input)
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty StakeRewards(global::EcoEarn.Contracts.Rewards.StakeRewardsInput input)
     //   {
     //     throw new global::System.NotImplementedException();
     //   }
@@ -674,7 +674,7 @@ namespace EcoEarn.Contracts.Rewards {
     //       .AddMethod(__Method_Claim, serviceImpl.Claim)
     //       .AddMethod(__Method_GetClaimInfo, serviceImpl.GetClaimInfo)
     //       .AddMethod(__Method_Withdraw, serviceImpl.Withdraw)
-    //       .AddMethod(__Method_EarlyStake, serviceImpl.EarlyStake)
+    //       .AddMethod(__Method_StakeRewards, serviceImpl.StakeRewards)
     //       .AddMethod(__Method_AddLiquidityAndStake, serviceImpl.AddLiquidityAndStake)
     //       .AddMethod(__Method_RemoveLiquidity, serviceImpl.RemoveLiquidity)
     //       .AddMethod(__Method_StakeLiquidity, serviceImpl.StakeLiquidity)
