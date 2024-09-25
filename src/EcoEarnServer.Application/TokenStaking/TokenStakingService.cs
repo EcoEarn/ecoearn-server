@@ -294,6 +294,14 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                     return subStakeInfoDto;
                 }).ToList(),
             };
+            if (_poolInfoOptions.PoolInfoDic.TryGetValue(tokenPoolIndexerDto.PoolId, out var poolInfo))
+            {
+                stakeInfoDto.MinimalStakePeriod = poolInfo.MinimalStakePeriod;
+                stakeInfoDto.ExtendStakePeriod = poolInfo.ExtendStakePeriod;
+                stakeInfoDto.MinimalStakeAmount = poolInfo.MinimalStakeAmount;
+                stakeInfoDto.MinimalExtendStakeAmount = poolInfo.MinimalExtendStakeAmount;
+            }
+
             stakeInfoDto.StakeApr = stakeInfoDto.SubStakeInfos.Count == 0
                 ? 0
                 : stakeInfoDto.SubStakeInfos.Sum(x => x.Apr) / stakeInfoDto.SubStakeInfos.Count;
