@@ -192,6 +192,10 @@ public class RewardsService : IRewardsService, ISingletonDependency
                 PoolName = hasPoolInfo ? poolInfo.PoolName : "",
                 Sort = hasPoolInfo ? poolInfo.Sort : 0,
                 SupportEarlyStake = hasPoolInfo && poolInfo.SupportEarlyStake,
+                TokenIcon = _tokenPoolIconsOptions.TokenPoolIconsDic.TryGetValue(dappId,
+                    out var icons)
+                    ? icons
+                    : new List<string> { },
                 RewardsTokenName = rewardsTokenName,
                 PoolType = PoolTypeEnums.Points.ToString(),
                 PoolTypeEnums = PoolTypeEnums.Points,
