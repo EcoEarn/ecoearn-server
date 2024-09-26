@@ -244,7 +244,9 @@ public class RewardsService : IRewardsService, ISingletonDependency
                     ? icons
                     : poolType == PoolTypeEnums.Points
                         ? new List<string> { }
-                        : new List<string> { "" },
+                        : poolType == PoolTypeEnums.Lp
+                            ? ["", ""]
+                            : [""],
                 RewardsTokenName = rewardsTokenName,
                 PoolType = poolType.ToString(),
                 PoolTypeEnums = poolType,
