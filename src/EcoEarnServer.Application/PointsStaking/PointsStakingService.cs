@@ -189,7 +189,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         var id = GuidHelper.GenerateId(address, poolId, today);
         var pointsPoolClaimRecordGrain = _clusterClient.GetGrain<IPointsPoolClaimRecordGrain>(id);
         var record = await pointsPoolClaimRecordGrain.GetAsync();
-        if (record != null)
+        if (record is { ClaimStatus: ClaimStatus.Claiming })
         {
             _logger.LogWarning(
                 "already generated signature. id: {id}", id);

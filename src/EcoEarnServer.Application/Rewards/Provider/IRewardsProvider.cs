@@ -31,8 +31,11 @@ public interface IRewardsProvider
     Task<MergedRewardsListIndexerResult> GetMergedRewardsListAsync(string address, List<string> poolIds,
         PoolTypeEnums poolType, List<string> dappIds = null, int skipCount = 0, int maxResultCount = 5000);
 
-    Task<RewardsInfoListIndexerDto> GetRewardsInfoListAsync(PoolTypeEnums poolType, string address, string id, int skipCount,
+    Task<RewardsInfoListIndexerDto> GetRewardsInfoListAsync(PoolTypeEnums poolType, string address, string id,
+        int skipCount,
         int maxResultCount);
+
+    Task<long> GetConfirmBlockHeightAsync(string chainId);
 }
 
 public class RewardsProvider : IRewardsProvider, ISingletonDependency
@@ -231,7 +234,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    poolIds = poolIds ?? new List<string>(), address = address, dappIds = dappIds ?? new List<string>(), 
+                    poolIds = poolIds ?? new List<string>(), address = address, dappIds = dappIds ?? new List<string>(),
                     poolType = poolType, skipCount = skipCount, maxResultCount = maxResultCount
                 }
             });
@@ -277,7 +280,8 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             }",
                 Variables = new
                 {
-                    poolType = poolType, address = address, id = id, skipCount = skipCount, maxResultCount = maxResultCount
+                    poolType = poolType, address = address, id = id, skipCount = skipCount,
+                    maxResultCount = maxResultCount
                 }
             });
 
@@ -287,6 +291,33 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         {
             _logger.LogError(e, "getClaimInfoList Indexer error");
             return new RewardsInfoListIndexerDto();
+        }
+    }
+
+    public async Task<long> GetConfirmBlockHeightAsync(string chainId)
+    {
+        try
+        {
+            var indexerResult = await _graphQlHelper.QueryAsync<ConfirmBlockHeightQuery>(new GraphQLRequest
+            {
+                Query =
+                    @"query($chainId:String!,$filterType:BlockFilterType!){
+                    syncState(input: {chainId:$chainId,filterType:$filterType}){
+                        confirmedBlockHeight
+                }
+            }",
+                Variables = new
+                {
+                    chainId = chainId, filterType = BlockFilterType.LogEvent
+                }
+            });
+
+            return indexerResult.SyncState.ConfirmedBlockHeight;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetConfirmBlockHeight Indexer error");
+            return long.MaxValue;
         }
     }
 }

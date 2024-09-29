@@ -25,4 +25,5 @@ public interface IRewardsService
     Task<string> RemoveLiquidityAsync(RewardsTransactionInput input);
     Task<List<FilterItemDto>> GetFilterItemsAsync();
     Task TransactionRecordAsync(TransactionRecordDto input);
+    Task<bool> TransactionResultAsync(long transactionBlockHeight, string chainId);
 }

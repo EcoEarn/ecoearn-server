@@ -88,6 +88,7 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.Rewards, m => m.MapFrom(f => f.ClaimedAmount))
             .ForMember(t => t.Date, m => m.MapFrom(f => f.ClaimedTime))
             .ForMember(t => t.RewardsToken, m => m.MapFrom(f => f.ClaimedSymbol))
+            .ForMember(t => t.PoolTypeStr, m => m.MapFrom(f => f.PoolType.ToString()))
             .ReverseMap();
         CreateMap<PointsRankingIndex, RankingDto>()
             .ForMember(t => t.Points, m => m.MapFrom(f => f.Points))

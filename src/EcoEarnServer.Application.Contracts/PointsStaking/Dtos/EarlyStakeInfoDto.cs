@@ -23,4 +23,9 @@ public class EarlyStakeInfoDto
     public string EarnedSymbol  { get; set; }
     
     public List<SubStakeInfoDto> SubStakeInfos { get; set; }
+    
+    public long MinimalStakePeriod { get; set; }
+    public long ExtendStakePeriod { get; set; }
+    public long MinimalStakeAmount { get; set; }
+    public long MinimalExtendStakeAmount { get; set; }
 }

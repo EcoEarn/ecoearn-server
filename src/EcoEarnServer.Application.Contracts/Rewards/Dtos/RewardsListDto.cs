@@ -5,6 +5,7 @@ namespace EcoEarnServer.Rewards.Dtos;
 public class RewardsListDto
 {
     public PoolTypeEnums PoolType { get; set; }
+    public string PoolTypeStr { get; set; }
     public string ProjectOwner { get; set; }
     public long ClaimedTime { get; set; }
     public string RewardsToken { get; set; }

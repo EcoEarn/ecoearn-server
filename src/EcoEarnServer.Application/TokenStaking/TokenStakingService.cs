@@ -115,6 +115,10 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
 
             tokenPoolsDto.SupportEarlyStake = poolInfoDic.TryGetValue(tokenPoolsIndexerDto.PoolId, out var poolInfo) &&
                                               poolInfo.SupportEarlyStake;
+            tokenPoolsDto.MinimalStakePeriod = poolInfo.MinimalStakePeriod;
+            tokenPoolsDto.ExtendStakePeriod = poolInfo.ExtendStakePeriod;
+            tokenPoolsDto.MinimalStakeAmount = poolInfo.MinimalStakeAmount;
+            tokenPoolsDto.MinimalExtendStakeAmount = poolInfo.MinimalExtendStakeAmount;
             tokenPoolsDto.Sort = poolInfo?.Sort ?? 0;
             var tokenPoolStakedSumLong = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
                 { PoolId = tokenPoolsDto.PoolId, ChainId = input.ChainId });
@@ -290,6 +294,14 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                     return subStakeInfoDto;
                 }).ToList(),
             };
+            if (_poolInfoOptions.PoolInfoDic.TryGetValue(tokenPoolIndexerDto.PoolId, out var poolInfo))
+            {
+                stakeInfoDto.MinimalStakePeriod = poolInfo.MinimalStakePeriod;
+                stakeInfoDto.ExtendStakePeriod = poolInfo.ExtendStakePeriod;
+                stakeInfoDto.MinimalStakeAmount = poolInfo.MinimalStakeAmount;
+                stakeInfoDto.MinimalExtendStakeAmount = poolInfo.MinimalExtendStakeAmount;
+            }
+
             stakeInfoDto.StakeApr = stakeInfoDto.SubStakeInfos.Count == 0
                 ? 0
                 : stakeInfoDto.SubStakeInfos.Sum(x => x.Apr) / stakeInfoDto.SubStakeInfos.Count;
