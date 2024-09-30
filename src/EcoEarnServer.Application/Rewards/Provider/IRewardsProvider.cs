@@ -1,12 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using EcoEarnServer.Common.GraphQL;
+using EcoEarnServer.Common.HttpClient;
+using EcoEarnServer.Options;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
 using GraphQL;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
 using Nest;
 using Volo.Abp.DependencyInjection;
 
@@ -43,13 +49,18 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
     private readonly IGraphQlHelper _graphQlHelper;
     private readonly ILogger<RewardsProvider> _logger;
     private readonly INESTRepository<RewardOperationRecordIndex, string> _repository;
+    private readonly IHttpProvider _httpProvider;
+    private readonly IndexerSyncStateOptions _indexerSyncStateOptions;
 
     public RewardsProvider(IGraphQlHelper graphQlHelper, ILogger<RewardsProvider> logger,
-        INESTRepository<RewardOperationRecordIndex, string> repository)
+        INESTRepository<RewardOperationRecordIndex, string> repository, IHttpProvider httpProvider, 
+        IOptionsSnapshot<IndexerSyncStateOptions> indexerSyncStateOptions)
     {
         _graphQlHelper = graphQlHelper;
         _logger = logger;
         _repository = repository;
+        _httpProvider = httpProvider;
+        _indexerSyncStateOptions = indexerSyncStateOptions.Value;
     }
 
     public async Task<RewardsListIndexerResult> GetRewardsListAsync(PoolTypeEnums poolType, string address,
@@ -298,21 +309,9 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
     {
         try
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<ConfirmBlockHeightQuery>(new GraphQLRequest
-            {
-                Query =
-                    @"query($chainId:String!,$filterType:BlockFilterType!){
-                    syncState(input: {chainId:$chainId,filterType:$filterType}){
-                        confirmedBlockHeight
-                }
-            }",
-                Variables = new
-                {
-                    chainId = chainId, filterType = BlockFilterType.LogEvent
-                }
-            });
-
-            return indexerResult.SyncState.ConfirmedBlockHeight;
+            var syncStateDto = await _httpProvider.InvokeAsync<SyncStateDto>(HttpMethod.Get, _indexerSyncStateOptions.Url);
+            return syncStateDto.CurrentVersion.Items.First(x => x.ChainId == _indexerSyncStateOptions.ChainId)
+                .LastIrreversibleBlockHeight;
         }
         catch (Exception e)
         {
