@@ -117,7 +117,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         var (total, list) = await _poolStakeSumRepository.GetListAsync(Filter,
             skip: 0, limit: 5000);
         _logger.LogInformation("GetPointsPoolStakeSumDicAsync: {total}", total);
-        return list.ToDictionary(x => x.PoolId, x => x.StakeAmount);
+        return list.ToDictionary(x => x.PoolId, x => string.IsNullOrEmpty(x.StakeAmount) ? "0" : x.StakeAmount);
     }
 
     public async Task<Dictionary<string, string>> GetAddressStakeAmountDicAsync(string address, string dappId = "")

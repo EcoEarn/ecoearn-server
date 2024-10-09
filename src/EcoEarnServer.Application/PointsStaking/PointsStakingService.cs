@@ -525,7 +525,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         var projectItemAggDataDic = pointsPoolStakeSumList.GroupBy(x => x.DappId)
             .ToDictionary(g => g.Key, g =>
             {
-                var tvl = g.Select(x => BigInteger.Parse(x.StakeAmount))
+                var tvl = g.Select(x => BigInteger.Parse(string.IsNullOrEmpty(x.StakeAmount) ? "0" : x.StakeAmount))
                     .Aggregate(BigInteger.Zero, (acc, num) => acc + num);
                 return tvl;
             });
