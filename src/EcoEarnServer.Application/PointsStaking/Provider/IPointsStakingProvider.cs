@@ -165,7 +165,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         var (total, list) = await _addressStakeRewardsRepository.GetListAsync(Filter,
             skip: 0, limit: 5000);
         _logger.LogInformation("GetAddressStakeRewardsDicAsync: {total}", total);
-        return list.ToDictionary(x => GuidHelper.GenerateId(x.Address, x.PoolId), x => x.Rewards);
+        return list.ToDictionary(x => GuidHelper.GenerateId(x.Address, x.PoolId), x => string.IsNullOrEmpty(x.Rewards) ? "0" : x.Rewards);
     }
 
     public async Task<List<RewardsListIndexerDto>> GetRealClaimInfoListAsync(List<string> seeds, string address,
