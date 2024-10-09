@@ -27,21 +27,30 @@ public class MarketCapProvider : AbpRedisCache, IMarketCapProvider, ISingletonDe
     private readonly IDistributedCacheSerializer _serializer;
     private readonly IHttpProvider _httpProvider;
     private readonly CoinMarketCapServerOptions _capServerOptions;
+    private readonly LpPoolRateOptions _lpPoolRateOptions;
+    private readonly IPriceProvider _priceProvider;
 
     public MarketCapProvider(IOptions<RedisCacheOptions> optionsAccessor,
         IOptionsSnapshot<CoinMarketCapServerOptions> capServerOptions,
-        ILogger<MarketCapProvider> logger, IDistributedCacheSerializer serializer,
-        IHttpProvider httpProvider) : base(optionsAccessor)
+        ILogger<MarketCapProvider> logger, IDistributedCacheSerializer serializer, IHttpProvider httpProvider,
+        IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions, IPriceProvider priceProvider) : base(optionsAccessor)
     {
         _capServerOptions = capServerOptions.Value;
         _logger = logger;
         _serializer = serializer;
         _httpProvider = httpProvider;
+        _priceProvider = priceProvider;
+        _lpPoolRateOptions = lpPoolRateOptions.Value;
     }
 
     public async Task<decimal> GetSymbolMarketCapAsync(string symbol)
     {
         await ConnectAsync();
+        if (_lpPoolRateOptions.SymbolMappingsDic.TryGetValue(symbol, out var mappingSymbol))
+        {
+            symbol = mappingSymbol;
+        }
+
         var redisValue = await RedisDatabase.StringGetAsync(MarketCapRedisKeyPrefix + symbol);
         if (redisValue.HasValue)
         {
