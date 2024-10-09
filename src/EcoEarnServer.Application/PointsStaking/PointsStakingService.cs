@@ -360,7 +360,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         return new AddressRewardsDto
         {
             Reward = pointsStakeRewardsList.ToDictionary(x => x.PoolName,
-                x => (decimal.Parse(x.Rewards) * decimal.Parse("0.9")).ToString(CultureInfo.InvariantCulture))
+                x => (decimal.Parse(string.IsNullOrEmpty(x.Rewards) ? "0" : x.Rewards) * decimal.Parse("0.9")).ToString(CultureInfo.InvariantCulture))
         };
     }
 
@@ -368,7 +368,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
     {
         var pointsStakeRewardsList = await GetAllPointsStakeRewardsList(input.Address, input.DappId);
         var rewardsInfoIndexerDtos = await GetAllPointsClaimedRewardsList(input.Address, input.DappId);
-        var stakeRewardsSum = pointsStakeRewardsList.Sum(x => decimal.Parse(x.Rewards));
+        var stakeRewardsSum = pointsStakeRewardsList.Sum(x => decimal.Parse(string.IsNullOrEmpty(x.Rewards) ? "0" : x.Rewards));
         var claimedRewardsSum = rewardsInfoIndexerDtos.Aggregate(BigInteger.Zero,
             (current, rewardsInfoIndexerDto) => current + BigInteger.Parse(rewardsInfoIndexerDto.ClaimedAmount));
         var claimedRewardsSumStr = decimal.Parse((claimedRewardsSum / new BigInteger(100000000)).ToString());
