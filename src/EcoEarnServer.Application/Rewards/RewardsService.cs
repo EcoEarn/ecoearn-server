@@ -732,7 +732,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
     public async Task<bool> TransactionResultAsync(long transactionBlockHeight, string chainId)
     {
         var confirmBlockHeight = await _rewardsProvider.GetConfirmBlockHeightAsync(chainId);
-        return confirmBlockHeight >= transactionBlockHeight;
+        return confirmBlockHeight != 0 && confirmBlockHeight >= transactionBlockHeight;
     }
 
 

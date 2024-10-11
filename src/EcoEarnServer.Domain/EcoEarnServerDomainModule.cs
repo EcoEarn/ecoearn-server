@@ -1,3 +1,4 @@
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using AElf.Indexing.Elasticsearch.Options;
 using EcoEarnServer.MultiTenancy;
@@ -33,7 +34,8 @@ namespace EcoEarnServer;
         typeof(AbpSettingManagementDomainModule),
         typeof(AbpTenantManagementDomainModule),
         typeof(AbpEmailingModule),
-        typeof(AElfIndexingElasticsearchModule)
+        typeof(AElfIndexingElasticsearchModule),
+        typeof(AOPExceptionModule)
     }
 )]
 public class EcoEarnServerDomainModule : AbpModule
