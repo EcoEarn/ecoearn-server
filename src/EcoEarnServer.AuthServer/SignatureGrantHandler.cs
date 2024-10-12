@@ -181,8 +181,8 @@ public class SignatureGrantHandler : ITokenExtensionGrant, ITransientDependency
             claimsPrincipal.SetScopes("EcoEarnServer");
             claimsPrincipal.SetResources(await GetResourcesAsync(context, principal.GetScopes()));
             claimsPrincipal.SetAudiences("EcoEarnServer");
-            await context.HttpContext.RequestServices.GetRequiredService<AbpOpenIddictClaimDestinationsManager>()
-                .SetAsync(principal);
+            // await context.HttpContext.RequestServices.GetRequiredService<AbpOpenIddictClaimDestinationsManager>()
+            //     .SetAsync(principal);
             return new SignInResult(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme, claimsPrincipal);
         }
         catch (UserFriendlyException e)

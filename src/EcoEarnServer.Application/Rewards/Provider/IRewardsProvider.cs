@@ -54,7 +54,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         _repository = repository;
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnType.New,
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
         MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetClaimInfoList Indexer error")]
     public virtual async Task<RewardsListIndexerResult> GetRewardsListAsync(PoolTypeEnums poolType, string address,
         int skipCount, int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false,
@@ -106,7 +106,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         return indexerResult.GetClaimInfoList;
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnType.New,
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
         MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetUnLockedStakeIds Indexer error")]
     public virtual async Task<List<string>> GetUnLockedStakeIdsAsync(List<string> stakeIds, string address)
     {
@@ -159,7 +159,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
     }
 
     [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService),
-        ReturnDefault = ReturnType.Default,
+        ReturnDefault = ReturnDefault.Default,
         MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetClaimInfoList Indexer error")]
     public virtual async Task<long> GetRewardsCountAsync(PoolTypeEnums poolType, string address,
         int skipCount, int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false,
@@ -187,7 +187,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         return indexerResult.GetClaimInfoCount;
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnType.New,
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
         MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetMergedRewardsList Indexer error")]
     public virtual async Task<MergedRewardsListIndexerResult> GetMergedRewardsListAsync(string address,
         List<string> poolIds,
@@ -228,7 +228,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         return indexerResult.GetMergedRewardsList;
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnType.New,
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
         MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetClaimInfoList Indexer error")]
     public async Task<RewardsInfoListIndexerDto> GetRewardsInfoListAsync(PoolTypeEnums poolType, string address,
         string id, int skipCount, int maxResultCount)
@@ -268,7 +268,7 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         return indexerResult.GetRewardsInfoList;
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnType.New,
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
         MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetConfirmBlockHeight Indexer error")]
     public async Task<long> GetConfirmBlockHeightAsync(string chainId)
     {

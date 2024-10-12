@@ -159,8 +159,8 @@ namespace EcoEarnServer
                 options.Languages.Add(new LanguageInfo("en-GB", "en-GB", "English (UK)"));
                 options.Languages.Add(new LanguageInfo("fi", "fi", "Finnish"));
                 options.Languages.Add(new LanguageInfo("fr", "fr", "Français"));
-                options.Languages.Add(new LanguageInfo("hi", "hi", "Hindi", "in"));
-                options.Languages.Add(new LanguageInfo("it", "it", "Italian", "it"));
+                options.Languages.Add(new LanguageInfo("hi", "hi", "Hindi"));
+                options.Languages.Add(new LanguageInfo("it", "it", "Italian"));
                 options.Languages.Add(new LanguageInfo("hu", "hu", "Magyar"));
                 options.Languages.Add(new LanguageInfo("pt-BR", "pt-BR", "Português"));
                 options.Languages.Add(new LanguageInfo("ru", "ru", "Русский"));
@@ -168,8 +168,8 @@ namespace EcoEarnServer
                 options.Languages.Add(new LanguageInfo("tr", "tr", "Türkçe"));
                 options.Languages.Add(new LanguageInfo("zh-Hans", "zh-Hans", "简体中文"));
                 options.Languages.Add(new LanguageInfo("zh-Hant", "zh-Hant", "繁體中文"));
-                options.Languages.Add(new LanguageInfo("de-DE", "de-DE", "Deutsch", "de"));
-                options.Languages.Add(new LanguageInfo("es", "es", "Español", "es"));
+                options.Languages.Add(new LanguageInfo("de-DE", "de-DE", "Deutsch"));
+                options.Languages.Add(new LanguageInfo("es", "es", "Español"));
             });
         }
 
@@ -211,26 +211,26 @@ namespace EcoEarnServer
 
         private static void ConfigureOrleans(ServiceConfigurationContext context, IConfiguration configuration)
         {
-            context.Services.AddSingleton<IClusterClient>(o =>
-            {
-                return new ClientBuilder()
-                    .ConfigureDefaults()
-                    .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
-                    .UseMongoDBClustering(options =>
-                    {
-                        options.DatabaseName = configuration["Orleans:DataBase"];
-                        options.Strategy = MongoDBMembershipStrategy.SingleDocument;
-                    })
-                    .Configure<ClusterOptions>(options =>
-                    {
-                        options.ClusterId = configuration["Orleans:ClusterId"];
-                        options.ServiceId = configuration["Orleans:ServiceId"];
-                    })
-                    .ConfigureApplicationParts(parts =>
-                        parts.AddApplicationPart(typeof(EcoEarnServerGrainsModule).Assembly).WithReferences())
-                    .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
-                    .Build();
-            });
+            // context.Services.AddSingleton<IClusterClient>(o =>
+            // {
+            //     return new ClientBuilder()
+            //         .ConfigureDefaults()
+            //         .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
+            //         .UseMongoDBClustering(options =>
+            //         {
+            //             options.DatabaseName = configuration["Orleans:DataBase"];
+            //             options.Strategy = MongoDBMembershipStrategy.SingleDocument;
+            //         })
+            //         .Configure<ClusterOptions>(options =>
+            //         {
+            //             options.ClusterId = configuration["Orleans:ClusterId"];
+            //             options.ServiceId = configuration["Orleans:ServiceId"];
+            //         })
+            //         .ConfigureApplicationParts(parts =>
+            //             parts.AddApplicationPart(typeof(EcoEarnServerGrainsModule).Assembly).WithReferences())
+            //         .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+            //         .Build();
+            // });
         }
 
         private void ConfigureGraphQl(ServiceConfigurationContext context,
@@ -287,14 +287,14 @@ namespace EcoEarnServer
 
         private static void StartOrleans(IServiceProvider serviceProvider)
         {
-            var client = serviceProvider.GetRequiredService<IClusterClient>();
-            AsyncHelper.RunSync(async () => await client.Connect());
+            // var client = serviceProvider.GetRequiredService<IClusterClient>();
+            // AsyncHelper.RunSync(async () => await client.Connect());
         }
 
         private static void StopOrleans(IServiceProvider serviceProvider)
         {
-            var client = serviceProvider.GetRequiredService<IClusterClient>();
-            AsyncHelper.RunSync(client.Close);
+            // var client = serviceProvider.GetRequiredService<IClusterClient>();
+            // AsyncHelper.RunSync(client.Close);
         }
     }
 }

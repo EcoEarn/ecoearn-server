@@ -44,7 +44,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
         _repository = repository;
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnType.New,
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
         MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetPointsPools Indexer error.")]
     public virtual async Task<List<TokenPoolsIndexerDto>> GetTokenPoolsAsync(GetTokenPoolsInput input)
     {
@@ -114,7 +114,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
             .ToDictionary(g => g.Key, g => g.First());
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnType.New,
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
         MethodName = nameof(ExceptionHandlingService.HandleException),
         Message = "GetTokenPoolByTokenAsync Indexer error")]
     public virtual async Task<List<TokenPoolsIndexerDto>> GetTokenPoolByTokenAsync(string tokenName,
@@ -166,7 +166,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
         return indexerResult.GetTokenPoolList.Data;
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnType.New,
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
         MethodName = nameof(ExceptionHandlingService.HandleException),
         Message = "GetTokenPoolStakedInfoListAsync Indexer error")]
     public virtual async Task<List<TokenPoolStakedInfoDto>> GetTokenPoolStakedInfoListAsync(List<string> poolIds)
@@ -194,7 +194,7 @@ public class TokenStakingProvider : ITokenStakingProvider, ISingletonDependency
         return indexerResult.GetTokenPoolStakeInfoList.Data;
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnType.New,
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
         MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetStakedInfoList Indexer error")]
     public virtual async Task<List<TokenStakedIndexerDto>> GetStakedInfoListAsync(string tokenName, string address,
         List<string> pools, int skipCount = 0, int maxResultCount = 5000)

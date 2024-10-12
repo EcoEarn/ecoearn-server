@@ -18,16 +18,16 @@ public class PointsPoolStakeSumGrain : Grain<PointsPoolStakeSumState>, IPointsPo
         _objectMapper = objectMapper;
     }
 
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken token)
     {
         await ReadStateAsync();
-        await base.OnActivateAsync();
+        await base.OnActivateAsync(token);
     }
 
-    public override async Task OnDeactivateAsync()
+    public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken token)
     {
         await WriteStateAsync();
-        await base.OnDeactivateAsync();
+        await base.OnDeactivateAsync(reason, token);
     }
 
     public async Task<GrainResultDto<PointsPoolStakeSumDto>> CreateOrUpdateAsync(PointsPoolStakeSumDto input)
