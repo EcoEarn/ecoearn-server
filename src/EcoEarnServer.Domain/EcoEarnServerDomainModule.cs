@@ -1,4 +1,4 @@
-using AElf.ExceptionHandler;
+using AElf.ExceptionHandler.ABP;
 using AElf.Indexing.Elasticsearch;
 using AElf.Indexing.Elasticsearch.Options;
 using EcoEarnServer.MultiTenancy;

@@ -26,7 +26,9 @@
     <PackageReference Include="Volo.Abp.TenantManagement.Domain" Version="8.2.0" />
     <PackageReference Include="Volo.Abp.FeatureManagement.Domain" Version="8.2.0" />
     <PackageReference Include="Volo.Abp.SettingManagement.Domain" Version="8.2.0" />
-    <PackageReference Include="AElf.ExceptionHandler" Version="1.5.0" />
+    <PackageReference Include="AElf.ExceptionHandler" Version="1.6.2" />
+    <PackageReference Include="AElf.ExceptionHandler.ABP" Version="1.0.0" />
+    <PackageReference Include="AElf.ExceptionHandler.Orleans" Version="1.0.0" />
   </ItemGroup>
 
 
