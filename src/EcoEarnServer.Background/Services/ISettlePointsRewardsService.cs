@@ -85,6 +85,7 @@ public class SettlePointsRewardsService : ISettlePointsRewardsService, ISingleto
         {
             var list = await GetYesterdaySnapshotAsync(settleRewardsBeforeDays);
             var stakeSumDic = await GetYesterdayStakeSumDic(list);
+            _logger.LogInformation("get stakeSumDic : {info}", JsonConvert.SerializeObject(stakeSumDic));
             //update the staked sum for each points pool
             if (_pointsSnapshotOptions.SettleRewards)
             {
