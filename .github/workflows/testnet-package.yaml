@@ -11,7 +11,7 @@ jobs:
     runs-on: ecoearn-runner # this is the self-hosted runner name after it is being setup
     strategy:
       matrix:
-        servicename: [EcoEarnServer.HttpApi.Host, EcoEarnServer.Silo, EcoEarnServer.EntityEventHandler, EcoEarnServer.AuthServer,EcoEarnServer.Background] # This should be the app that needs to be deploy.
+        servicename: [EcoEarnServer.HttpApi.Host, EcoEarnServer.Silo, EcoEarnServer.EntityEventHandler, EcoEarnServer.AuthServer,EcoEarnServer.Background,EcoEarnServer.DbMigrator] # This should be the app that needs to be deploy.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -29,7 +29,7 @@ jobs:
     runs-on: ecoearn-runner # this is the self-hosted runner name after it is being setup
     strategy:
       matrix:
-        servicename: [EcoEarnServer.HttpApi.Host, EcoEarnServer.Silo, EcoEarnServer.EntityEventHandler, EcoEarnServer.AuthServer,EcoEarnServer.Background] # This should be the list of app that needs to be deploy.
+        servicename: [EcoEarnServer.HttpApi.Host, EcoEarnServer.Silo, EcoEarnServer.EntityEventHandler, EcoEarnServer.AuthServer,EcoEarnServer.Background,EcoEarnServer.DbMigrator] # This should be the list of app that needs to be deploy.
     permissions:
       contents: read
     outputs:
