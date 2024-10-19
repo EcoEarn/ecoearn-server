@@ -128,10 +128,6 @@ public class SignatureGrantHandler : ITokenExtensionGrant, ITransientDependency
                         "PublicKey not manager of address");
                 }
 
-                AssertHelper.IsTrue(
-                    caHolderInfos.CaHolderManagerInfo.Select(m => m.CaAddress).Any(add => add == address),
-                    "PublicKey not manager of address");
-
                 //Find caHash by caAddress
                 foreach (var account in caHolderInfos.CaHolderManagerInfo)
                 {
