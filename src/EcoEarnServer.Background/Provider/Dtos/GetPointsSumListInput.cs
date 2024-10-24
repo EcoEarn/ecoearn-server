@@ -6,7 +6,9 @@ namespace EcoEarnServer.Background.Provider.Dtos;
 
 public class GetPointsSumListInput : PagedAndSortedResultRequestDto
 {
-    public DateTime EndTime { get; set; }
+    public string DappName { get; set; }
+    public string LastId { get; set; }
+    public long LastBlockHeight { get; set; }
 }
 
 public class GetRelationShipInput
