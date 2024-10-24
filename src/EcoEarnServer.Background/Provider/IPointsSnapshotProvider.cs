@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using EcoEarnServer.Background.Dtos;
@@ -44,12 +45,14 @@ public class PointsSnapshotProvider : IPointsSnapshotProvider, ISingletonDepende
     public async Task<List<PointsListDto>> GetPointsSumListAsync()
     {
         var res = new List<PointsListDto>();
-        var apiInfo = new ApiInfo(HttpMethod.Post, "api/app/points/list");
+        var apiInfo = new ApiInfo(HttpMethod.Post, "api/app/points/all/list");
+        var lastId = "";
+        var lastBlockHeight = 0;
         var input = new GetPointsSumListInput()
         {
-            //EndTime = DateTime.UtcNow.Date,
-            SkipCount = 0,
-            MaxResultCount = _pointsSnapshotOptions.BatchQueryCount
+            MaxResultCount = _pointsSnapshotOptions.BatchQueryCount,
+            LastBlockHeight = lastBlockHeight,
+            LastId = lastId
         };
         List<PointsListDto> list;
 
@@ -68,7 +71,10 @@ public class PointsSnapshotProvider : IPointsSnapshotProvider, ISingletonDepende
                     break;
                 }
 
+                var pointsListDto = list.Last();
                 input.SkipCount += count;
+                input.LastId = pointsListDto.Id;
+                input.LastBlockHeight = pointsListDto.BlockHeight;
             }
             catch (Exception e)
             {
