@@ -21,6 +21,8 @@ public class PointsListDto
     public string TwelveSymbolAmount { get; set; }  = "0";
     public long UpdateTime { get; set; }
     public OperatorRole Role { get; set; }
+    public string Id { get; set; }
+    public long BlockHeight { get; set; }
 }
 
 public enum OperatorRole
