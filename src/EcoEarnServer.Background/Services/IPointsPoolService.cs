@@ -65,21 +65,18 @@ public class PointsPoolService : IPointsPoolService, ISingletonDependency
         if (stakeListEto.Count > 0)
         {
             var pointsPoolAddressStakeListEto = new PointsPoolAddressStakeListEto { EventDataList = stakeListEto };
-            _logger.LogInformation("points pool address stake list : {list}", JsonConvert.SerializeObject(pointsPoolAddressStakeListEto));
             await _distributedEventBus.PublishAsync(pointsPoolAddressStakeListEto);
         }
 
         if (rewardsList.Count > 0)
         {
             var rewardsListEto = new PointsStakeRewardsListEto { EventDataList = rewardsList };
-            _logger.LogInformation("points stake rewards list : {list}", JsonConvert.SerializeObject(rewardsListEto));
             await _distributedEventBus.PublishAsync(rewardsListEto);
         }
 
         if (rewardsSumList.Count > 0)
         {
             var rewardsSumListEto = new PointsStakeRewardsSumListEto { EventDataList = rewardsSumList };
-            _logger.LogInformation("points stake rewards sum list : {list}", JsonConvert.SerializeObject(rewardsSumListEto));
             await _distributedEventBus.PublishAsync(rewardsSumListEto);
         }
     }
