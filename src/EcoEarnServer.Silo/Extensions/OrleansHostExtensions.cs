@@ -15,18 +15,17 @@ public static class OrleansHostExtensions
 {
     public static IHostBuilder UseOrleansSnapshot(this IHostBuilder hostBuilder)
     {
-        var configuration = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json")
-            .Build();
-        if (configuration == null) throw new ArgumentNullException(nameof(configuration));
-        var configSection = configuration.GetSection("Orleans");
-        if (configSection == null)
-            throw new ArgumentNullException(nameof(configSection), "The OrleansServer node is missing");
-        return hostBuilder.UseOrleans(siloBuilder =>
+        return hostBuilder.UseOrleans((context, siloBuilder) =>
         {
             //Configure OrleansSnapshot
+            var configSection = context.Configuration.GetSection("Orleans");
+            var isRunningInKubernetes = configSection.GetValue<bool>("isRunningInKubernetes");
+            var advertisedIP = isRunningInKubernetes ?  Environment.GetEnvironmentVariable("POD_IP") :configSection.GetValue<string>("AdvertisedIP");
+            var clusterId = isRunningInKubernetes ? Environment.GetEnvironmentVariable("ORLEANS_CLUSTER_ID") : configSection.GetValue<string>("ClusterId");
+            var serviceId = isRunningInKubernetes ? Environment.GetEnvironmentVariable("ORLEANS_SERVICE_ID") : configSection.GetValue<string>("ServiceId");
+            
             siloBuilder
-                .ConfigureEndpoints(advertisedIP: IPAddress.Parse(configSection.GetValue<string>("AdvertisedIP")),
+                .ConfigureEndpoints(advertisedIP: IPAddress.Parse(advertisedIP),
                     siloPort: configSection.GetValue<int>("SiloPort"),
                     gatewayPort: configSection.GetValue<int>("GatewayPort"), listenOnAnyHostAddress: true)
                 .UseMongoDBClient(configSection.GetValue<string>("MongoDBClient"))
@@ -56,8 +55,8 @@ public static class OrleansHostExtensions
                 })
                 .Configure<ClusterOptions>(options =>
                 {
-                    options.ClusterId = configSection.GetValue<string>("ClusterId");
-                    options.ServiceId = configSection.GetValue<string>("ServiceId");
+                    options.ClusterId = clusterId;
+                    options.ServiceId = serviceId;
                 })
                 // .AddMemoryGrainStorage("PubSubStore")
                 .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
