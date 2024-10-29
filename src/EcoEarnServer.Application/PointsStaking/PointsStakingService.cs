@@ -153,7 +153,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
                 : Math.Floor(10000 * 30 / decimal.Parse(dto.TotalStake) * dto.PoolDailyRewards * 100000000)
                     .ToString(CultureInfo.InvariantCulture);
         });
-        var sortedPointsPools = pointsPoolsDtos.OrderByDescending(dto => decimal.Parse(dto.DailyRewards)).ToList();
+        var sortedPointsPools = pointsPoolsDtos.OrderByDescending(dto => dto.PoolDailyRewards).ToList();
 
         var result = input.Type == PoolQueryType.Staked
             ? sortedPointsPools.Where(x => x.Staked != "0").ToList()
