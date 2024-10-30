@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using AutoResponseWrapper;
 using EcoEarnServer.SignatureServer.Controllers;
 using EcoEarnServer.SignatureServer.Options;
 using EcoEarnServer.SignatureServer.Providers;
@@ -43,6 +44,8 @@ namespace EcoEarnServer.SignatureServer
             // ConfigureSwaggerServices(context, configuration);
             context.Services.AddSingleton<AccountProvider>();
             context.Services.AddSingleton<ISignatureProvider, SignatureProvider>();
+            
+            context.Services.AddAutoResponseWrapper();
             
             var assembly = typeof(EcoEarnServerSignatureApiHostModule).Assembly;
             var controllerType = assembly.GetTypes().FirstOrDefault(t => t == typeof(SignatureController));
