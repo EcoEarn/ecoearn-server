@@ -53,14 +53,13 @@ public class SecretProvider : ISecretProvider, ISingletonDependency
             };
 
             var url = Uri(GetSignatureUri);
-            var resp = await _httpProvider.InvokeAsync<CommonResponseDto<SignResponseDto>>(HttpMethod.Post,
+            var resp = await _httpProvider.InvokeAsync<SignResponseDto>(HttpMethod.Post,
                 url,
                 body: JsonConvert.SerializeObject(signatureSend),
                 header: SecurityServerHeader()
             );
-            AssertHelper.IsTrue(resp?.Success ?? false, "Signature response failed");
-            AssertHelper.NotEmpty(resp!.Data?.Signature, "Signature response empty");
-            return resp.Data!.Signature;
+            AssertHelper.NotEmpty(resp!.Signature, "Signature response empty");
+            return resp.Signature;
         }
         catch (Exception e)
         {
