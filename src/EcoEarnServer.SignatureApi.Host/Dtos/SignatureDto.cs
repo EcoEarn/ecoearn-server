@@ -9,6 +9,6 @@ public class SignResponseDto
 
 public class SendSignatureDto
 {
-    [Required] public string Account { get; set; }
+    [Required] public string PublicKey { get; set; }
     [Required] public string HexMsg { get; set; }
 }

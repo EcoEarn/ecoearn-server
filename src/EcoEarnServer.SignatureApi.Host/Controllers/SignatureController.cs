@@ -35,8 +35,8 @@ public class SignatureController : AbpControllerBase
     {
         try
         {
-            _logger.LogDebug("input Account: {Account}, HexMsg: {HexMsg}", input.Account, input.HexMsg);
-            var signatureResult = _accountProvider.GetSignature(input.Account,
+            _logger.LogDebug("input PublicKey: {Account}, HexMsg: {HexMsg}", input.PublicKey, input.HexMsg);
+            var signatureResult = _accountProvider.GetSignature(input.PublicKey,
                 ByteArrayHelper.HexStringToByteArray(input.HexMsg));
             _logger.LogDebug("Signature result :{SignatureResult}", signatureResult);
 
