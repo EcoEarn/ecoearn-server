@@ -155,7 +155,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         });
         var sortedPointsPools = pointsPoolsDtos
             .OrderByDescending(dto => dto.PoolDailyRewards)
-            .ThenByDescending(dto => dto.PoolName)
+            .ThenBy(dto => dto.PoolName)
             .ToList();
 
         var result = input.Type == PoolQueryType.Staked
