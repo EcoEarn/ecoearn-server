@@ -31,6 +31,7 @@ public class TokenPoolsDto
     public long ExtendStakePeriod { get; set; }
     public long MinimalStakeAmount { get; set; }
     public long MinimalExtendStakeAmount { get; set; }
+    public long MergeInterval { get; set; }
     
     //stake info
     public string StakeId { get; set; }

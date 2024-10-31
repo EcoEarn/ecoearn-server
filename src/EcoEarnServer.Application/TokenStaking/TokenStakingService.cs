@@ -119,6 +119,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             tokenPoolsDto.ExtendStakePeriod = poolInfo.ExtendStakePeriod;
             tokenPoolsDto.MinimalStakeAmount = poolInfo.MinimalStakeAmount;
             tokenPoolsDto.MinimalExtendStakeAmount = poolInfo.MinimalExtendStakeAmount;
+            tokenPoolsDto.MergeInterval = tokenPoolsIndexerDto.TokenPoolConfig.MergeInterval;
             tokenPoolsDto.Sort = poolInfo?.Sort ?? 0;
             var tokenPoolStakedSumLong = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
                 { PoolId = tokenPoolsDto.PoolId, ChainId = input.ChainId });
@@ -180,7 +181,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                     stakeInfoDtos.Add(subStakeInfoDto);
                 }
 
-                tokenPoolsDto.StakeInfos = stakeInfoDtos;
+                tokenPoolsDto.StakeInfos = stakeInfoDtos.OrderBy(x => x.StakedTime).ToList();
             }
 
             tokenPoolsDto.StakeApr = tokenPoolsDto.StakeInfos.Count == 0
