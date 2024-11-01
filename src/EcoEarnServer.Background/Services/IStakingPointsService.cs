@@ -203,12 +203,11 @@ public class StakingPointsService : IStakingPointsService, ITransientDependency
             }
 
             var stakingToken = poolInfo.TokenPoolConfig.StakingToken;
-            var currencyPair = $"{stakingToken.ToUpper()}_USDT";
 
             double rate;
             if (poolInfo.PoolType == PoolTypeEnums.Token)
             {
-                rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
+                rate = await _priceProvider.GetAetherLinkUsdPriceAsync(stakingToken.ToUpper());
             }
             else
             {
