@@ -95,10 +95,9 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         var tokenPoolsList = new List<TokenPoolsDto>();
         foreach (var tokenPoolsIndexerDto in tokenPoolsIndexerDtos)
         {
-            var currencyPair = $"{tokenPoolsIndexerDto.TokenPoolConfig.StakingToken.ToUpper()}_USDT";
             var usdtRate =
-                await _priceProvider.GetGateIoPriceAsync(
-                    $"{tokenPoolsIndexerDto.TokenPoolConfig.RewardToken.ToUpper()}_USDT");
+                await _priceProvider.GetAetherLinkUsdPriceAsync(
+                    tokenPoolsIndexerDto.TokenPoolConfig.RewardToken.ToUpper());
 
             var feeRate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(
                 tokenPoolsIndexerDto.TokenPoolConfig.StakeTokenContract,
@@ -106,7 +105,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 ? poolRate
                 : 0;
             var rate = tokenPoolsIndexerDto.PoolType == PoolTypeEnums.Token
-                ? await _priceProvider.GetGateIoPriceAsync(currencyPair)
+                ? await _priceProvider.GetAetherLinkUsdPriceAsync(tokenPoolsIndexerDto.TokenPoolConfig.StakingToken.ToUpper())
                 : await _priceProvider.GetLpPriceAsync(tokenPoolsIndexerDto.TokenPoolConfig.StakingToken, feeRate);
 
             var tokenPoolsDto = _objectMapper.Map<TokenPoolsIndexerDto, TokenPoolsDto>(tokenPoolsIndexerDto);
@@ -119,6 +118,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             tokenPoolsDto.ExtendStakePeriod = poolInfo.ExtendStakePeriod;
             tokenPoolsDto.MinimalStakeAmount = poolInfo.MinimalStakeAmount;
             tokenPoolsDto.MinimalExtendStakeAmount = poolInfo.MinimalExtendStakeAmount;
+            tokenPoolsDto.MergeInterval = tokenPoolsIndexerDto.TokenPoolConfig.MergeInterval;
             tokenPoolsDto.Sort = poolInfo?.Sort ?? 0;
             var tokenPoolStakedSumLong = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
                 { PoolId = tokenPoolsDto.PoolId, ChainId = input.ChainId });
@@ -180,7 +180,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                     stakeInfoDtos.Add(subStakeInfoDto);
                 }
 
-                tokenPoolsDto.StakeInfos = stakeInfoDtos;
+                tokenPoolsDto.StakeInfos = stakeInfoDtos.OrderBy(x => x.StakedTime).ToList();
             }
 
             tokenPoolsDto.StakeApr = tokenPoolsDto.StakeInfos.Count == 0
@@ -254,8 +254,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
             var tokenPoolStakedSum = await GetTokenPoolStakedSumAsync(new GetTokenPoolStakedSumInput
                 { PoolId = tokenPoolIndexerDto.PoolId, ChainId = chainId });
             var usdtRate =
-                await _priceProvider.GetGateIoPriceAsync(
-                    $"{tokenPoolIndexerDto.TokenPoolConfig.RewardToken.ToUpper()}_USDT");
+                await _priceProvider.GetAetherLinkUsdPriceAsync(tokenPoolIndexerDto.TokenPoolConfig.RewardToken.ToUpper());
 
             if (!tokenStakedIndexerDtos.TryGetValue(tokenPoolIndexerDto.PoolId, out var stakedInfoIndexerDtos))
             {
@@ -282,6 +281,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 FixedBoostFactor = tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor,
                 UnlockWindowDuration = tokenPoolIndexerDto.TokenPoolConfig.UnlockWindowDuration,
                 MinimumClaimAmount = tokenPoolIndexerDto.TokenPoolConfig.MinimumClaimAmount,
+                MergeInterval = tokenPoolIndexerDto.TokenPoolConfig.MergeInterval,
                 EarnedSymbol = tokenPoolIndexerDto.TokenPoolConfig.RewardToken,
                 UsdRate = usdtRate,
                 SubStakeInfos = stakedInfoIndexerDtos.SubStakeInfos.Select(dto =>

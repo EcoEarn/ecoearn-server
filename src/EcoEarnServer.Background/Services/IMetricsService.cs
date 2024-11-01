@@ -106,17 +106,16 @@ public class MetricsService : IMetricsService, ISingletonDependency
                 continue;
             }
 
-            var currencyPair = $"{poolInfo.TokenPoolConfig.StakingToken.ToUpper()}_USDT";
             var feeRate = _lpPoolRateOptions.LpPoolRateDic.TryGetValue(
                 poolInfo.TokenPoolConfig.StakeTokenContract,
                 out var poolRate)
                 ? poolRate
                 : 0;
             double rate;
-            var key = GuidHelper.GenerateId(poolInfo.PoolType.ToString(), currencyPair);
+            var key = GuidHelper.GenerateId(poolInfo.PoolType.ToString(), poolInfo.TokenPoolConfig.StakingToken.ToUpper());
             if (poolInfo.PoolType == PoolTypeEnums.Token)
             {
-                rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
+                rate = await _priceProvider.GetAetherLinkUsdPriceAsync(poolInfo.TokenPoolConfig.StakingToken.ToUpper());
             }
             else
             {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using EcoEarnServer.Background.Dtos;
@@ -11,6 +12,7 @@ using EcoEarnServer.Common.HttpClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
 namespace EcoEarnServer.Background.Provider;
@@ -19,6 +21,7 @@ public interface IPointsSnapshotProvider
 {
     Task<List<PointsListDto>> GetPointsSumListAsync();
     Task<List<RelationshipDto>> GetRelationShipAsync(List<string> addressList);
+    Task<Dictionary<string, RemainPointDto>> GetUnboundEvmAddressPointsAsync();
 }
 
 public class PointsSnapshotProvider : IPointsSnapshotProvider, ISingletonDependency
@@ -44,12 +47,14 @@ public class PointsSnapshotProvider : IPointsSnapshotProvider, ISingletonDepende
     public async Task<List<PointsListDto>> GetPointsSumListAsync()
     {
         var res = new List<PointsListDto>();
-        var apiInfo = new ApiInfo(HttpMethod.Post, "api/app/points/list");
+        var apiInfo = new ApiInfo(HttpMethod.Post, "api/app/points/all/list");
+        var lastId = "";
+        var lastBlockHeight = 0;
         var input = new GetPointsSumListInput()
         {
-            //EndTime = DateTime.UtcNow.Date,
-            SkipCount = 0,
-            MaxResultCount = _pointsSnapshotOptions.BatchQueryCount
+            MaxResultCount = _pointsSnapshotOptions.BatchQueryCount,
+            LastBlockHeight = lastBlockHeight,
+            LastId = lastId
         };
         List<PointsListDto> list;
 
@@ -68,7 +73,10 @@ public class PointsSnapshotProvider : IPointsSnapshotProvider, ISingletonDepende
                     break;
                 }
 
+                var pointsListDto = list.Last();
                 input.SkipCount += count;
+                input.LastId = pointsListDto.Id;
+                input.LastBlockHeight = pointsListDto.BlockHeight;
             }
             catch (Exception e)
             {
@@ -104,5 +112,24 @@ public class PointsSnapshotProvider : IPointsSnapshotProvider, ISingletonDepende
         }
 
         return res;
+    }
+
+    public async Task<Dictionary<string, RemainPointDto>> GetUnboundEvmAddressPointsAsync()
+    {
+        var apiInfo = new ApiInfo(HttpMethod.Get, "api/app/remain-point");
+
+        try
+        {
+            var resp = await _httpProvider.InvokeAsync<CommonResponseDto<UnBoundEvmAddressAmountDto>>(
+                _pointsSnapshotOptions.SchrodingerServerBaseUrl, apiInfo);
+            return resp.Data.RemainPointList
+                .GroupBy(x => x.Address)
+                .ToDictionary(x => x.Key, x => x.First());
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "get un bound evm address amount fail.");
+            throw new UserFriendlyException("get un bound evm address amount fail.");
+        }
     }
 }

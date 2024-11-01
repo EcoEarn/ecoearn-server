@@ -1,3 +1,4 @@
+using Aetherlink.PriceServer;
 using EcoEarnServer.Grains;
 using EcoEarnServer.PointsStaking;
 using EcoEarnServer.PointsStaking.Provider;
@@ -25,7 +26,8 @@ namespace EcoEarnServer;
     typeof(AbpTenantManagementApplicationModule),
     typeof(AbpFeatureManagementApplicationModule),
     typeof(EcoEarnServerGrainsModule),
-    typeof(AbpSettingManagementApplicationModule)
+    typeof(AbpSettingManagementApplicationModule),
+    typeof(AetherlinkPriceServerModule)
 )]
 public class EcoEarnServerApplicationModule : AbpModule
 {

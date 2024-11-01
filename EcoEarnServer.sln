@@ -51,6 +51,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoEarnServer.Background", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoEarnServer.AuthServer", "src\EcoEarnServer.AuthServer\EcoEarnServer.AuthServer.csproj", "{0E78BB8B-D156-4E4E-AFE1-DEDBA5D10B37}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoEarnServer.SignatureApi.Host", "src\EcoEarnServer.SignatureApi.Host\EcoEarnServer.SignatureApi.Host.csproj", "{45008898-AAAC-4A8E-BFD3-869AF8AD77AE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -145,6 +147,10 @@ Global
 		{0E78BB8B-D156-4E4E-AFE1-DEDBA5D10B37}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0E78BB8B-D156-4E4E-AFE1-DEDBA5D10B37}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0E78BB8B-D156-4E4E-AFE1-DEDBA5D10B37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45008898-AAAC-4A8E-BFD3-869AF8AD77AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45008898-AAAC-4A8E-BFD3-869AF8AD77AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45008898-AAAC-4A8E-BFD3-869AF8AD77AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45008898-AAAC-4A8E-BFD3-869AF8AD77AE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -172,6 +178,7 @@ Global
 		{0E98561B-9F55-448A-B1D4-777A7F27FC13} = {04DBDB01-70F4-4E06-B468-8F87850B22BE}
 		{BF362AF3-A388-44A1-955C-BF61F1219438} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{0E78BB8B-D156-4E4E-AFE1-DEDBA5D10B37} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{45008898-AAAC-4A8E-BFD3-869AF8AD77AE} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28315BFD-90E7-4E14-A2EA-F3D23AF4126F}

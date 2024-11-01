@@ -75,7 +75,7 @@ public class MetricsProvider : AbpRedisCache, IMetricsProvider, ISingletonDepend
                     .transaction;
                 var transactionResult =
                     await _contractProvider.CallTransactionAsync<BalanceDto>(chainId, transaction);
-                var rate = await _priceProvider.GetGateIoPriceAsync($"{symbol.ToUpper()}_USDT");
+                var rate = await _priceProvider.GetAetherLinkUsdPriceAsync(symbol.ToUpper());
                 balance += decimal.Parse(transactionResult.Balance) *
                            decimal.Parse(rate.ToString(CultureInfo.InvariantCulture));
             }

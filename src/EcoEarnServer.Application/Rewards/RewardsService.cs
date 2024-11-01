@@ -135,8 +135,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             }
 
             var rewardsToken = rewardsListDto.RewardsToken ?? "";
-            var currencyPair = $"{rewardsToken}_USDT";
-            var rate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
+            var rate = await _priceProvider.GetAetherLinkUsdPriceAsync(rewardsToken);
             rewardsListDto.Rate =
                 _lpPoolRateOptions.LpPoolRateDic.TryGetValue(poolData.StakeTokenContract, out var poolRate)
                     ? poolRate
@@ -183,8 +182,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             }
 
             var rewardsTokenName = dappPointsPools.FirstOrDefault()?.PointsPoolConfig.RewardToken ?? "";
-            var currencyPair = $"{rewardsTokenName}_USDT";
-            var usdRate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
+            var usdRate = await _priceProvider.GetAetherLinkUsdPriceAsync(rewardsTokenName);
             var hasPoolInfo = poolInfoDic.TryGetValue(dappId, out var poolInfo);
             var poolRewardsInfoDto = new RewardsAggregationDto
             {
@@ -222,8 +220,7 @@ public class RewardsService : IRewardsService, ISingletonDependency
             }
 
             var rewardsTokenName = tokenPool.TokenPoolConfig.RewardToken;
-            var currencyPair = $"{rewardsTokenName}_USDT";
-            var usdRate = await _priceProvider.GetGateIoPriceAsync(currencyPair);
+            var usdRate = await _priceProvider.GetAetherLinkUsdPriceAsync(rewardsTokenName);
             var rewardsAggInfo =
                 await GetRewardsAggAsync(rewardsListIndexerDtos, address, usdRate, poolId, poolType);
             var hasPoolInfo = poolInfoDic.TryGetValue(poolId, out var poolInfo);

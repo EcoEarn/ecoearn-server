@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using EcoEarnServer.Common.Dtos;
 using EcoEarnServer.Common.HttpClient;
 using EcoEarnServer.Options;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
@@ -29,17 +31,20 @@ public class MarketCapProvider : AbpRedisCache, IMarketCapProvider, ISingletonDe
     private readonly CoinMarketCapServerOptions _capServerOptions;
     private readonly LpPoolRateOptions _lpPoolRateOptions;
     private readonly IPriceProvider _priceProvider;
+    private readonly SymbolMarketCapOptions _symbolMarketCapOptions;
 
     public MarketCapProvider(IOptions<RedisCacheOptions> optionsAccessor,
         IOptionsSnapshot<CoinMarketCapServerOptions> capServerOptions,
         ILogger<MarketCapProvider> logger, IDistributedCacheSerializer serializer, IHttpProvider httpProvider,
-        IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions, IPriceProvider priceProvider) : base(optionsAccessor)
+        IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions, IPriceProvider priceProvider,
+        IOptionsSnapshot<SymbolMarketCapOptions> symbolMarketCapOptions) : base(optionsAccessor)
     {
         _capServerOptions = capServerOptions.Value;
         _logger = logger;
         _serializer = serializer;
         _httpProvider = httpProvider;
         _priceProvider = priceProvider;
+        _symbolMarketCapOptions = symbolMarketCapOptions.Value;
         _lpPoolRateOptions = lpPoolRateOptions.Value;
     }
 
@@ -57,16 +62,18 @@ public class MarketCapProvider : AbpRedisCache, IMarketCapProvider, ISingletonDe
             return _serializer.Deserialize<decimal>(redisValue);
         }
 
-        var apiInfo = new ApiInfo(HttpMethod.Get, "/v2/cryptocurrency/quotes/latest");
-        var param = new Dictionary<string, string> { { "symbol", symbol } };
-        var header = new Dictionary<string, string> { { "X-CMC_PRO_API_KEY", _capServerOptions.ApiKey } };
         decimal marketCap = 0;
         var expired = 10;
         try
         {
-            var resp = await _httpProvider.InvokeAsync<MarketCapDto>(
-                _capServerOptions.BaseUrl, apiInfo, param: param, header: header);
-            marketCap = resp.Data[symbol].Sum(x => x.Quote.USD.Market_Cap);
+            if (_symbolMarketCapOptions.SymbolMarketCapStrategyList.Contains(symbol))
+            {
+                marketCap = await GetMarketCapByStrategyAsync(symbol);
+            }
+            else
+            {
+                marketCap = await GetMarketCapByCmcAsync(symbol);
+            }
         }
         catch (Exception e)
         {
@@ -76,6 +83,29 @@ public class MarketCapProvider : AbpRedisCache, IMarketCapProvider, ISingletonDe
 
         await RedisDatabase.StringSetAsync(MarketCapRedisKeyPrefix + symbol, _serializer.Serialize(marketCap),
             TimeSpan.FromMinutes(expired));
+        return marketCap;
+    }
+
+    private async Task<decimal> GetMarketCapByCmcAsync(string symbol)
+    {
+        var apiInfo = new ApiInfo(HttpMethod.Get, "/v2/cryptocurrency/quotes/latest");
+        var param = new Dictionary<string, string> { { "symbol", symbol } };
+        var header = new Dictionary<string, string> { { "X-CMC_PRO_API_KEY", _capServerOptions.ApiKey } };
+        var resp = await _httpProvider.InvokeAsync<MarketCapDto>(
+            _capServerOptions.BaseUrl, apiInfo, param: param, header: header);
+        var marketCap = resp.Data[symbol].Sum(x => x.Quote.USD.Market_Cap);
+        return marketCap;
+    }
+
+    private async Task<decimal> GetMarketCapByStrategyAsync(string symbol)
+    {
+        var apiInfo = new ApiInfo(HttpMethod.Get, "api/app/circulation");
+        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<long>>(
+            _symbolMarketCapOptions.SchrodingerServerBaseUrl, apiInfo);
+
+        var usdPrice = await _priceProvider.GetAetherLinkUsdPriceAsync(symbol.ToUpper());
+        var marketCap = decimal.Parse(resp.Data.ToString()) *
+                        decimal.Parse(usdPrice.ToString(CultureInfo.InvariantCulture));
         return marketCap;
     }
 }

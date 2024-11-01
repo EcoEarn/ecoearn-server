@@ -54,6 +54,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0" />
     <PackageReference Include="Volo.Abp.Caching.StackExchangeRedis" Version="8.2.0" />
     <PackageReference Include="Io.Gate.GateApi" Version="4.60.1" />
+    <PackageReference Include="AetherlinkPriceServer" Version="1.0.5" />
   </ItemGroup>
   
   <ItemGroup>
