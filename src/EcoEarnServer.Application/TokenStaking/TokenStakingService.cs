@@ -281,6 +281,7 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
                 FixedBoostFactor = tokenPoolIndexerDto.TokenPoolConfig.FixedBoostFactor,
                 UnlockWindowDuration = tokenPoolIndexerDto.TokenPoolConfig.UnlockWindowDuration,
                 MinimumClaimAmount = tokenPoolIndexerDto.TokenPoolConfig.MinimumClaimAmount,
+                MergeInterval = tokenPoolIndexerDto.TokenPoolConfig.MergeInterval,
                 EarnedSymbol = tokenPoolIndexerDto.TokenPoolConfig.RewardToken,
                 UsdRate = usdtRate,
                 SubStakeInfos = stakedInfoIndexerDtos.SubStakeInfos.Select(dto =>
