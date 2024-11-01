@@ -66,6 +66,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
     private readonly IDistributedCacheSerializer _serializer;
     private readonly IRewardsProvider _rewardsProvider;
     private readonly ITransactionRecordProvider _transactionRecordProvider;
+    private readonly DappHighRewardsOptions _dappHighRewardsOptions;
 
     public PointsStakingService(IOptionsSnapshot<ProjectItemOptions> projectItemOptions, IObjectMapper objectMapper,
         IPointsStakingProvider pointsStakingProvider, IOptionsSnapshot<EcoEarnContractOptions> earnContractOptions,
@@ -75,7 +76,8 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         ISecretProvider secretProvider, IAbpDistributedLock distributedLock,
         IOptionsSnapshot<PoolTextWordOptions> poolTextWordOptions,
         IOptions<RedisCacheOptions> optionsAccessor, IDistributedCacheSerializer serializer,
-        IRewardsProvider rewardsProvider, ITransactionRecordProvider transactionRecordProvider) : base(optionsAccessor)
+        IRewardsProvider rewardsProvider, ITransactionRecordProvider transactionRecordProvider, 
+        IOptionsSnapshot<DappHighRewardsOptions> dappHighRewardsOptions) : base(optionsAccessor)
     {
         _objectMapper = objectMapper;
         _pointsStakingProvider = pointsStakingProvider;
@@ -94,6 +96,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         _projectKeyPairInfoOptions = projectKeyPairInfoOptions.Value;
         _earnContractOptions = earnContractOptions.Value;
         _projectItemOptions = projectItemOptions.Value;
+        _dappHighRewardsOptions = dappHighRewardsOptions.Value;
     }
 
     public async Task<List<ProjectItemListDto>> GetProjectItemListAsync()
@@ -157,7 +160,11 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             .OrderByDescending(dto => dto.PoolDailyRewards)
             .ThenBy(dto => dto.PoolName)
             .ToList();
-
+        var dappHighRewardsDic = _dappHighRewardsOptions.DappHighRewardsDic;
+        if (dappHighRewardsDic.TryGetValue(dappId, out var dappHighRewards))
+        {
+            sortedPointsPools.ForEach(x => x.HighRewards = x.PoolDailyRewards > dappHighRewards);
+        }
         var result = input.Type == PoolQueryType.Staked
             ? sortedPointsPools.Where(x => x.Staked != "0").ToList()
             : sortedPointsPools;
