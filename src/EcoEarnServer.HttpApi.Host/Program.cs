@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler.ABP;
 using EcoEarnServer.Extension;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -43,6 +44,7 @@ namespace EcoEarnServer
                 builder.Configuration.AddJsonFile("apollo.appsettings.json");
                 builder.Host.AddAppSettingsSecretsJson()
                     .UseAutofac()
+                    .UseAElfExceptionHandler()
 #if !DEBUG
                    .UseApollo()
 #endif
