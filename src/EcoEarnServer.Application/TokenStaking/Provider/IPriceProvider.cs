@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Aetherlink.PriceServer;
+using Aetherlink.PriceServer.Dtos;
 using EcoEarnServer.Common;
 using EcoEarnServer.Common.Dtos;
 using EcoEarnServer.Common.HttpClient;
@@ -21,6 +23,8 @@ public interface IPriceProvider
 {
     Task<double> GetGateIoPriceAsync(string currencyPair);
     Task<double> GetLpPriceAsync(string stakingToken, double feeRate, string symbol0 = "", string symbol1 = "");
+    Task<double> GetAetherLinkPriceAsync(string currencyPair);
+    Task<double> GetAetherLinkUsdPriceAsync(string symbol);
 }
 
 public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
@@ -30,16 +34,18 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
     private readonly IHttpProvider _httpProvider;
     private readonly LpPoolRateOptions _lpPoolRateOptions;
     private readonly HamsterServerOptions _hamsterServerOptions;
+    private readonly IPriceServerProvider _priceServerProvider;
 
     public PriceProvider(IOptions<RedisCacheOptions> optionsAccessor, ILogger<PriceProvider> logger,
         IDistributedCacheSerializer serializer, IHttpProvider httpProvider,
         IOptionsSnapshot<LpPoolRateOptions> lpPoolRateOptions,
-        IOptionsSnapshot<HamsterServerOptions> hamsterServerOptions) : base(
+        IOptionsSnapshot<HamsterServerOptions> hamsterServerOptions, IPriceServerProvider priceServerProvider) : base(
         optionsAccessor)
     {
         _logger = logger;
         _serializer = serializer;
         _httpProvider = httpProvider;
+        _priceServerProvider = priceServerProvider;
         _hamsterServerOptions = hamsterServerOptions.Value;
         _lpPoolRateOptions = lpPoolRateOptions.Value;
     }
@@ -133,6 +139,62 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
             _logger.LogError("[PriceDataProvider][GetLpPriceAsync] Parse response error.");
             return 0;
         }
+    }
+
+    public async Task<double> GetAetherLinkPriceAsync(string pair)
+    {
+        var currencyPair = pair;
+        var split = pair.Split("-");
+        if (split.Length == 2 && _lpPoolRateOptions.SymbolMappingsDic.TryGetValue(split[0], out var mappingSymbol))
+        {
+            currencyPair = mappingSymbol + "-" + split[1];
+        }
+
+        var rep = await _priceServerProvider.GetAggregatedTokenPriceAsync(new GetAggregatedTokenPriceRequestDto
+        {
+            TokenPair = currencyPair,
+            AggregateType = AggregateType.Latest
+        });
+        if (rep.Data == null || rep.Data.Price == 0 || rep.Data.Decimal == 0)
+        {
+            return 0;
+        }
+
+        return (double)(rep.Data.Price / rep.Data.Decimal);
+    }
+
+    public async Task<double> GetAetherLinkUsdPriceAsync(string symbol)
+    {
+        if (_lpPoolRateOptions.SymbolMappingsDic.TryGetValue(symbol, out var mappingSymbol))
+        {
+            symbol = mappingSymbol;
+        }
+
+        var usdPrice = "0.0000000000";
+        
+        var requestDto = new GetAggregatedTokenPriceRequestDto
+        {
+            TokenPair = $"{symbol}-{TokenPriceConstants.USD}",
+            AggregateType = AggregateType.Latest
+        };
+        var usdRep = await _priceServerProvider.GetAggregatedTokenPriceAsync(requestDto);
+
+        if (usdRep.Data != null)
+        {
+            return Math.Round(double.Parse((usdRep.Data.Price / Math.Pow(10, (double)usdRep.Data.Decimal)).ToString("F10")), 10);
+        }
+        requestDto.TokenPair = $"{symbol}-{TokenPriceConstants.USDT}";
+        var usdtRep = await _priceServerProvider.GetAggregatedTokenPriceAsync(requestDto);
+        if (usdtRep.Data == null)
+        {
+            return 0;
+        }
+
+        requestDto.TokenPair = $"{TokenPriceConstants.USDT}-{TokenPriceConstants.USD}";
+        var usdtConvertUsdRep = await _priceServerProvider.GetAggregatedTokenPriceAsync(requestDto);
+        
+        return Math.Round(double.Parse((usdtRep.Data.Price / Math.Pow(10, (double)usdtRep.Data.Decimal) * (usdtConvertUsdRep.Data.Price / Math.Pow(10, (double)usdtConvertUsdRep.Data.Decimal))).ToString("F10")), 10);
+
     }
 
     private async Task<string> GetHamsterSymbolUsdPriceAsync()

@@ -28,4 +28,5 @@ public class EarlyStakeInfoDto
     public long ExtendStakePeriod { get; set; }
     public long MinimalStakeAmount { get; set; }
     public long MinimalExtendStakeAmount { get; set; }
+    public long MergeInterval { get; set; }
 }

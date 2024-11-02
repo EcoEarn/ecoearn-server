@@ -103,7 +103,7 @@ public class MarketCapProvider : AbpRedisCache, IMarketCapProvider, ISingletonDe
         var resp = await _httpProvider.InvokeAsync<CommonResponseDto<long>>(
             _symbolMarketCapOptions.SchrodingerServerBaseUrl, apiInfo);
 
-        var usdPrice = await _priceProvider.GetGateIoPriceAsync($"{symbol.ToUpper()}_USDT");
+        var usdPrice = await _priceProvider.GetAetherLinkUsdPriceAsync(symbol.ToUpper());
         var marketCap = decimal.Parse(resp.Data.ToString()) *
                         decimal.Parse(usdPrice.ToString(CultureInfo.InvariantCulture));
         return marketCap;

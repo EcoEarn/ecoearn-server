@@ -2,7 +2,7 @@ name: Build and Deploy
 
 on:
   push:
-    branches: ['feature/securityserver-k8s'] # if you want to trigger the Github Action on another branch add or change this
+    branches: ['feature/1.16.0'] # if you want to trigger the Github Action on another branch add or change this
 env:
   DOTNET_INSTALL_DIR: "./.dotnet"
 
@@ -73,4 +73,22 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-  
+  dispatch:
+    runs-on: ecoearn-runner
+    needs: build-and-push-image
+    steps:
+      - name: Deploy
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.TOK }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'EcoEarn',
+              repo: 'devops',
+              workflow_id: 'deployment_testnet.yaml',
+              ref: 'main',
+              inputs: {
+                appName: 'ecoearn-backend',
+                commit_sha: 'sha-${{ needs.build-and-push-image.outputs.short_sha }}',
+              }
+            })
