@@ -14,4 +14,5 @@ public class PointsPoolsDto
     public string RewardsTokenName { get; set; }
     public long ReleasePeriod { get; set; }
     public string StakeTokenName { get; set; }
+    public bool HighRewards { get; set; }
 }
