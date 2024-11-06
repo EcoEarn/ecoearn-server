@@ -55,7 +55,7 @@ public class Program
                 services.AddApplication<EcoEarnServerOrleansSiloModule>();
             })
 #if !DEBUG
-            .ConfigureAppConfiguration((h, c) => c.AddJsonFile("apollosettings.json"))
+            .ConfigureAppConfiguration((h, c) => c.AddJsonFile("apollo.appsettings.json"))
             .UseApollo()
 #endif
             .UseOrleansSnapshot()
