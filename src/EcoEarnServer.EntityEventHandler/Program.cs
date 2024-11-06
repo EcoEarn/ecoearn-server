@@ -57,7 +57,7 @@ namespace EcoEarnServer.EntityEventHandler
                     services.AddApplication<EcoEarnServerEntityEventHandlerModule>();
                 })
 #if !DEBUG
-                .ConfigureAppConfiguration((h, c) => c.AddJsonFile("apollosettings.json"))
+                .ConfigureAppConfiguration((h, c) => c.AddJsonFile("apollo.appsettings.json"))
                 .UseApollo() 
 #endif
                 .UseAutofac()
