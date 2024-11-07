@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Orleans;
 using Volo.Abp.EventBus;
 
 namespace EcoEarnServer.Rewards;
@@ -19,8 +20,11 @@ public class RewardOperationRecordEto
     public long ExpiredTime { get; set; }
 }
 
+[GenerateSerializer]
 public class ClaimInfoDto
 {
+    [Id(0)]
     public string ClaimId { get; set; }
+    [Id(1)]
     public long ReleaseTime { get; set; }
 }
