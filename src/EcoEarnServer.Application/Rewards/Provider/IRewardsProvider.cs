@@ -283,16 +283,8 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetConfirmBlockHeight Indexer error")]
     public async Task<long> GetConfirmBlockHeightAsync(string chainId)
     {
-        try
-        {
-            var syncStateDto = await _httpProvider.InvokeAsync<SyncStateDto>(HttpMethod.Get, _indexerSyncStateOptions.Url);
-            return syncStateDto.CurrentVersion.Items.First(x => x.ChainId == _indexerSyncStateOptions.ChainId)
-                .LastIrreversibleBlockHeight;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "GetConfirmBlockHeight Indexer error");
-            return long.MaxValue;
-        }
+        var syncStateDto = await _httpProvider.InvokeAsync<SyncStateDto>(HttpMethod.Get, _indexerSyncStateOptions.Url);
+        return syncStateDto.CurrentVersion.Items.First(x => x.ChainId == _indexerSyncStateOptions.ChainId)
+            .LastIrreversibleBlockHeight;
     }
 }
