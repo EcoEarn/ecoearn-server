@@ -2,7 +2,7 @@ name: Build and Deploy
 
 on:
   push:
-    branches: ['feature/handle-exception'] # if you want to trigger the Github Action on another branch add or change this
+    branches: ['feature/111'] # if you want to trigger the Github Action on another branch add or change this
 env:
   DOTNET_INSTALL_DIR: "./.dotnet"
 
