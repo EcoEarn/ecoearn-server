@@ -183,6 +183,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         var poolId = input.PoolId;
         var address = input.Address;
         var amount = input.Amount;
+        var domain = input.Domain;
 
         //prevention of duplicate claims
         await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + address);
@@ -248,7 +249,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
             .AddSeconds(-expiredPeriod)
             .ToUtcMilliSeconds();
         var seed = Guid.NewGuid().ToString();
-        var signature = await GenerateSignatureByPubKeyAsync(projectInfo.PublicKey,
+        var signature = await GenerateSignatureByPubKeyAsync(projectInfo.PublicKey, domain,
             Hash.LoadFromHex(poolId), amount, Address.FromBase58(address),
             HashHelper.ComputeFrom(seed), expiredTime / 1000);
 
@@ -514,6 +515,7 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         {
             PoolId = input.PoolId,
             Account = input.Account,
+            Domain = input.Domain,
             Amount = input.Amount,
             Seed = input.Seed,
             ExpirationTime = input.ExpirationTime
@@ -589,12 +591,13 @@ public class PointsStakingService : AbpRedisCache, IPointsStakingService, ISingl
         return result;
     }
 
-    private async Task<string> GenerateSignatureByPubKeyAsync(string pubKey, Hash poolId, long amount, Address account,
+    private async Task<string> GenerateSignatureByPubKeyAsync(string pubKey, string domain, Hash poolId, long amount, Address account,
         Hash seed, long expirationTime)
     {
         var data = new ClaimInput
         {
             PoolId = poolId,
+            Domain = domain,
             Account = account,
             Amount = amount,
             Seed = seed,

@@ -113,6 +113,7 @@ namespace EcoEarn.Contracts.Tokens {
         MinimumClaimAmount = MinimumClaimAmount,
         MinimumStakeDuration = MinimumStakeDuration,
         MinimumAddLiquidityAmount = MinimumAddLiquidityAmount,
+        MinimumAdditionalStakeAmount = MinimumAdditionalStakeAmount,
       };
     }
   }

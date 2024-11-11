@@ -323,8 +323,10 @@ namespace EcoEarn.Contracts.Rewards {
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.RemoveLiquidityInput> __Marshaller_RemoveLiquidityInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.RemoveLiquidityInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.StakeLiquidityInput> __Marshaller_StakeLiquidityInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.StakeLiquidityInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.LiquidityInfo> __Marshaller_LiquidityInfo = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.LiquidityInfo.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.JoinInput> __Marshaller_JoinInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.JoinInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.AcceptReferralInput> __Marshaller_AcceptReferralInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.AcceptReferralInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.BatchSettleInput> __Marshaller_BatchSettleInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.BatchSettleInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.JoinForInput> __Marshaller_JoinForInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.JoinForInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.SetPointsContractConfigInput> __Marshaller_SetPointsContractConfigInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.SetPointsContractConfigInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::EcoEarn.Contracts.Rewards.GetPointsContractConfigOutput> __Marshaller_GetPointsContractConfigOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::EcoEarn.Contracts.Rewards.GetPointsContractConfigOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Google.Protobuf.WellKnownTypes.BoolValue> __Marshaller_google_protobuf_BoolValue = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Google.Protobuf.WellKnownTypes.BoolValue.Parser.ParseFrom);
@@ -457,11 +459,11 @@ namespace EcoEarn.Contracts.Rewards {
         __Marshaller_aelf_Hash,
         __Marshaller_LiquidityInfo);
 
-    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty> __Method_Join = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty>(
+    static readonly aelf::Method<global::EcoEarn.Contracts.Rewards.JoinInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_Join = new aelf::Method<global::EcoEarn.Contracts.Rewards.JoinInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
         "Join",
-        __Marshaller_google_protobuf_Empty,
+        __Marshaller_JoinInput,
         __Marshaller_google_protobuf_Empty);
 
     static readonly aelf::Method<global::EcoEarn.Contracts.Rewards.AcceptReferralInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AcceptReferral = new aelf::Method<global::EcoEarn.Contracts.Rewards.AcceptReferralInput, global::Google.Protobuf.WellKnownTypes.Empty>(
@@ -478,11 +480,11 @@ namespace EcoEarn.Contracts.Rewards {
         __Marshaller_BatchSettleInput,
         __Marshaller_google_protobuf_Empty);
 
-    static readonly aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty> __Method_JoinFor = new aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty>(
+    static readonly aelf::Method<global::EcoEarn.Contracts.Rewards.JoinForInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_JoinFor = new aelf::Method<global::EcoEarn.Contracts.Rewards.JoinForInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
         "JoinFor",
-        __Marshaller_aelf_Address,
+        __Marshaller_JoinForInput,
         __Marshaller_google_protobuf_Empty);
 
     static readonly aelf::Method<global::EcoEarn.Contracts.Rewards.SetPointsContractConfigInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetPointsContractConfig = new aelf::Method<global::EcoEarn.Contracts.Rewards.SetPointsContractConfigInput, global::Google.Protobuf.WellKnownTypes.Empty>(
@@ -620,7 +622,7 @@ namespace EcoEarn.Contracts.Rewards {
     //     throw new global::System.NotImplementedException();
     //   }
     //
-    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Join(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Join(global::EcoEarn.Contracts.Rewards.JoinInput input)
     //   {
     //     throw new global::System.NotImplementedException();
     //   }
@@ -635,7 +637,7 @@ namespace EcoEarn.Contracts.Rewards {
     //     throw new global::System.NotImplementedException();
     //   }
     //
-    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty JoinFor(global::AElf.Types.Address input)
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty JoinFor(global::EcoEarn.Contracts.Rewards.JoinForInput input)
     //   {
     //     throw new global::System.NotImplementedException();
     //   }
