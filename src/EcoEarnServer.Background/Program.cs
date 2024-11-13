@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Serilog.Events;
 
 namespace EcoEarnServer.Background;
 
@@ -17,8 +18,18 @@ public class Program
             .Build();
 
         Log.Logger = new LoggerConfiguration()
+#if DEBUG
+            .MinimumLevel.Debug()
+#else
+                .MinimumLevel.Information()
+#endif
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
             .Enrich.FromLogContext()
             .ReadFrom.Configuration(configuration)
+#if DEBUG
+            .WriteTo.Async(c => c.Console())
+#endif
             .CreateLogger();
 
         try
@@ -44,5 +55,6 @@ public class Program
             .ConfigureAppConfiguration((h, c) => c.AddJsonFile("apollo.appsettings.json"))
             .UseApollo()
             .UseAutofac()
-            .UseSerilog();
+            .UseSerilog()
+            .UseOrleansClient();
 }
