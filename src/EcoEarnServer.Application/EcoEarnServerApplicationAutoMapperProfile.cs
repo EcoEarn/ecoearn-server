@@ -93,5 +93,8 @@ public class EcoEarnServerApplicationAutoMapperProfile : Profile
         CreateMap<PointsRankingIndex, RankingDto>()
             .ForMember(t => t.Points, m => m.MapFrom(f => f.Points))
             .ReverseMap();
+        
+        CreateMap<TokenPoolsDto, TokenPoolInfoDto>()
+            .ReverseMap();
     }
 }
