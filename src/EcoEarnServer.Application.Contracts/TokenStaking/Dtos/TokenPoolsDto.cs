@@ -50,3 +50,20 @@ public class TokenPoolsDto
     public List<SubStakeInfoDto> StakeInfos { get; set; } = new();
     
 }
+
+public class TokenPoolInfoDto
+{
+    public string PoolId { get; set; }
+    public double Rate { get; set; }
+    public List<string> Icons { get; set; }
+    public string Staked { get; set; } = "0";
+    public string TotalStake { get; set; } = "0";
+    public int Decimal { get; set; } = 8;
+    public string StakeSymbol { get; set; }
+    public long LastOperationTime { get; set; }
+    public long UnlockWindowDuration { get; set; }
+    public string TotalStakeInUsd { get; set; } = "0";
+    public long Stakers { get; set; }
+    public decimal MarketCap { get; set; }
+    public string EarnedSymbol { get; set; }
+}
