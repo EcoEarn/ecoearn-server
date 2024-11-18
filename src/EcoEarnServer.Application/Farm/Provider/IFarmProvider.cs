@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using EcoEarnServer.Common.Dtos;
 using EcoEarnServer.Common.GraphQL;
 using EcoEarnServer.Common.HttpClient;
+using EcoEarnServer.ExceptionHandle;
 using EcoEarnServer.Farm.Dtos;
 using EcoEarnServer.Options;
 using EcoEarnServer.TokenStaking.Provider;
@@ -22,6 +24,7 @@ public interface IFarmProvider
         LpStatus lpStatus, int skipCount, int maxResultCount);
 
     Task<List<LpPriceItemDto>> GetAwakenLiquidityInfoAsync(string symbol0, string symbol1);
+
     Task<LiquidityInfoListIndexerResult> GetLiquidityListAsync(List<string> liquidityIds, string address,
         LpStatus lpStatus, int skipCount, int maxResultCount);
 }
@@ -43,6 +46,9 @@ public class FarmProvider : IFarmProvider, ISingletonDependency
     }
 
 
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService),
+        ReturnDefault = ReturnDefault.New, MethodName = nameof(ExceptionHandlingService.HandleException),
+        Message = "GetClaimInfoList Indexer error")]
     public async Task<List<LiquidityInfoIndexerDto>> GetLiquidityInfoAsync(List<string> liquidityIds, string address,
         LpStatus lpStatus, int skipCount, int maxResultCount)
     {
@@ -51,12 +57,10 @@ public class FarmProvider : IFarmProvider, ISingletonDependency
             return new List<LiquidityInfoIndexerDto>();
         }
 
-        try
+        var indexerResult = await _graphQlHelper.QueryAsync<LiquidityInfoListIndexerQuery>(new GraphQLRequest
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<LiquidityInfoListIndexerQuery>(new GraphQLRequest
-            {
-                Query =
-                    @"query($liquidityIds:[String!]!, $lpStatus:LpStatus!, $address:String!, $skipCount:Int!,$maxResultCount:Int!){
+            Query =
+                @"query($liquidityIds:[String!]!, $lpStatus:LpStatus!, $address:String!, $skipCount:Int!,$maxResultCount:Int!){
                     getLiquidityInfoList(input: {liquidityIds:$liquidityIds,lpStatus:$lpStatus,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
@@ -81,58 +85,48 @@ public class FarmProvider : IFarmProvider, ISingletonDependency
                     }
                 }
             }",
-                Variables = new
-                {
-                    liquidityIds = liquidityIds, lpStatus = lpStatus, skipCount = skipCount,
-                    maxResultCount = maxResultCount, address = address
-                }
-            });
+            Variables = new
+            {
+                liquidityIds = liquidityIds, lpStatus = lpStatus, skipCount = skipCount,
+                maxResultCount = maxResultCount, address = address
+            }
+        });
 
-            return indexerResult.GetLiquidityInfoList.Data;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "getClaimInfoList Indexer error");
-            return new List<LiquidityInfoIndexerDto>();
-        }
+        return indexerResult.GetLiquidityInfoList.Data;
     }
 
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService),
+        ReturnDefault = ReturnDefault.New, MethodName = nameof(ExceptionHandlingService.HandleException),
+        Message = "GetAwakenLiquidityInfo error")]
     public async Task<List<LpPriceItemDto>> GetAwakenLiquidityInfoAsync(string symbol0, string symbol1)
     {
-        try
-        {
-            var resp = await _httpProvider.InvokeAsync<CommonResponseDto<LpPriceDto>>(HttpMethod.Get,
-                _lpPoolRateOptions.LpPriceServer.LpPriceServerBaseUrl,
-                param: new Dictionary<string, string>
-                {
-                    ["token0Symbol"] = symbol0,
-                    ["token1Symbol"] = symbol1,
-                    ["chainId"] = _lpPoolRateOptions.LpPriceServer.ChainId,
-                }, header: null);
-            var result = new List<LpPriceItemDto>();
-            if (resp.Success && resp.Data != null)
+        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<LpPriceDto>>(HttpMethod.Get,
+            _lpPoolRateOptions.LpPriceServer.LpPriceServerBaseUrl,
+            param: new Dictionary<string, string>
             {
-                result = resp.Data.Items;
-            }
-
-            return result;
-        }
-        catch (Exception e)
+                ["token0Symbol"] = symbol0,
+                ["token1Symbol"] = symbol1,
+                ["chainId"] = _lpPoolRateOptions.LpPriceServer.ChainId,
+            }, header: null);
+        var result = new List<LpPriceItemDto>();
+        if (resp.Success && resp.Data != null)
         {
-            _logger.LogError(e, "[PriceDataProvider][GetLpPriceAsync] Parse response error.");
-            return new List<LpPriceItemDto>();
+            result = resp.Data.Items;
         }
+
+        return result;
     }
 
-    public async Task<LiquidityInfoListIndexerResult> GetLiquidityListAsync(List<string> liquidityIds, string address, LpStatus lpStatus, int skipCount, int maxResultCount)
-    
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService),
+        ReturnDefault = ReturnDefault.New, MethodName = nameof(ExceptionHandlingService.HandleException),
+        Message = "GetLiquidityList Indexer error")]
+    public async Task<LiquidityInfoListIndexerResult> GetLiquidityListAsync(List<string> liquidityIds, string address,
+        LpStatus lpStatus, int skipCount, int maxResultCount)
     {
-        try
+        var indexerResult = await _graphQlHelper.QueryAsync<LiquidityInfoListIndexerQuery>(new GraphQLRequest
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<LiquidityInfoListIndexerQuery>(new GraphQLRequest
-            {
-                Query =
-                    @"query($liquidityIds:[String!]!, $lpStatus:LpStatus!, $address:String!, $skipCount:Int!,$maxResultCount:Int!){
+            Query =
+                @"query($liquidityIds:[String!]!, $lpStatus:LpStatus!, $address:String!, $skipCount:Int!,$maxResultCount:Int!){
                     getLiquidityInfoList(input: {liquidityIds:$liquidityIds,lpStatus:$lpStatus,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
@@ -158,19 +152,13 @@ public class FarmProvider : IFarmProvider, ISingletonDependency
                     }
                 }
             }",
-                Variables = new
-                {
-                    liquidityIds = liquidityIds, lpStatus = lpStatus, skipCount = skipCount,
-                    maxResultCount = maxResultCount, address = address
-                }
-            });
+            Variables = new
+            {
+                liquidityIds = liquidityIds, lpStatus = lpStatus, skipCount = skipCount,
+                maxResultCount = maxResultCount, address = address
+            }
+        });
 
-            return indexerResult.GetLiquidityInfoList;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "getClaimInfoList Indexer error");
-            return new LiquidityInfoListIndexerResult();
-        }
+        return indexerResult.GetLiquidityInfoList;
     }
 }
