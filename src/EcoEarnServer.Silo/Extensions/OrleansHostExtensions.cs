@@ -3,11 +3,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Orleans;
 using Orleans.Configuration;
-using Orleans.Hosting;
 using Orleans.Providers.MongoDB.Configuration;
-using Orleans.Statistics;
 
 namespace EcoEarnServer.Silo.Extensions;
 
@@ -47,6 +44,7 @@ public static class OrleansHostExtensions
                         jsonSettings.DefaultValueHandling = DefaultValueHandling.Populate;
                         jsonSettings.ObjectCreationHandling = ObjectCreationHandling.Replace;
                     };
+                    
                 })
                 .UseMongoDBReminders(options =>
                 {
@@ -58,8 +56,8 @@ public static class OrleansHostExtensions
                     options.ClusterId = clusterId;
                     options.ServiceId = serviceId;
                 })
-                // .AddMemoryGrainStorage("PubSubStore")
-                .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
+                 .AddMemoryGrainStorage("PubSubStore")
+                //.ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
                 .UseDashboard(options =>
                 {
                     options.Username = configSection.GetValue<string>("DashboardUserName");
@@ -69,7 +67,7 @@ public static class OrleansHostExtensions
                     options.HostSelf = true;
                     options.CounterUpdateIntervalMs = configSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
                 })
-                .UseLinuxEnvironmentStatistics()
+                // .UseLinuxEnvironmentStatistics()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
         });
     }

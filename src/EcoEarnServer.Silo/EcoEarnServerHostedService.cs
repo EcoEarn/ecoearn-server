@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Volo.Abp;
 
-namespace EcoEarnServer;
+namespace EcoEarnServer.Silo;
 
 public class EcoEarnServerHostedService : IHostedService
 {

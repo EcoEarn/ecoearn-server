@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
+using EcoEarnServer.ExceptionHandle;
 using EcoEarnServer.StakingSettlePoints;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
@@ -27,6 +28,9 @@ public class AddressStakingSettlePointsHandler : IDistributedEventHandler<Addres
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService),
+        MethodName = nameof(ExceptionHandlingService.HandleException), LogOnly = true,
+        LogTargets = ["eventData"], Message = "AddressStakingSettlePointsHandler error")]
     public async Task HandleEventAsync(AddressStakingSettlePointsListEto eventData)
     {
         if (eventData.EventDataList.Count == 0)
@@ -34,18 +38,10 @@ public class AddressStakingSettlePointsHandler : IDistributedEventHandler<Addres
             return;
         }
 
-        try
-        {
-            var indexList =
-                _objectMapper.Map<List<AddressStakingSettlePointsEto>, List<AddressStakingSettlePointsIndex>>(
-                    eventData.EventDataList);
-            await _repository.BulkAddOrUpdateAsync(indexList);
-            _logger.LogDebug("HandleEventAsync AddressStakingSettlePointsHandler success.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "HandleEventAsync AddressStakingSettlePointsHandler fail. {Message}",
-                JsonConvert.SerializeObject(eventData));
-        }
+        var indexList =
+            _objectMapper.Map<List<AddressStakingSettlePointsEto>, List<AddressStakingSettlePointsIndex>>(
+                eventData.EventDataList);
+        await _repository.BulkAddOrUpdateAsync(indexList);
+        _logger.LogDebug("HandleEventAsync AddressStakingSettlePointsHandler success.");
     }
 }

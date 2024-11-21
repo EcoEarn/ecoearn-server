@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Net.Http;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using Aetherlink.PriceServer;
 using Aetherlink.PriceServer.Dtos;
 using EcoEarnServer.Common;
 using EcoEarnServer.Common.Dtos;
 using EcoEarnServer.Common.HttpClient;
+using EcoEarnServer.ExceptionHandle;
 using EcoEarnServer.Options;
 using Io.Gate.GateApi.Api;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
@@ -163,6 +165,8 @@ public class PriceProvider : AbpRedisCache, IPriceProvider, ISingletonDependency
         return (double)(rep.Data.Price / rep.Data.Decimal);
     }
 
+    [ExceptionHandler(typeof(TaskCanceledException), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.Default,
+        MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetAetherLink Server error.")]
     public async Task<double> GetAetherLinkUsdPriceAsync(string symbol)
     {
         if (_lpPoolRateOptions.SymbolMappingsDic.TryGetValue(symbol, out var mappingSymbol))

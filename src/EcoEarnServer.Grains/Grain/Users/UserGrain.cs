@@ -1,7 +1,6 @@
 using EcoEarnServer.Common;
 using EcoEarnServer.Grains.State.Users;
 using EcoEarnServer.Users;
-using Orleans;
 using Volo.Abp.ObjectMapping;
 
 namespace EcoEarnServer.Grains.Grain.Users;
@@ -22,16 +21,16 @@ public class UserGrain : Grain<UserState>, IUserGrain
         _objectMapper = objectMapper;
     }
 
-    public override async Task OnActivateAsync()
+    public override async Task OnActivateAsync(CancellationToken token)
     {
         await ReadStateAsync();
-        await base.OnActivateAsync();
+        await base.OnActivateAsync(token);
     }
 
-    public override async Task OnDeactivateAsync()
+    public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken token)
     {
         await WriteStateAsync();
-        await base.OnDeactivateAsync();
+        await base.OnDeactivateAsync(reason, token);
     }
 
     public async Task<GrainResultDto<UserGrainDto>> UpdateUserAsync(UserGrainDto input)

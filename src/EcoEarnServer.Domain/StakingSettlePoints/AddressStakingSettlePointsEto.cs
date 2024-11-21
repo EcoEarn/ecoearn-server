@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Orleans;
 using Volo.Abp.EventBus;
 
 namespace EcoEarnServer.StakingSettlePoints;
@@ -19,8 +20,11 @@ public class AddressStakingSettlePointsEto
     public long UpdateTime { get; set; }
 }
 
+[GenerateSerializer]
 public class StakingSettlePointsDto
 {
+    [Id(0)]
     public string Points { get; set; }
+    [Id(1)]
     public string DappId { get; set; }
 }

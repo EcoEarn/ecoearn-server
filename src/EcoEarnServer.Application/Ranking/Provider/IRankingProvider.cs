@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using EcoEarnServer.Common;
 using EcoEarnServer.Common.AElfSdk;
-using Google.Protobuf.WellKnownTypes;
+using EcoEarnServer.ExceptionHandle;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -84,6 +85,9 @@ public class RankingProvider : AbpRedisCache, IRankingProvider, ISingletonDepend
         return await _repository.GetAsync(Filter);
     }
 
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService),
+        ReturnDefault = ReturnDefault.Default, MethodName = nameof(ExceptionHandlingService.HandleException),
+        Message = "GetJoinRecord Indexer error")]
     private async Task<bool> GetJoinRecordAsync(string chainId, string address)
     {
         var transaction = _contractProvider
@@ -91,15 +95,7 @@ public class RankingProvider : AbpRedisCache, IRankingProvider, ISingletonDepend
                 ContractConstants.GetJoinRecord, Address.FromBase58(address))
             .Result
             .transaction;
-        try
-        {
-            var transactionOutput = await _contractProvider.CallTransactionAsync(chainId, transaction);
-            return bool.Parse(transactionOutput);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("GetJoinRecord fail.", e);
-            return false;
-        }
+        var transactionOutput = await _contractProvider.CallTransactionAsync(chainId, transaction);
+        return bool.Parse(transactionOutput);
     }
 }

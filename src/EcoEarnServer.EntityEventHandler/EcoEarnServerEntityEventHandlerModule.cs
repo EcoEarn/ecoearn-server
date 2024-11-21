@@ -32,42 +32,42 @@ public class EcoEarnServerEntityEventHandlerModule : AbpModule
         ConfigureTokenCleanupService();
         var configuration = context.Services.GetConfiguration();
         context.Services.AddHostedService<EcoEarnServerHostedService>();
-        context.Services.AddSingleton<IClusterClient>(o =>
-        {
-            return new ClientBuilder()
-                .ConfigureDefaults()
-                .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
-                .UseMongoDBClustering(options =>
-                {
-                    options.DatabaseName = configuration["Orleans:DataBase"];
-                    ;
-                    options.Strategy = MongoDBMembershipStrategy.SingleDocument;
-                })
-                .Configure<ClusterOptions>(options =>
-                {
-                    options.ClusterId = configuration["Orleans:ClusterId"];
-                    options.ServiceId = configuration["Orleans:ServiceId"];
-                })
-                .ConfigureApplicationParts(parts =>
-                    parts.AddApplicationPart(typeof(EcoEarnServerGrainsModule).Assembly).WithReferences())
-                //.AddSimpleMessageStreamProvider(AElfIndexerApplicationConsts.MessageStreamName)
-                .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
-                .Build();
-        });
+        // context.Services.AddSingleton<IClusterClient>(o =>
+        // {
+        //     return new ClientBuilder()
+        //         .ConfigureDefaults()
+        //         .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
+        //         .UseMongoDBClustering(options =>
+        //         {
+        //             options.DatabaseName = configuration["Orleans:DataBase"];
+        //             ;
+        //             options.Strategy = MongoDBMembershipStrategy.SingleDocument;
+        //         })
+        //         .Configure<ClusterOptions>(options =>
+        //         {
+        //             options.ClusterId = configuration["Orleans:ClusterId"];
+        //             options.ServiceId = configuration["Orleans:ServiceId"];
+        //         })
+        //         .ConfigureApplicationParts(parts =>
+        //             parts.AddApplicationPart(typeof(EcoEarnServerGrainsModule).Assembly).WithReferences())
+        //         //.AddSimpleMessageStreamProvider(AElfIndexerApplicationConsts.MessageStreamName)
+        //         .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+        //         .Build();
+        // });
         ConfigureEsIndexCreation();
     }
 
-    public override void OnApplicationInitialization(ApplicationInitializationContext context)
-    {
-        var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(async () => await client.Connect());
-    }
+    // public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    // {
+    //     var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
+    //     AsyncHelper.RunSync(async () => await client.Connect());
+    // }
 
-    public override void OnApplicationShutdown(ApplicationShutdownContext context)
-    {
-        var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(client.Close);
-    }
+    // public override void OnApplicationShutdown(ApplicationShutdownContext context)
+    // {
+    //     var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
+    //     AsyncHelper.RunSync(client.Close);
+    // }
 
     //Create the ElasticSearch Index based on Domain Entity
     private void ConfigureEsIndexCreation()

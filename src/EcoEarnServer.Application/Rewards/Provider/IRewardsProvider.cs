@@ -1,12 +1,20 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using EcoEarnServer.Common.GraphQL;
+using EcoEarnServer.ExceptionHandle;
+using EcoEarnServer.Common.HttpClient;
+using EcoEarnServer.Options;
 using EcoEarnServer.Rewards.Dtos;
 using EcoEarnServer.TokenStaking.Provider;
 using GraphQL;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
 using Nest;
 using Volo.Abp.DependencyInjection;
 
@@ -43,16 +51,23 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
     private readonly IGraphQlHelper _graphQlHelper;
     private readonly ILogger<RewardsProvider> _logger;
     private readonly INESTRepository<RewardOperationRecordIndex, string> _repository;
+    private readonly IHttpProvider _httpProvider;
+    private readonly IndexerSyncStateOptions _indexerSyncStateOptions;
 
     public RewardsProvider(IGraphQlHelper graphQlHelper, ILogger<RewardsProvider> logger,
-        INESTRepository<RewardOperationRecordIndex, string> repository)
+        INESTRepository<RewardOperationRecordIndex, string> repository, IHttpProvider httpProvider, 
+        IOptionsSnapshot<IndexerSyncStateOptions> indexerSyncStateOptions)
     {
         _graphQlHelper = graphQlHelper;
         _logger = logger;
         _repository = repository;
+        _httpProvider = httpProvider;
+        _indexerSyncStateOptions = indexerSyncStateOptions.Value;
     }
 
-    public async Task<RewardsListIndexerResult> GetRewardsListAsync(PoolTypeEnums poolType, string address,
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
+        MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetClaimInfoList Indexer error")]
+    public virtual async Task<RewardsListIndexerResult> GetRewardsListAsync(PoolTypeEnums poolType, string address,
         int skipCount, int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false,
         List<string> liquidityIds = null, List<string> poolIds = null, List<string> dappIds = null)
     {
@@ -61,12 +76,10 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             return new RewardsListIndexerResult();
         }
 
-        try
+        var indexerResult = await _graphQlHelper.QueryAsync<RewardsListQuery>(new GraphQLRequest
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<RewardsListQuery>(new GraphQLRequest
-            {
-                Query =
-                    @"query($poolType:PoolType!, $liquidityIds:[String!]!, $poolIds:[String!]!, $dappIds:[String!]!,$filterUnlock:Boolean!,$filterWithdraw:Boolean!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
+            Query =
+                @"query($poolType:PoolType!, $liquidityIds:[String!]!, $poolIds:[String!]!, $dappIds:[String!]!,$filterUnlock:Boolean!,$filterWithdraw:Boolean!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
                     getClaimInfoList(input: {poolType:$poolType,liquidityIds:$liquidityIds,poolIds:$poolIds,dappIds:$dappIds,filterUnlock:$filterUnlock,filterWithdraw:$filterWithdraw,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
@@ -91,53 +104,41 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
                     }
                 }
             }",
-                Variables = new
-                {
-                    poolType = poolType, filterUnlock = filterUnlocked, filterWithdraw = filterWithdraw,
-                    address = address, skipCount = skipCount, maxResultCount = maxResultCount,
-                    liquidityIds = liquidityIds ?? new List<string>(),
-                    poolIds = poolIds ?? new List<string>(),
-                    dappIds = dappIds ?? new List<string>()
-                }
-            });
+            Variables = new
+            {
+                poolType = poolType, filterUnlock = filterUnlocked, filterWithdraw = filterWithdraw,
+                address = address, skipCount = skipCount, maxResultCount = maxResultCount,
+                liquidityIds = liquidityIds ?? new List<string>(),
+                poolIds = poolIds ?? new List<string>(),
+                dappIds = dappIds ?? new List<string>()
+            }
+        });
 
-            return indexerResult.GetClaimInfoList;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "getClaimInfoList Indexer error");
-            return new RewardsListIndexerResult();
-        }
+        return indexerResult.GetClaimInfoList;
     }
 
-    public async Task<List<string>> GetUnLockedStakeIdsAsync(List<string> stakeIds, string address)
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
+        MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetUnLockedStakeIds Indexer error")]
+    public virtual async Task<List<string>> GetUnLockedStakeIdsAsync(List<string> stakeIds, string address)
     {
         if (string.IsNullOrEmpty(address) || stakeIds.IsNullOrEmpty())
         {
             return new List<string>();
         }
 
-        try
+        var indexerResult = await _graphQlHelper.QueryAsync<UnLockedStakeIdsQuery>(new GraphQLRequest
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<UnLockedStakeIdsQuery>(new GraphQLRequest
-            {
-                Query =
-                    @"query($address:String!, $stakeIds:[String!]!,$skipCount:Int!,$maxResultCount:Int!){
+            Query =
+                @"query($address:String!, $stakeIds:[String!]!,$skipCount:Int!,$maxResultCount:Int!){
                     getUnLockedStakeIdsAsync(input: {address:$address,stakeIds:$stakeIds,skipCount:$skipCount,maxResultCount:$maxResultCount})
             }",
-                Variables = new
-                {
-                    address = address, stakeIds = stakeIds, skipCount = 0, maxResultCount = 5000,
-                }
-            });
+            Variables = new
+            {
+                address = address, stakeIds = stakeIds, skipCount = 0, maxResultCount = 5000,
+            }
+        });
 
-            return indexerResult.GetUnLockedStakeIdsAsync;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "GetUnLockedStakeIds Indexer error");
-            return new List<string>();
-        }
+        return indexerResult.GetUnLockedStakeIdsAsync;
     }
 
     public async Task<List<RewardOperationRecordIndex>> GetRewardOperationRecordListAsync(string address,
@@ -168,7 +169,10 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
         return list;
     }
 
-    public async Task<long> GetRewardsCountAsync(PoolTypeEnums poolType, string address,
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService),
+        ReturnDefault = ReturnDefault.Default,
+        MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetClaimInfoList Indexer error")]
+    public virtual async Task<long> GetRewardsCountAsync(PoolTypeEnums poolType, string address,
         int skipCount, int maxResultCount, bool filterWithdraw = false, bool filterUnlocked = false,
         List<string> liquidityIds = null)
     {
@@ -177,32 +181,27 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             return 0;
         }
 
-        try
+        var indexerResult = await _graphQlHelper.QueryAsync<RewardsCountQuery>(new GraphQLRequest
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<RewardsCountQuery>(new GraphQLRequest
-            {
-                Query =
-                    @"query($poolType:PoolType!, $liquidityIds:[String!]!, $filterUnlock:Boolean!,$filterWithdraw:Boolean!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
+            Query =
+                @"query($poolType:PoolType!, $liquidityIds:[String!]!, $filterUnlock:Boolean!,$filterWithdraw:Boolean!,$address:String!, $skipCount:Int!,$maxResultCount:Int!){
                     getClaimInfoCount(input: {poolType:$poolType,liquidityIds:$liquidityIds,filterUnlock:$filterUnlock,filterWithdraw:$filterWithdraw,address:$address,skipCount:$skipCount,maxResultCount:$maxResultCount})
             }",
-                Variables = new
-                {
-                    poolType = poolType, filterUnlock = filterUnlocked, filterWithdraw = filterWithdraw,
-                    address = address, skipCount = skipCount, maxResultCount = maxResultCount,
-                    liquidityIds = liquidityIds ?? new List<string>()
-                }
-            });
+            Variables = new
+            {
+                poolType = poolType, filterUnlock = filterUnlocked, filterWithdraw = filterWithdraw,
+                address = address, skipCount = skipCount, maxResultCount = maxResultCount,
+                liquidityIds = liquidityIds ?? new List<string>()
+            }
+        });
 
-            return indexerResult.GetClaimInfoCount;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "getClaimInfoList Indexer error");
-            return 0;
-        }
+        return indexerResult.GetClaimInfoCount;
     }
 
-    public async Task<MergedRewardsListIndexerResult> GetMergedRewardsListAsync(string address, List<string> poolIds,
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
+        MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetMergedRewardsList Indexer error")]
+    public virtual async Task<MergedRewardsListIndexerResult> GetMergedRewardsListAsync(string address,
+        List<string> poolIds,
         PoolTypeEnums poolType, List<string> dappIds = null, int skipCount = 0, int maxResultCount = 5000)
     {
         if (string.IsNullOrEmpty(address))
@@ -210,12 +209,10 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             return new MergedRewardsListIndexerResult();
         }
 
-        try
+        var indexerResult = await _graphQlHelper.QueryAsync<MergedRewardsListQuery>(new GraphQLRequest
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<MergedRewardsListQuery>(new GraphQLRequest
-            {
-                Query =
-                    @"query($poolIds:[String!]!,$address:String!,$poolType:PoolType!,$dappIds:[String!]!,$skipCount:Int!,$maxResultCount:Int!){
+            Query =
+                @"query($poolIds:[String!]!,$address:String!,$poolType:PoolType!,$dappIds:[String!]!,$skipCount:Int!,$maxResultCount:Int!){
                     getMergedRewardsList(input: {poolIds:$poolIds,address:$address,poolType:$poolType,dappIds:$dappIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount
                         data{
@@ -232,22 +229,18 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
                     }
                 }
             }",
-                Variables = new
-                {
-                    poolIds = poolIds ?? new List<string>(), address = address, dappIds = dappIds ?? new List<string>(),
-                    poolType = poolType, skipCount = skipCount, maxResultCount = maxResultCount
-                }
-            });
+            Variables = new
+            {
+                poolIds = poolIds ?? new List<string>(), address = address, dappIds = dappIds ?? new List<string>(),
+                poolType = poolType, skipCount = skipCount, maxResultCount = maxResultCount
+            }
+        });
 
-            return indexerResult.GetMergedRewardsList;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "GetMergedRewardsList Indexer error");
-            return new MergedRewardsListIndexerResult();
-        }
+        return indexerResult.GetMergedRewardsList;
     }
 
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
+        MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetClaimInfoList Indexer error")]
     public async Task<RewardsInfoListIndexerDto> GetRewardsInfoListAsync(PoolTypeEnums poolType, string address,
         string id, int skipCount, int maxResultCount)
     {
@@ -256,12 +249,10 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
             return new RewardsInfoListIndexerDto();
         }
 
-        try
+        var indexerResult = await _graphQlHelper.QueryAsync<RewardsInfoListQuery>(new GraphQLRequest
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<RewardsInfoListQuery>(new GraphQLRequest
-            {
-                Query =
-                    @"query($poolType:PoolType!,$address:String!,$id:String!, $skipCount:Int!,$maxResultCount:Int!){
+            Query =
+                @"query($poolType:PoolType!,$address:String!,$id:String!, $skipCount:Int!,$maxResultCount:Int!){
                     getRewardsInfoList(input: {poolType:$poolType,address:$address,id:$id,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
@@ -278,46 +269,22 @@ public class RewardsProvider : IRewardsProvider, ISingletonDependency
                     }
                 }
             }",
-                Variables = new
-                {
-                    poolType = poolType, address = address, id = id, skipCount = skipCount,
-                    maxResultCount = maxResultCount
-                }
-            });
+            Variables = new
+            {
+                poolType = poolType, address = address, id = id, skipCount = skipCount,
+                maxResultCount = maxResultCount
+            }
+        });
 
-            return indexerResult.GetRewardsInfoList;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "getClaimInfoList Indexer error");
-            return new RewardsInfoListIndexerDto();
-        }
+        return indexerResult.GetRewardsInfoList;
     }
 
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), ReturnDefault = ReturnDefault.New,
+        MethodName = nameof(ExceptionHandlingService.HandleException), Message = "GetConfirmBlockHeight Indexer error")]
     public async Task<long> GetConfirmBlockHeightAsync(string chainId)
     {
-        try
-        {
-            var indexerResult = await _graphQlHelper.QueryAsync<ConfirmBlockHeightQuery>(new GraphQLRequest
-            {
-                Query =
-                    @"query($chainId:String!,$filterType:BlockFilterType!){
-                    syncState(input: {chainId:$chainId,filterType:$filterType}){
-                        confirmedBlockHeight
-                }
-            }",
-                Variables = new
-                {
-                    chainId = chainId, filterType = BlockFilterType.LogEvent
-                }
-            });
-
-            return indexerResult.SyncState.ConfirmedBlockHeight;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "GetConfirmBlockHeight Indexer error");
-            return long.MaxValue;
-        }
+        var syncStateDto = await _httpProvider.InvokeAsync<SyncStateDto>(HttpMethod.Get, _indexerSyncStateOptions.Url);
+        return syncStateDto.CurrentVersion.Items.First(x => x.ChainId == _indexerSyncStateOptions.ChainId)
+            .LastIrreversibleBlockHeight;
     }
 }

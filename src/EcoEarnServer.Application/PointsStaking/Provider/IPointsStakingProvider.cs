@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
 using EcoEarnServer.Common;
 using EcoEarnServer.Common.GraphQL;
+using EcoEarnServer.ExceptionHandle;
 using EcoEarnServer.PointsPool;
 using EcoEarnServer.PointsSnapshot;
 using EcoEarnServer.PointsStakeRewards;
@@ -27,7 +29,10 @@ public interface IPointsStakingProvider
     Task<Dictionary<string, string>> GetAddressStakeRewardsDicAsync(string address, string dappId = "");
     Task<List<RewardsListIndexerDto>> GetRealClaimInfoListAsync(List<string> seeds, string address, string poolId);
     Task<List<PointsPoolClaimRecordIndex>> GetClaimingListAsync(string address, string poolId);
-    Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string address, string dappId, int skipCount, int maxResultCount);
+
+    Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string address, string dappId, int skipCount,
+        int maxResultCount);
+
     Task<List<PointsPoolStakeSumIndex>> GetPointsPoolStakeSumAsync();
 }
 
@@ -69,15 +74,16 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         return list.Select(x => x.Address).Distinct().Count();
     }
 
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService),
+        ReturnDefault = ReturnDefault.New, MethodName = nameof(ExceptionHandlingService.HandleException),
+        Message = "GetPointsPools Indexer error")]
     public async Task<List<PointsPoolsIndexerDto>> GetPointsPoolsAsync(string name, string dappId = "",
         List<string> poolIds = null)
     {
-        try
+        var indexerResult = await _graphQlHelper.QueryAsync<PointsPoolsQuery>(new GraphQLRequest
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<PointsPoolsQuery>(new GraphQLRequest
-            {
-                Query =
-                    @"query($name:String!, $dappId:String!, $poolIds:[String!]!, $skipCount:Int!,$maxResultCount:Int!){
+            Query =
+                @"query($name:String!, $dappId:String!, $poolIds:[String!]!, $skipCount:Int!,$maxResultCount:Int!){
                     getPointsPoolList(input: {name:$name,dappId:$dappId,poolIds:$poolIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
@@ -90,21 +96,15 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
                     }
                 }
             }",
-                Variables = new
-                {
-                    name = string.IsNullOrEmpty(name) ? "" : name, dappId = dappId,
-                    poolIds = poolIds ?? new List<string>(),
-                    skipCount = 0, maxResultCount = 5000
-                }
-            });
+            Variables = new
+            {
+                name = string.IsNullOrEmpty(name) ? "" : name, dappId = dappId,
+                poolIds = poolIds ?? new List<string>(),
+                skipCount = 0, maxResultCount = 5000
+            }
+        });
 
-            return indexerResult.GetPointsPoolList.Data;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "GetPointsPools Indexer error");
-            return new List<PointsPoolsIndexerDto>();
-        }
+        return indexerResult.GetPointsPoolList.Data;
     }
 
     public async Task<Dictionary<string, string>> GetPointsPoolStakeSumDicAsync(List<string> poolIds)
@@ -165,9 +165,13 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         var (total, list) = await _addressStakeRewardsRepository.GetListAsync(Filter,
             skip: 0, limit: 5000);
         _logger.LogInformation("GetAddressStakeRewardsDicAsync: {total}", total);
-        return list.ToDictionary(x => GuidHelper.GenerateId(x.Address, x.PoolId), x => string.IsNullOrEmpty(x.Rewards) ? "0" : x.Rewards);
+        return list.ToDictionary(x => GuidHelper.GenerateId(x.Address, x.PoolId),
+            x => string.IsNullOrEmpty(x.Rewards) ? "0" : x.Rewards);
     }
 
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService),
+        ReturnDefault = ReturnDefault.New, MethodName = nameof(ExceptionHandlingService.HandleException),
+        Message = "GetRealClaimInfoList Indexer error")]
     public async Task<List<RewardsListIndexerDto>> GetRealClaimInfoListAsync(List<string> seeds, string address,
         string poolId)
     {
@@ -176,12 +180,10 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
             return new List<RewardsListIndexerDto>();
         }
 
-        try
+        var indexerResult = await _graphQlHelper.QueryAsync<RealRewardsListQuery>(new GraphQLRequest
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<RealRewardsListQuery>(new GraphQLRequest
-            {
-                Query =
-                    @"query($seeds:[String!]!, $address:String!, $poolId:String!, $skipCount:Int!,$maxResultCount:Int!){
+            Query =
+                @"query($seeds:[String!]!, $address:String!, $poolId:String!, $skipCount:Int!,$maxResultCount:Int!){
                     getRealClaimInfoList(input: {seeds:$seeds,address:$address,poolId:$poolId,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         totalCount,
                         data{
@@ -206,19 +208,13 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
                     }
                 }
             }",
-                Variables = new
-                {
-                    seeds = seeds, address = address, poolId = poolId, skipCount = 0, maxResultCount = 5000,
-                }
-            });
+            Variables = new
+            {
+                seeds = seeds, address = address, poolId = poolId, skipCount = 0, maxResultCount = 5000,
+            }
+        });
 
-            return indexerResult.GetRealClaimInfoList.Data;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "getClaimInfoList Indexer error");
-            return new List<RewardsListIndexerDto>();
-        }
+        return indexerResult.GetRealClaimInfoList.Data;
     }
 
     public async Task<List<PointsPoolClaimRecordIndex>> GetClaimingListAsync(string address, string poolId)
@@ -242,7 +238,7 @@ public class PointsStakingProvider : IPointsStakingProvider, ISingletonDependenc
         return list;
     }
 
-    public async Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string address, string dappId, 
+    public async Task<List<PointsStakeRewardsSumIndex>> GetAddressRewardsAsync(string address, string dappId,
         int skipCount, int maxResultCount)
     {
         if (string.IsNullOrEmpty(address))

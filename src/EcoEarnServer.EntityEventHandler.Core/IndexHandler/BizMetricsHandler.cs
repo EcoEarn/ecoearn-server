@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AElf.Indexing.Elasticsearch;
+using EcoEarnServer.ExceptionHandle;
 using EcoEarnServer.Metrics;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -27,6 +29,9 @@ public class BizMetricsHandler : IDistributedEventHandler<BizMetricsListEto>,
         _logger = logger;
     }
 
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ExceptionHandlingService), 
+        MethodName = nameof(ExceptionHandlingService.HandleException), LogOnly = true,
+        LogTargets = ["eventData"], Message = "AddressStakingSettlePointsHandler error")]
     public async Task HandleEventAsync(BizMetricsListEto eventData)
     {
         if (eventData.EventDataList.Count == 0)

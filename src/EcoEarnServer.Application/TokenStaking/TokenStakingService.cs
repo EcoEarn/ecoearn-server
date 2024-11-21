@@ -312,6 +312,13 @@ public class TokenStakingService : AbpRedisCache, ITokenStakingService, ISinglet
         return result;
     }
 
+    public async Task<List<TokenPoolInfoDto>> GetTokenPoolInfosAsync(GetTokenPoolsInput input)
+    {
+        var tokenPoolsResult = await GetTokenPoolsAsync(input);
+
+        return _objectMapper.Map<List<TokenPoolsDto>, List<TokenPoolInfoDto>>(tokenPoolsResult.Pools);
+    }
+
 
     private async Task<Dictionary<string, RewardDataDto>> GetStakedRewardsAsync(string stakeId, string chainId)
     {
